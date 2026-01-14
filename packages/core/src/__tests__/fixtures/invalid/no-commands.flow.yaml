@@ -1,0 +1,5 @@
+# コマンド配列ではなくオブジェクト
+env:
+  BASE_URL: https://example.com
+---
+not_an_array: true

@@ -1,0 +1,753 @@
+/**
+ * コマンド型ガード・正規化関数
+ *
+ * YAMLからパースされた値を正規化されたCommand型に変換する。
+ * 以下の2つの形式をサポート:
+ * 1. 正規化済み形式: { command: 'click', selector: '...' }
+ * 2. YAML簡略形式: { click: '...' }
+ */
+
+import type {
+  OpenCommand,
+  ClickCommand,
+  TypeCommand,
+  FillCommand,
+  PressCommand,
+  HoverCommand,
+  SelectCommand,
+  ScrollCommand,
+  ScrollIntoViewCommand,
+  WaitCommand,
+  ScreenshotCommand,
+  SnapshotCommand,
+  EvalCommand,
+  AssertVisibleCommand,
+  AssertEnabledCommand,
+  AssertCheckedCommand,
+  Command,
+} from '../../types';
+
+/**
+ * YAML簡略形式を検出するヘルパー
+ *
+ * { click: '...' } のような形式で、commandキーが存在しない場合にtrue
+ *
+ * @param obj - チェック対象のオブジェクト
+ * @param key - 検出するキー名
+ * @returns YAML簡略形式の場合true
+ */
+const hasYamlKey = (obj: Record<string, unknown>, key: string): boolean => {
+  return key in obj && !('command' in obj);
+};
+
+/**
+ * 値がRecord型かどうかを判定する型ガード
+ *
+ * unknown型の値がRecord<string, unknown>であることを型安全に判定する。
+ * オブジェクトでない場合、nullの場合、配列の場合はfalseを返す。
+ *
+ * @param value - 変換対象の値
+ * @returns Record型の場合true、それ以外false
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+/**
+ * 型安全なオブジェクト変換ヘルパー
+ *
+ * unknown型の値をRecord<string, unknown>に変換する。
+ * オブジェクトでない場合はnullを返す。
+ *
+ * @param value - 変換対象の値
+ * @returns オブジェクトの場合Record<string, unknown>、それ以外null
+ */
+const toRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+  return value;
+};
+
+/**
+ * OpenCommandを正規化
+ *
+ * 正規化済み形式: { command: 'open', url: '...' }
+ * YAML簡略形式: { open: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたOpenCommand、または不正な場合null
+ */
+export const normalizeOpenCommand = (value: unknown): OpenCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  // 正規化済み
+  if (obj.command === 'open' && typeof obj.url === 'string') {
+    return { command: 'open', url: obj.url };
+  }
+
+  // YAML簡略形式: { open: 'https://...' }
+  if (hasYamlKey(obj, 'open') && typeof obj.open === 'string') {
+    return { command: 'open', url: obj.open };
+  }
+
+  return null;
+};
+
+/**
+ * ClickCommandを正規化
+ *
+ * 正規化済み形式: { command: 'click', selector: '...' }
+ * YAML簡略形式: { click: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたClickCommand、または不正な場合null
+ */
+export const normalizeClickCommand = (value: unknown): ClickCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  // 正規化済み
+  if (obj.command === 'click' && typeof obj.selector === 'string') {
+    return { command: 'click', selector: obj.selector };
+  }
+
+  // YAML簡略形式: { click: 'セレクタ' }
+  if (hasYamlKey(obj, 'click') && typeof obj.click === 'string') {
+    return { command: 'click', selector: obj.click };
+  }
+
+  return null;
+};
+
+/**
+ * テキスト値を取得するヘルパー（text または value フィールド）
+ *
+ * @param obj - オブジェクト
+ * @returns テキスト値、または存在しない場合null
+ */
+const extractTextOrValue = (obj: Record<string, unknown>): string | null => {
+  if (typeof obj.text === 'string') {
+    return obj.text;
+  }
+  if (typeof obj.value === 'string') {
+    return obj.value;
+  }
+  return null;
+};
+
+/**
+ * 正規化済みTypeCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns TypeCommand、または不正な場合null
+ */
+const checkNormalizedType = (obj: Record<string, unknown>): TypeCommand | null => {
+  if (obj.command === 'type' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
+    return { command: 'type', selector: obj.selector, value: obj.value };
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のTypeCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns TypeCommand、または不正な場合null
+ */
+const checkYamlType = (obj: Record<string, unknown>): TypeCommand | null => {
+  if (!hasYamlKey(obj, 'type')) {
+    return null;
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.type);
+  if (inner === null || typeof inner.selector !== 'string') {
+    return null;
+  }
+
+  const text: string | null = extractTextOrValue(inner);
+  if (text === null) {
+    return null;
+  }
+
+  return { command: 'type', selector: inner.selector, value: text };
+};
+
+/**
+ * TypeCommandを正規化
+ *
+ * 正規化済み形式: { command: 'type', selector: '...', value: '...' }
+ * YAML簡略形式: { type: { selector: '...', text: '...' } } または { type: { selector: '...', value: '...' } }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたTypeCommand、または不正な場合null
+ */
+export const normalizeTypeCommand = (value: unknown): TypeCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  const normalized: TypeCommand | null = checkNormalizedType(obj);
+  if (normalized !== null) {
+    return normalized;
+  }
+
+  return checkYamlType(obj);
+};
+
+/**
+ * 正規化済みFillCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns FillCommand、または不正な場合null
+ */
+const checkNormalizedFill = (obj: Record<string, unknown>): FillCommand | null => {
+  if (obj.command === 'fill' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
+    return { command: 'fill', selector: obj.selector, value: obj.value };
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のFillCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns FillCommand、または不正な場合null
+ */
+const checkYamlFill = (obj: Record<string, unknown>): FillCommand | null => {
+  if (!hasYamlKey(obj, 'fill')) {
+    return null;
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.fill);
+  if (inner === null || typeof inner.selector !== 'string') {
+    return null;
+  }
+
+  const text: string | null = extractTextOrValue(inner);
+  if (text === null) {
+    return null;
+  }
+
+  return { command: 'fill', selector: inner.selector, value: text };
+};
+
+/**
+ * FillCommandを正規化
+ *
+ * 正規化済み形式: { command: 'fill', selector: '...', value: '...' }
+ * YAML簡略形式: { fill: { selector: '...', text: '...' } } または { fill: { selector: '...', value: '...' } }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたFillCommand、または不正な場合null
+ */
+export const normalizeFillCommand = (value: unknown): FillCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  const normalized: FillCommand | null = checkNormalizedFill(obj);
+  if (normalized !== null) {
+    return normalized;
+  }
+
+  return checkYamlFill(obj);
+};
+
+/**
+ * PressCommandを正規化
+ *
+ * 正規化済み形式: { command: 'press', key: '...' }
+ * YAML簡略形式: { press: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたPressCommand、または不正な場合null
+ */
+export const normalizePressCommand = (value: unknown): PressCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'press' && typeof obj.key === 'string') {
+    return { command: 'press', key: obj.key };
+  }
+
+  if (hasYamlKey(obj, 'press') && typeof obj.press === 'string') {
+    return { command: 'press', key: obj.press };
+  }
+
+  return null;
+};
+
+/**
+ * HoverCommandを正規化
+ *
+ * 正規化済み形式: { command: 'hover', selector: '...' }
+ * YAML簡略形式: { hover: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたHoverCommand、または不正な場合null
+ */
+export const normalizeHoverCommand = (value: unknown): HoverCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'hover' && typeof obj.selector === 'string') {
+    return { command: 'hover', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'hover') && typeof obj.hover === 'string') {
+    return { command: 'hover', selector: obj.hover };
+  }
+
+  return null;
+};
+
+/**
+ * 正規化済みSelectCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns SelectCommand、または不正な場合null
+ */
+const checkNormalizedSelect = (obj: Record<string, unknown>): SelectCommand | null => {
+  if (
+    obj.command === 'select' &&
+    typeof obj.selector === 'string' &&
+    typeof obj.value === 'string'
+  ) {
+    return { command: 'select', selector: obj.selector, value: obj.value };
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のSelectCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns SelectCommand、または不正な場合null
+ */
+const checkYamlSelect = (obj: Record<string, unknown>): SelectCommand | null => {
+  if (!hasYamlKey(obj, 'select')) {
+    return null;
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.select);
+  if (inner === null || typeof inner.selector !== 'string' || typeof inner.value !== 'string') {
+    return null;
+  }
+
+  return { command: 'select', selector: inner.selector, value: inner.value };
+};
+
+/**
+ * SelectCommandを正規化
+ *
+ * 正規化済み形式: { command: 'select', selector: '...', value: '...' }
+ * YAML簡略形式: { select: { selector: '...', value: '...' } }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたSelectCommand、または不正な場合null
+ */
+export const normalizeSelectCommand = (value: unknown): SelectCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  const normalized: SelectCommand | null = checkNormalizedSelect(obj);
+  if (normalized !== null) {
+    return normalized;
+  }
+
+  return checkYamlSelect(obj);
+};
+
+/**
+ * 正規化済みScrollCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ScrollCommand、または不正な場合null
+ */
+const checkNormalizedScroll = (obj: Record<string, unknown>): ScrollCommand | null => {
+  if (
+    obj.command === 'scroll' &&
+    (obj.direction === 'up' || obj.direction === 'down') &&
+    typeof obj.amount === 'number'
+  ) {
+    return { command: 'scroll', direction: obj.direction, amount: obj.amount };
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のScrollCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ScrollCommand、または不正な場合null
+ */
+const checkYamlScroll = (obj: Record<string, unknown>): ScrollCommand | null => {
+  if (!hasYamlKey(obj, 'scroll')) {
+    return null;
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.scroll);
+  if (
+    inner === null ||
+    (inner.direction !== 'up' && inner.direction !== 'down') ||
+    typeof inner.amount !== 'number'
+  ) {
+    return null;
+  }
+
+  return { command: 'scroll', direction: inner.direction, amount: inner.amount };
+};
+
+/**
+ * ScrollCommandを正規化
+ *
+ * 正規化済み形式: { command: 'scroll', direction: 'up' | 'down', amount: number }
+ * YAML簡略形式: { scroll: { direction: 'up' | 'down', amount: number } }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたScrollCommand、または不正な場合null
+ */
+export const normalizeScrollCommand = (value: unknown): ScrollCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  const normalized: ScrollCommand | null = checkNormalizedScroll(obj);
+  if (normalized !== null) {
+    return normalized;
+  }
+
+  return checkYamlScroll(obj);
+};
+
+/**
+ * ScrollIntoViewCommandを正規化
+ *
+ * 正規化済み形式: { command: 'scrollIntoView', selector: '...' }
+ * YAML簡略形式: { scrollIntoView: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたScrollIntoViewCommand、または不正な場合null
+ */
+export const normalizeScrollIntoViewCommand = (value: unknown): ScrollIntoViewCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'scrollIntoView' && typeof obj.selector === 'string') {
+    return { command: 'scrollIntoView', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'scrollIntoView') && typeof obj.scrollIntoView === 'string') {
+    return { command: 'scrollIntoView', selector: obj.scrollIntoView };
+  }
+
+  return null;
+};
+
+/**
+ * 正規化済みWaitCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns WaitCommand、または不正な場合null
+ */
+const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null => {
+  if (obj.command !== 'wait') {
+    return null;
+  }
+
+  if (typeof obj.ms === 'number') {
+    return { command: 'wait', ms: obj.ms };
+  }
+
+  if (typeof obj.target === 'string') {
+    return { command: 'wait', target: obj.target };
+  }
+
+  return null;
+};
+
+/**
+ * YAML簡略形式のWaitCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns WaitCommand、または不正な場合null
+ */
+const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
+  if (!hasYamlKey(obj, 'wait')) {
+    return null;
+  }
+
+  if (typeof obj.wait === 'number') {
+    return { command: 'wait', ms: obj.wait };
+  }
+
+  if (typeof obj.wait === 'string') {
+    return { command: 'wait', target: obj.wait };
+  }
+
+  return null;
+};
+
+/**
+ * WaitCommandを正規化
+ *
+ * 正規化済み形式:
+ * - { command: 'wait', ms: number }
+ * - { command: 'wait', target: string }
+ *
+ * YAML簡略形式:
+ * - { wait: number }
+ * - { wait: string }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたWaitCommand、または不正な場合null
+ */
+export const normalizeWaitCommand = (value: unknown): WaitCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  const normalized: WaitCommand | null = checkNormalizedWait(obj);
+  if (normalized !== null) {
+    return normalized;
+  }
+
+  return checkYamlWait(obj);
+};
+
+/**
+ * ScreenshotCommandを構築するヘルパー
+ *
+ * @param path - スクリーンショットのパス
+ * @param fullPage - フルページオプション（オプショナル）
+ * @returns ScreenshotCommand
+ */
+const buildScreenshotCommand = (path: string, fullPage: unknown): ScreenshotCommand => {
+  const result: ScreenshotCommand = { command: 'screenshot', path };
+  if (typeof fullPage === 'boolean') {
+    result.fullPage = fullPage;
+  }
+  return result;
+};
+
+/**
+ * YAML簡略形式のscreenshotを正規化
+ *
+ * @param value - screenshot フィールドの値
+ * @returns ScreenshotCommand、または不正な場合null
+ */
+const normalizeYamlScreenshot = (value: unknown): ScreenshotCommand | null => {
+  // { screenshot: './path.png' }
+  if (typeof value === 'string') {
+    return { command: 'screenshot', path: value };
+  }
+
+  // { screenshot: { path: '...', fullPage: true } }
+  const inner: Record<string, unknown> | null = toRecord(value);
+  if (inner === null || typeof inner.path !== 'string') {
+    return null;
+  }
+
+  return buildScreenshotCommand(inner.path, inner.fullPage);
+};
+
+/**
+ * ScreenshotCommandを正規化
+ *
+ * 正規化済み形式: { command: 'screenshot', path: '...', fullPage?: boolean }
+ * YAML簡略形式:
+ * - { screenshot: './path.png' }
+ * - { screenshot: { path: '...', fullPage: true } }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたScreenshotCommand、または不正な場合null
+ */
+export const normalizeScreenshotCommand = (value: unknown): ScreenshotCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'screenshot' && typeof obj.path === 'string') {
+    return buildScreenshotCommand(obj.path, obj.fullPage);
+  }
+
+  if (hasYamlKey(obj, 'screenshot')) {
+    return normalizeYamlScreenshot(obj.screenshot);
+  }
+
+  return null;
+};
+
+/**
+ * SnapshotCommandを正規化
+ *
+ * 正規化済み形式: { command: 'snapshot' }
+ * YAML簡略形式: { snapshot: {} } または { snapshot: null }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたSnapshotCommand、または不正な場合null
+ */
+export const normalizeSnapshotCommand = (value: unknown): SnapshotCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'snapshot') {
+    return { command: 'snapshot' };
+  }
+
+  // { snapshot: {} } or { snapshot: null }
+  if ('snapshot' in obj && !('command' in obj)) {
+    return { command: 'snapshot' };
+  }
+
+  return null;
+};
+
+/**
+ * EvalCommandを正規化
+ *
+ * 正規化済み形式: { command: 'eval', script: '...' }
+ * YAML簡略形式: { eval: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたEvalCommand、または不正な場合null
+ */
+export const normalizeEvalCommand = (value: unknown): EvalCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'eval' && typeof obj.script === 'string') {
+    return { command: 'eval', script: obj.script };
+  }
+
+  if (hasYamlKey(obj, 'eval') && typeof obj.eval === 'string') {
+    return { command: 'eval', script: obj.eval };
+  }
+
+  return null;
+};
+
+/**
+ * AssertVisibleCommandを正規化
+ *
+ * 正規化済み形式: { command: 'assertVisible', selector: '...' }
+ * YAML簡略形式: { assertVisible: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたAssertVisibleCommand、または不正な場合null
+ */
+export const normalizeAssertVisibleCommand = (value: unknown): AssertVisibleCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'assertVisible' && typeof obj.selector === 'string') {
+    return { command: 'assertVisible', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'assertVisible') && typeof obj.assertVisible === 'string') {
+    return { command: 'assertVisible', selector: obj.assertVisible };
+  }
+
+  return null;
+};
+
+/**
+ * AssertEnabledCommandを正規化
+ *
+ * 正規化済み形式: { command: 'assertEnabled', selector: '...' }
+ * YAML簡略形式: { assertEnabled: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたAssertEnabledCommand、または不正な場合null
+ */
+export const normalizeAssertEnabledCommand = (value: unknown): AssertEnabledCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'assertEnabled' && typeof obj.selector === 'string') {
+    return { command: 'assertEnabled', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'assertEnabled') && typeof obj.assertEnabled === 'string') {
+    return { command: 'assertEnabled', selector: obj.assertEnabled };
+  }
+
+  return null;
+};
+
+/**
+ * AssertCheckedCommandを正規化
+ *
+ * 正規化済み形式: { command: 'assertChecked', selector: '...' }
+ * YAML簡略形式: { assertChecked: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたAssertCheckedCommand、または不正な場合null
+ */
+export const normalizeAssertCheckedCommand = (value: unknown): AssertCheckedCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'assertChecked' && typeof obj.selector === 'string') {
+    return { command: 'assertChecked', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'assertChecked') && typeof obj.assertChecked === 'string') {
+    return { command: 'assertChecked', selector: obj.assertChecked };
+  }
+
+  return null;
+};
+
+/**
+ * 全てのnormalizer関数をまとめた配列
+ *
+ * validateCommandで順次試行される。
+ */
+export const normalizers: Array<(value: unknown) => Command | null> = [
+  normalizeOpenCommand,
+  normalizeClickCommand,
+  normalizeTypeCommand,
+  normalizeFillCommand,
+  normalizePressCommand,
+  normalizeHoverCommand,
+  normalizeSelectCommand,
+  normalizeScrollCommand,
+  normalizeScrollIntoViewCommand,
+  normalizeWaitCommand,
+  normalizeScreenshotCommand,
+  normalizeSnapshotCommand,
+  normalizeEvalCommand,
+  normalizeAssertVisibleCommand,
+  normalizeAssertEnabledCommand,
+  normalizeAssertCheckedCommand,
+];

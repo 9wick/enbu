@@ -1,0 +1,4 @@
+# 不正なコマンド形式
+- open: https://example.com
+- invalidCommand: "テスト"
+- click: "ボタン"

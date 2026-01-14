@@ -1,13 +1,9 @@
 /**
- * @packages/core
- *
- * フロー定義の型システム、パーサー、ローダーを提供する。
+ * 型定義の再エクスポート
  */
 
-// 型
+export type { Flow, FlowEnv } from './flow';
 export type {
-  Flow,
-  FlowEnv,
   Command,
   OpenCommand,
   ClickCommand,
@@ -25,9 +21,5 @@ export type {
   AssertVisibleCommand,
   AssertEnabledCommand,
   AssertCheckedCommand,
-  ParseError,
-} from './types';
-
-// 関数
-export { parseFlowYaml, resolveEnvVariables } from './parser';
-export { loadFlows } from './loader';
+} from './commands';
+export type { ParseError } from './errors';

@@ -23,7 +23,9 @@
     "test": "nx run core:test"
   },
   "dependencies": {
-    "neverthrow": "^8.2.0"
+    "dotenv": "^17.2.3",
+    "neverthrow": "^8.2.0",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@packages/config": "workspace:*",

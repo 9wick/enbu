@@ -1,0 +1,9 @@
+env:
+  BASE_URL: https://example.com
+  USERNAME: テストユーザー
+---
+- open: ${BASE_URL}
+- fill:
+    selector: "ユーザー名"
+    text: ${USERNAME}
+- click: "ログイン"
