@@ -93,48 +93,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 /**
- * 文字列プロパティの環境変数を解決する
- *
- * @param obj - 解決対象のオブジェクト
- * @param key - プロパティキー
- * @param value - プロパティ値
- * @param envMap - 環境変数マップ
- * @param location - エラー報告用のロケーション
- * @returns 成功時: void、失敗時: ParseError
- */
-const resolveStringProperty = (
-  obj: Record<string, unknown>,
-  key: string,
-  value: string,
-  envMap: Record<string, string>,
-  location: string,
-): Result<void, ParseError> => {
-  return resolveStringVariables(value, envMap, `${location}.${key}`).map((resolved) => {
-    obj[key] = resolved;
-  });
-};
-
-/**
- * ネストされたオブジェクトプロパティを再帰的に解決する
- *
- * @param value - ネストされたオブジェクト
- * @param envMap - 環境変数マップ
- * @param location - エラー報告用のロケーション
- * @returns 成功時: void、失敗時: ParseError
- */
-const resolveNestedObject = (
-  value: Record<string, unknown>,
-  envMap: Record<string, string>,
-  location: string,
-): Result<void, ParseError> => {
-  return resolveObjectVariables(value, envMap, location);
-};
-
-/**
  * オブジェクトの全てのプロパティを走査して環境変数を解決する
  *
  * 再帰的に処理（ネストされたオブジェクトに対応）
- * mutableな操作を行うが、クローンされたオブジェクトに対して行う
+ * mutableな操作を行うが、structuredCloneされたオブジェクトに対して行うため安全
+ *
+ * @param obj - 解決対象のオブジェクト
+ * @param envMap - 環境変数マップ
+ * @param location - エラー報告用のロケーション
+ * @returns 成功時: void、失敗時: ParseError
  */
 const resolveObjectVariables = (
   obj: Record<string, unknown>,
@@ -143,15 +110,21 @@ const resolveObjectVariables = (
 ): Result<void, ParseError> => {
   const entries = Object.entries(obj);
 
+  /**
+   * 単一のエントリを処理する
+   */
   const processEntry = ([key, value]: [string, unknown]): Result<void, ParseError> => {
     if (typeof value === 'string') {
-      // 文字列プロパティの環境変数を解決
-      return resolveStringProperty(obj, key, value, envMap, location);
+      // 文字列プロパティの環境変数を解決し、objを変更
+      return resolveStringVariables(value, envMap, `${location}.${key}`).map((resolved) => {
+        obj[key] = resolved;
+      });
     }
     if (isRecord(value)) {
       // ネストされたオブジェクトを再帰的に処理
-      return resolveNestedObject(value, envMap, `${location}.${key}`);
+      return resolveObjectVariables(value, envMap, `${location}.${key}`);
     }
+    // その他の型（number, boolean, null等）はそのまま
     return ok(undefined);
   };
 
@@ -164,25 +137,28 @@ const resolveObjectVariables = (
 /**
  * コマンド内の環境変数を解決する
  *
- * コマンドをディープクローンし、全てのプロパティの環境変数を解決する。
+ * コマンドをディープクローンし、クローン先で環境変数を展開する。
+ * structuredCloneにより型安全にクローンを作成し、その後mutableに変更する。
+ *
+ * @param command - 解決対象のコマンド
+ * @param envMap - 環境変数マップ
+ * @param commandIndex - コマンドのインデックス（エラー報告用）
+ * @returns 成功時: 新しいCommandオブジェクト、失敗時: ParseError
  */
 const resolveCommandVariables = (
   command: Command,
   envMap: Record<string, string>,
   commandIndex: number,
 ): Result<Command, ParseError> => {
-  // コマンドをディープクローン
-  // NOTE: structuredCloneはanyを返すため、型注釈で元の型を保持
+  // コマンドをディープクローン（型注釈により型を保持）
   const cloned: Command = structuredClone(command);
-
-  // CommandをRecord<string, unknown>として扱う必要があるため型注釈で変換
-  const clonedRecord: Record<string, unknown> = cloned;
 
   // 全てのプロパティを走査して文字列を解決
   const location = `step[${commandIndex}]`;
 
-  // clonedはCommand型として保持されているため、そのまま返す
-  return resolveObjectVariables(clonedRecord, envMap, location).map(() => cloned);
+  // clonedをRecord<string, unknown>として扱い、環境変数を解決
+  // 解決後もclonedの参照は変わらず、Command型として保持される
+  return resolveObjectVariables(cloned, envMap, location).map(() => cloned);
 };
 
 /**

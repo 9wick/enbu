@@ -80,19 +80,35 @@ const loadSingleFlow = async (
  * .envファイルを読み込む
  *
  * @param dotEnvPath - .envファイルのパス
- * @returns env変数のマップ（ファイルが存在しない場合は空オブジェクト）
+ * @returns 成功時: env変数のマップ（ファイルが存在しない場合は空オブジェクト）、失敗時: ParseError
  *
  * @remarks
  * dotenv.configはprocess.envを変更する副作用があるため、
  * dotenv.parseを使用してファイル内容を直接パースする。
+ *
+ * エラーハンドリング:
+ * - ENOENT（ファイルが存在しない）: 空オブジェクトを返す（正常系）
+ * - その他のエラー（EACCES、EIOなど）: エラーを伝播させる
  */
-const loadDotEnv = async (dotEnvPath: string): Promise<Record<string, string>> => {
+const loadDotEnv = async (
+  dotEnvPath: string,
+): Promise<Result<Record<string, string>, ParseError>> => {
   try {
     const content = await readFile(dotEnvPath, 'utf-8');
-    return parseDotenv(content);
-  } catch {
-    // ファイルが存在しない場合は空オブジェクトを返す
-    return {};
+    return ok(parseDotenv(content));
+  } catch (error) {
+    // ENOENT（ファイルが存在しない）の場合は空オブジェクトを返す
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return ok({});
+    }
+
+    // その他のエラー（パーミッションエラー、I/Oエラーなど）は伝播
+    return err({
+      type: 'file_read_error' as const,
+      message: `Failed to read .env file: ${dotEnvPath}`,
+      filePath: dotEnvPath,
+      cause: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 
@@ -181,14 +197,18 @@ export const loadFlows = async (
   const dotEnvPath = options?.dotEnvPath ?? '.env';
 
   // 1. .envファイルを読み込み
-  const dotEnv = await loadDotEnv(dotEnvPath);
+  const dotEnvResult = await loadDotEnv(dotEnvPath);
 
   // 2. ディレクトリから*.flow.yamlファイルを検索
   const findResult = await findFlowFiles(dirPath);
 
   // 3. 全てのフローファイルを読み込み（エラーの場合は即座にエラーResultを返す）
-  return findResult.match(
-    (files) => loadAllFlows(files, processEnv, dotEnv),
+  return dotEnvResult.match(
+    (dotEnv) =>
+      findResult.match(
+        (files) => loadAllFlows(files, processEnv, dotEnv),
+        (error) => Promise.resolve(err(error)),
+      ),
     (error) => Promise.resolve(err(error)),
   );
 };

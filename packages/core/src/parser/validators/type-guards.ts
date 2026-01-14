@@ -98,10 +98,63 @@ export const normalizeOpenCommand = (value: unknown): OpenCommand | null => {
 };
 
 /**
+ * ClickCommandを構築するヘルパー
+ *
+ * @param selector - セレクタ文字列
+ * @param index - インデックス（オプショナル）
+ * @returns ClickCommand
+ */
+const buildClickCommand = (selector: string, index: unknown): ClickCommand => {
+  const result: ClickCommand = { command: 'click', selector };
+  if (typeof index === 'number') {
+    result.index = index;
+  }
+  return result;
+};
+
+/**
+ * 正規化済みClickCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ClickCommand、または不正な場合null
+ */
+const checkNormalizedClick = (obj: Record<string, unknown>): ClickCommand | null => {
+  if (obj.command === 'click' && typeof obj.selector === 'string') {
+    return buildClickCommand(obj.selector, obj.index);
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のClickCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ClickCommand、または不正な場合null
+ */
+const checkYamlClick = (obj: Record<string, unknown>): ClickCommand | null => {
+  if (!hasYamlKey(obj, 'click')) {
+    return null;
+  }
+
+  // { click: 'セレクタ' }
+  if (typeof obj.click === 'string') {
+    return { command: 'click', selector: obj.click };
+  }
+
+  // { click: { selector: '...', index?: number } }
+  const inner: Record<string, unknown> | null = toRecord(obj.click);
+  if (inner !== null && typeof inner.selector === 'string') {
+    return buildClickCommand(inner.selector, inner.index);
+  }
+
+  return null;
+};
+
+/**
  * ClickCommandを正規化
  *
- * 正規化済み形式: { command: 'click', selector: '...' }
- * YAML簡略形式: { click: '...' }
+ * 正規化済み形式: { command: 'click', selector: '...', index?: number }
+ * YAML簡略形式: { click: '...' } または { click: { selector: '...', index?: number } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたClickCommand、または不正な場合null
@@ -112,17 +165,12 @@ export const normalizeClickCommand = (value: unknown): ClickCommand | null => {
     return null;
   }
 
-  // 正規化済み
-  if (obj.command === 'click' && typeof obj.selector === 'string') {
-    return { command: 'click', selector: obj.selector };
+  const normalized: ClickCommand | null = checkNormalizedClick(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  // YAML簡略形式: { click: 'セレクタ' }
-  if (hasYamlKey(obj, 'click') && typeof obj.click === 'string') {
-    return { command: 'click', selector: obj.click };
-  }
-
-  return null;
+  return checkYamlClick(obj);
 };
 
 /**
@@ -142,6 +190,22 @@ const extractTextOrValue = (obj: Record<string, unknown>): string | null => {
 };
 
 /**
+ * TypeCommandを構築するヘルパー
+ *
+ * @param selector - セレクタ文字列
+ * @param value - 入力値
+ * @param clear - クリアオプション（オプショナル）
+ * @returns TypeCommand
+ */
+const buildTypeCommand = (selector: string, value: string, clear: unknown): TypeCommand => {
+  const result: TypeCommand = { command: 'type', selector, value };
+  if (typeof clear === 'boolean') {
+    result.clear = clear;
+  }
+  return result;
+};
+
+/**
  * 正規化済みTypeCommandを検証
  *
  * @param obj - 検証対象のオブジェクト
@@ -149,7 +213,7 @@ const extractTextOrValue = (obj: Record<string, unknown>): string | null => {
  */
 const checkNormalizedType = (obj: Record<string, unknown>): TypeCommand | null => {
   if (obj.command === 'type' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
-    return { command: 'type', selector: obj.selector, value: obj.value };
+    return buildTypeCommand(obj.selector, obj.value, obj.clear);
   }
   return null;
 };
@@ -175,7 +239,7 @@ const checkYamlType = (obj: Record<string, unknown>): TypeCommand | null => {
     return null;
   }
 
-  return { command: 'type', selector: inner.selector, value: text };
+  return buildTypeCommand(inner.selector, text, inner.clear);
 };
 
 /**

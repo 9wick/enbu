@@ -24,10 +24,19 @@ export type OpenCommand = {
  * @example
  * // YAML: - click: "ログインボタン"
  * { command: 'click', selector: 'ログインボタン' }
+ *
+ * @example
+ * // YAML:
+ * // - click:
+ * //     selector: "ログインボタン"
+ * //     index: 2
+ * { command: 'click', selector: 'ログインボタン', index: 2 }
  */
 export type ClickCommand = {
   command: 'click';
   selector: string;
+  /** 同名要素が複数ある場合のインデックス指定（0始まり） */
+  index?: number;
 };
 
 /**
@@ -39,11 +48,21 @@ export type ClickCommand = {
  * //     selector: "検索欄"
  * //     value: "検索キーワード"
  * { command: 'type', selector: '検索欄', value: '検索キーワード' }
+ *
+ * @example
+ * // YAML:
+ * // - type:
+ * //     selector: "検索欄"
+ * //     value: "検索キーワード"
+ * //     clear: true
+ * { command: 'type', selector: '検索欄', value: '検索キーワード', clear: true }
  */
 export type TypeCommand = {
   command: 'type';
   selector: string;
   value: string;
+  /** 入力前に既存のテキストをクリアするか */
+  clear?: boolean;
 };
 
 /**
