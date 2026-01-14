@@ -1,0 +1,22 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "pnpm-sync",
+  "root": "packages/pnpm-sync",
+  "projectType": "library",
+  "tags": ["scope:pnpm-sync", "type:tool"],
+  "targets": {
+    "sync-deps": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh -c \"if [ -n \\\"$CODEX_SANDBOX\\\" ]; then echo 'pnpm-sync: CODEX_SANDBOX is set; skipping pnpm install'; exit 0; fi; pnpm install \"",
+        "cwd": "."
+      },
+      "inputs": [
+        "{workspaceRoot}/pnpm-lock.yaml",
+        "{workspaceRoot}/pnpm-workspace.yaml",
+        "{workspaceRoot}/**/package.json",
+        "!{workspaceRoot}/node_modules/**"
+      ]
+    }
+  }
+}

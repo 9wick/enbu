@@ -1,0 +1,56 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "agent-browser-adapter",
+  "projectType": "library",
+  "sourceRoot": "packages/agent-browser-adapter/src",
+  "tags": ["scope:adapter", "type:lib"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "pnpm exec tsdown --config tsdown.config.ts",
+        "cwd": "packages/agent-browser-adapter"
+      },
+      "configurations": {
+        "watch": {
+          "command": "pnpm exec tsdown --config tsdown.config.ts --watch"
+        }
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec oxlint --fix --fix-suggestions . && pnpm exec eslint --cache --fix .",
+        "cwd": "packages/agent-browser-adapter"
+      },
+      "configurations": {
+        "ci": {
+          "command": "pnpm exec oxlint . && pnpm exec eslint --cache .",
+          "cwd": "packages/agent-browser-adapter"
+        }
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsdown --config tsdown.config.ts --watch",
+        "cwd": "packages/agent-browser-adapter"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsc -p tsconfig.json --noEmit",
+        "cwd": "packages/agent-browser-adapter"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitest run",
+        "cwd": "packages/agent-browser-adapter"
+      }
+    }
+  }
+}

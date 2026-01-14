@@ -1,0 +1,32 @@
+{
+  "name": "@packages/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "types": "dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nx run core:build",
+    "dev": "nx run core:dev",
+    "typecheck": "nx run core:typecheck",
+    "lint": "nx run core:lint",
+    "lint:check": "nx run core:lint --configuration=ci",
+    "test": "nx run core:test"
+  },
+  "dependencies": {
+    "neverthrow": "^8.2.0"
+  },
+  "devDependencies": {
+    "@packages/config": "workspace:*",
+    "@types/node": "^22.14.1"
+  }
+}

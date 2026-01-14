@@ -1,0 +1,65 @@
+{
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
+    }
+  },
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "extends": "nx/presets/npm.json",
+  "npmScope": "agent-browser-flow",
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "packages"
+  },
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheableOperations": ["build", "lint", "test", "typecheck", "sync-deps"],
+        "useDaemonProcess": false
+      }
+    }
+  },
+  "defaultBase": "main",
+  "useInferencePlugins": false,
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/*.spec.*",
+      "!{projectRoot}/**/*.test.*",
+      "!{projectRoot}/vitest.config.*",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/pnpm-workspace.yaml"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["pnpm-sync:sync-deps", "lint", "typecheck", "^build"],
+      "inputs": ["production", "^production"],
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "lint": {
+      "dependsOn": ["pnpm-sync:sync-deps", "^lint"]
+    },
+    "dev": {
+      "dependsOn": ["pnpm-sync:sync-deps"]
+    },
+    "test": {
+      "dependsOn": ["pnpm-sync:sync-deps", "^test"]
+    },
+    "typecheck": {
+      "dependsOn": ["pnpm-sync:sync-deps", "^typecheck", "^build"],
+      "inputs": ["default", "^default"]
+    }
+  },
+  "tui": {
+    "enabled": false,
+    "autoExit": true
+  }
+}

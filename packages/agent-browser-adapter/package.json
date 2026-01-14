@@ -1,0 +1,32 @@
+{
+  "name": "@packages/agent-browser-adapter",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "types": "dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nx run agent-browser-adapter:build",
+    "dev": "nx run agent-browser-adapter:dev",
+    "typecheck": "nx run agent-browser-adapter:typecheck",
+    "lint": "nx run agent-browser-adapter:lint",
+    "lint:check": "nx run agent-browser-adapter:lint --configuration=ci",
+    "test": "nx run agent-browser-adapter:test"
+  },
+  "dependencies": {
+    "neverthrow": "^8.2.0"
+  },
+  "devDependencies": {
+    "@packages/config": "workspace:*",
+    "@types/node": "^22.14.1"
+  }
+}

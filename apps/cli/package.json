@@ -1,0 +1,30 @@
+{
+  "name": "@apps/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.mjs",
+  "bin": {
+    "agent-browser-flow": "./dist/main.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nx run cli:build",
+    "dev": "nx run cli:dev",
+    "typecheck": "nx run cli:typecheck",
+    "lint": "nx run cli:lint",
+    "lint:check": "nx run cli:lint --configuration=ci",
+    "test": "nx run cli:test",
+    "start": "node ./dist/main.mjs"
+  },
+  "dependencies": {
+    "@packages/core": "workspace:*",
+    "neverthrow": "^8.2.0"
+  },
+  "devDependencies": {
+    "@packages/config": "workspace:*",
+    "@types/node": "^22.14.1"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(npx agent-browser:*)", "mcp__sequential-thinking__sequentialthinking"]
+  }
+}
