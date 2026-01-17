@@ -1,14 +1,12 @@
 {
-  "name": "@example/simple",
+  "name": "@example/navigation",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Navigation commands example (open, click, hover)",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test": "start-server-and-test start http://localhost:3000 test:run",
-    "test:run": "agent-browser-flow flows/test.flow.yaml",
     "test:e2e": "agent-browser-flow flows/test.flow.yaml",
     "test:headed": "agent-browser-flow --headed flows/test.flow.yaml"
   },
@@ -20,7 +18,6 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.19.2",
     "agent-browser-flow": "workspace:*",
-    "start-server-and-test": "^2.0.9",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

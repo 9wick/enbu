@@ -1,0 +1,47 @@
+# assertionsカテゴリのテストフロー
+# ポート3050を使用（example/assertionsサーバー専用ポート）
+# テスト用HTTPサーバー（localhost:3050）が起動していることを前提とする
+
+env:
+  BASE_URL: http://localhost:3050
+
+steps:
+  # ステップ1: ページを開く
+  - open: ${BASE_URL}
+
+  # ステップ2: "Assertions Test"タイトルの表示確認
+  - assertVisible: Assertions Test
+
+  # ステップ3: 表示要素の確認
+  - assertVisible: 表示されている要素
+
+  # ステップ4: 非表示要素の確認
+  - assertNotVisible: 非表示の要素
+
+  # ステップ5: 有効ボタンの確認
+  - assertEnabled: 有効なボタン
+
+  # ステップ6: チェック済みチェックボックスの確認
+  - assertChecked: チェック済み
+
+  # ステップ7: 未チェックチェックボックスの確認
+  - assertChecked:
+      selector: 未チェック
+      checked: false
+
+  # ステップ8: トグルボタンをクリック
+  - click: 表示切替ボタン
+
+  # ステップ9: 切替後の表示要素確認
+  - assertVisible: トグル後表示要素
+
+  # ステップ10: 切替後の非表示要素確認
+  - assertNotVisible: トグル前表示要素
+
+  # ステップ11: チェックボックスをクリック
+  - click: チェック済み
+
+  # ステップ12: チェック解除後の確認
+  - assertChecked:
+      selector: チェック済み
+      checked: false

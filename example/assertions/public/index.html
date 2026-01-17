@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assertions Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    .section h2 {
+      margin-top: 0;
+      color: #555;
+      font-size: 1.2em;
+    }
+    .element {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: white;
+      border-radius: 4px;
+    }
+    .hidden {
+      display: none;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:not(:disabled) {
+      background-color: #007bff;
+      color: white;
+    }
+    button:not(:disabled):hover {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #ccc;
+      color: #666;
+      cursor: not-allowed;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    label {
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-testid="page-title">Assertions Test</h1>
+
+  <!-- 表示/非表示要素のセクション -->
+  <div class="section">
+    <h2>表示/非表示要素テスト</h2>
+    <div class="element" data-testid="visible-element">
+      表示されている要素
+    </div>
+    <div class="element hidden" data-testid="hidden-element">
+      非表示の要素
+    </div>
+  </div>
+
+  <!-- ボタン有効/無効のセクション -->
+  <div class="section">
+    <h2>ボタン有効/無効テスト</h2>
+    <button data-testid="enabled-button">有効なボタン</button>
+    <button data-testid="disabled-button" disabled>無効なボタン</button>
+  </div>
+
+  <!-- チェックボックスのセクション -->
+  <div class="section">
+    <h2>チェックボックステスト</h2>
+    <div class="element">
+      <label>
+        <input type="checkbox" data-testid="checked-checkbox" checked>
+        チェック済み
+      </label>
+    </div>
+    <div class="element">
+      <label>
+        <input type="checkbox" data-testid="unchecked-checkbox">
+        未チェック
+      </label>
+    </div>
+  </div>
+
+  <!-- トグル機能のセクション -->
+  <div class="section">
+    <h2>表示切替テスト</h2>
+    <button data-testid="toggle-button">表示切替ボタン</button>
+    <div class="element" data-testid="toggle-before" style="margin-top: 15px;">
+      トグル前表示要素
+    </div>
+    <div class="element hidden" data-testid="toggle-after">
+      トグル後表示要素
+    </div>
+  </div>
+
+  <script>
+    // トグルボタンの機能を実装
+    const toggleButton = document.querySelector('[data-testid="toggle-button"]');
+    const toggleBefore = document.querySelector('[data-testid="toggle-before"]');
+    const toggleAfter = document.querySelector('[data-testid="toggle-after"]');
+
+    toggleButton.addEventListener('click', () => {
+      toggleBefore.classList.toggle('hidden');
+      toggleAfter.classList.toggle('hidden');
+    });
+
+    // チェックボックスのクリックイベント（デフォルト動作を利用）
+    // HTML標準の動作により、チェックボックスをクリックするとchecked状態が自動的に切り替わる
+  </script>
+</body>
+</html>

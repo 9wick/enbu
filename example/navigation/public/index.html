@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .links {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .links a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    .links a:hover {
+      background-color: #0056b3;
+    }
+    /* ホバーメニューのスタイル */
+    .dropdown-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-button {
+      padding: 12px 24px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    .dropdown-button:hover {
+      background-color: #1e7e34;
+    }
+    /* ドロップダウンメニュー（初期状態は非表示） */
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
+      margin-top: 5px;
+      z-index: 1000;
+    }
+    /* ホバー時にメニューを表示 */
+    .dropdown:hover .dropdown-menu {
+      display: block;
+    }
+    .dropdown-menu a {
+      display: block;
+      padding: 12px 20px;
+      color: #333;
+      text-decoration: none;
+      transition: background-color 0.2s;
+    }
+    .dropdown-menu a:hover {
+      background-color: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-testid="nav-title">Navigation Test</h1>
+
+  <div class="links">
+    <a href="/page1.html" data-testid="link-to-page1">Page 1へ移動</a>
+  </div>
+
+  <div class="dropdown-container">
+    <div class="dropdown" data-testid="dropdown-menu">
+      <button class="dropdown-button" data-testid="dropdown-button">ドロップダウンメニュー</button>
+      <div class="dropdown-menu" data-testid="dropdown-content">
+        <a href="/dropdown.html" data-testid="dropdown-item">サブメニュー項目</a>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align: center; margin-top: 40px; color: #666;">
+    ナビゲーション機能（open, click, hover）のテストサンプルページです
+  </p>
+</body>
+</html>

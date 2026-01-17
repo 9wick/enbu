@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropdown Page</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #17a2b8;
+      margin-bottom: 30px;
+    }
+    .content {
+      margin: 40px 0;
+      padding: 20px;
+      background-color: #e7f7f8;
+      border-radius: 8px;
+    }
+    a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #6c757d;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    a:hover {
+      background-color: #545b62;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-testid="dropdown-title">Dropdown Page</h1>
+
+  <div class="content">
+    <p>ドロップダウンメニューからアクセスしたページです。</p>
+    <p>ホバー操作のテストに使用されます。</p>
+  </div>
+
+  <div>
+    <a href="/" data-testid="link-to-index">トップへ戻る</a>
+  </div>
+</body>
+</html>

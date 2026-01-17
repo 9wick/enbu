@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page 1</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #28a745;
+      margin-bottom: 30px;
+    }
+    .content {
+      margin: 40px 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+    a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #6c757d;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    a:hover {
+      background-color: #545b62;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-testid="page1-title">Page 1 Content</h1>
+
+  <div class="content">
+    <p>これはPage 1のコンテンツページです。</p>
+    <p>ナビゲーションテストの一部として使用されます。</p>
+  </div>
+
+  <div>
+    <a href="/" data-testid="link-to-index">トップへ戻る</a>
+  </div>
+</body>
+</html>

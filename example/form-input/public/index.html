@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Input Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 25px;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #555;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #e7f3ff;
+      border-left: 4px solid #007bff;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .search-form {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #fff3cd;
+      border-radius: 8px;
+    }
+    .search-form input {
+      margin-top: 10px;
+    }
+    .description {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1 data-testid="form-title">Form Input Test</h1>
+  <p>各種フォーム入力コマンドのテストページです</p>
+
+  <!-- type コマンドのテスト: 既存テキストに追記 -->
+  <div class="form-group">
+    <label for="type-input">Type コマンド（追記入力）</label>
+    <p class="description">既存のテキストをクリアせずに追記します</p>
+    <input
+      type="text"
+      id="type-input"
+      data-testid="type-input"
+      value="初期値"
+    >
+    <div class="result" data-testid="type-result">現在の値: <span id="type-value">初期値</span></div>
+  </div>
+
+  <!-- fill コマンドのテスト: クリア後入力 -->
+  <div class="form-group">
+    <label for="fill-input">Fill コマンド（クリア後入力）</label>
+    <p class="description">既存のテキストをクリアしてから新しい値を入力します</p>
+    <input
+      type="text"
+      id="fill-input"
+      data-testid="fill-input"
+      value=""
+      placeholder="ここに入力してください"
+    >
+    <div class="result" data-testid="fill-result">現在の値: <span id="fill-value">(空)</span></div>
+  </div>
+
+  <!-- select コマンドのテスト: セレクトボックス -->
+  <div class="form-group">
+    <label for="select-input">Select コマンド（選択）</label>
+    <p class="description">セレクトボックスから選択します</p>
+    <select id="select-input" data-testid="select-input">
+      <option value="">-- 選択してください --</option>
+      <option value="option1">選択肢1</option>
+      <option value="option2">選択肢2</option>
+      <option value="option3">選択肢3</option>
+    </select>
+    <div class="result" data-testid="select-result">選択された値: <span id="select-value">(未選択)</span></div>
+  </div>
+
+  <!-- press コマンドのテスト: Enterキーで検索実行 -->
+  <div class="search-form">
+    <form action="/search.html" method="get" id="search-form">
+      <label for="search-input">Press コマンド（Enterキーで検索）</label>
+      <p class="description">検索キーワードを入力してEnterキーを押すと検索結果ページに遷移します</p>
+      <input
+        type="text"
+        id="search-input"
+        name="q"
+        data-testid="search-input"
+        placeholder="検索キーワードを入力..."
+      >
+    </form>
+  </div>
+
+  <script>
+    // type入力欄の値変化を監視して表示
+    const typeInput = document.getElementById('type-input');
+    const typeValue = document.getElementById('type-value');
+
+    typeInput.addEventListener('input', (e) => {
+      typeValue.textContent = e.target.value;
+    });
+
+    // fill入力欄の値変化を監視して表示
+    const fillInput = document.getElementById('fill-input');
+    const fillValue = document.getElementById('fill-value');
+
+    fillInput.addEventListener('input', (e) => {
+      fillValue.textContent = e.target.value || '(空)';
+    });
+
+    // セレクトボックスの選択を監視して表示
+    const selectInput = document.getElementById('select-input');
+    const selectValue = document.getElementById('select-value');
+
+    selectInput.addEventListener('change', (e) => {
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      selectValue.textContent = selectedOption.text || '(未選択)';
+    });
+  </script>
+</body>
+</html>
