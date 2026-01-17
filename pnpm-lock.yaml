@@ -108,6 +108,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@packages/agent-browser-adapter':
+        specifier: workspace:*
+        version: link:../agent-browser-adapter
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3

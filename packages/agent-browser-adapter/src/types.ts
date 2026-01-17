@@ -31,6 +31,24 @@ export type AgentBrowserError =
       type: 'parse_error';
       message: string;
       rawOutput: string;
+    }
+  | {
+      type: 'assertion_failed';
+      message: string;
+      command: string;
+      args: readonly string[];
+      exitCode: number;
+      stderr: string;
+      errorMessage: string | null;
+    }
+  | {
+      type: 'validation_error';
+      message: string;
+      command: string;
+      args: readonly string[];
+      exitCode: number;
+      stderr: string;
+      errorMessage: string | null;
     };
 
 /**

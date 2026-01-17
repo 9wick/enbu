@@ -238,10 +238,19 @@ export type AssertEnabledCommand = {
  * @example
  * // YAML: - assertChecked: "利用規約に同意"
  * { command: 'assertChecked', selector: '利用規約に同意' }
+ *
+ * @example
+ * // YAML:
+ * // - assertChecked:
+ * //     selector: "利用規約に同意"
+ * //     checked: false
+ * { command: 'assertChecked', selector: '利用規約に同意', checked: false }
  */
 export type AssertCheckedCommand = {
   command: 'assertChecked';
   selector: string;
+  /** 期待されるチェック状態（デフォルト: true） */
+  checked?: boolean;
 };
 
 /**

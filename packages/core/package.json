@@ -23,6 +23,7 @@
     "test": "nx run core:test"
   },
   "dependencies": {
+    "@packages/agent-browser-adapter": "workspace:*",
     "dotenv": "^17.2.3",
     "neverthrow": "^8.2.0",
     "yaml": "^2.8.2"
