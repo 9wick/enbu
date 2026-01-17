@@ -5,6 +5,12 @@ import type { AgentBrowserError, ExecuteOptions } from './types';
 /** デフォルトタイムアウト: 30秒 */
 const DEFAULT_TIMEOUT_MS = 30000;
 
+// デバッグログ用（stderrに出力してno-consoleルールを回避）
+const DEBUG = process.env.DEBUG_FLOW === '1';
+const debugLog = (msg: string, ...args: unknown[]) => {
+  if (DEBUG) process.stderr.write(`[executor] ${msg} ${args.map(String).join(' ')}\n`);
+};
+
 /**
  * agent-browserコマンドを実行する
  *
@@ -19,17 +25,21 @@ export const executeCommand = (
   options: ExecuteOptions = {},
 ): Promise<Result<string, AgentBrowserError>> => {
   const { sessionName, headed = false, timeoutMs = DEFAULT_TIMEOUT_MS, cwd } = options;
+  debugLog(`executeCommand: ${command} ${args.join(' ')}`);
 
   return new Promise((resolve) => {
     // コマンドライン引数を構築
     const fullArgs = buildArgs(command, args, sessionName, headed);
+    debugLog(`fullArgs: npx agent-browser ${fullArgs.join(' ')}`);
 
     // プロセス起動
+    debugLog('spawning process...');
     const proc = spawn('npx', ['agent-browser', ...fullArgs], {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: true,
       cwd,
     });
+    debugLog(`process spawned, pid=${proc.pid}`);
 
     // 出力収集
     let stdout = '';
@@ -75,11 +85,13 @@ export const executeCommand = (
 
     // 完了処理
     proc.on('close', (exitCode) => {
+      debugLog(`process closed, exitCode=${exitCode}, stdout.length=${stdout.length}`);
       if (exitCode === 0) {
         resolveOnce(ok(stdout));
       } else {
         // JSON出力からエラーメッセージを抽出試行
         const errorMessage = extractErrorMessage(stdout);
+        debugLog(`command failed, errorMessage=${errorMessage}, stderr=${stderr}`);
 
         resolveOnce(
           err({
@@ -97,6 +109,7 @@ export const executeCommand = (
 
     // プロセス起動エラー
     proc.on('error', (error) => {
+      debugLog(`process error: ${error.message}`);
       resolveOnce(
         err({
           type: 'not_installed',

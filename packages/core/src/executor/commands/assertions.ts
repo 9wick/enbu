@@ -11,6 +11,14 @@ import type {
 import type { ExecutionContext, CommandResult } from '../result';
 
 /**
+ * セレクタを解決する
+ * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ */
+const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
+  return context.resolvedRef ?? originalSelector;
+};
+
+/**
  * assertVisible コマンドのハンドラ
  *
  * 指定されたセレクタの要素が表示されていることを確認する。
@@ -26,10 +34,9 @@ export const handleAssertVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('is', ['visible', command.selector, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .andThen((output) => {
       const duration = Date.now() - startTime;
@@ -106,10 +113,9 @@ export const handleAssertNotVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('is', ['visible', command.selector, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .andThen((output) => {
       const duration = Date.now() - startTime;
@@ -186,10 +192,9 @@ export const handleAssertEnabled = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('is', ['enabled', command.selector, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('is', ['enabled', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .andThen((output) => {
       const duration = Date.now() - startTime;
@@ -266,10 +271,9 @@ export const handleAssertChecked = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('is', ['checked', command.selector, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('is', ['checked', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .andThen((output) => {
       const duration = Date.now() - startTime;

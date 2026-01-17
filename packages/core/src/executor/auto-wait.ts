@@ -15,6 +15,20 @@ import {
 import type { AgentBrowserError, SnapshotRefs } from '@packages/agent-browser-adapter';
 import type { ExecutionContext } from './result';
 
+// デバッグログ用（stderrに出力してno-consoleルールを回避）
+const DEBUG = process.env.DEBUG_FLOW === '1';
+const debugLog = (msg: string, ...args: unknown[]) => {
+  if (DEBUG) process.stderr.write(`[auto-wait] ${msg} ${args.map(String).join(' ')}\n`);
+};
+
+/**
+ * autoWaitの結果
+ * resolvedRef: agent-browserで使用可能な@ref形式のセレクタ
+ */
+export type AutoWaitResult = {
+  resolvedRef: string;
+};
+
 /**
  * 要素の出現を待機する
  *
@@ -25,42 +39,57 @@ import type { ExecutionContext } from './result';
  *
  * @param selector - 待機する要素のセレクタ（@e1形式の参照ID、またはテキスト/ロール名）
  * @param context - 実行コンテキスト（タイムアウト時間、ポーリング間隔などを含む）
- * @returns 成功時: 要素が見つかった旨のメッセージ、失敗時: AgentBrowserError
+ * @returns 成功時: 解決されたrefを含む結果、失敗時: AgentBrowserError
  */
 export const autoWait = async (
   selector: string | undefined,
   context: ExecutionContext,
-): Promise<Result<string, AgentBrowserError>> => {
+): Promise<Result<AutoWaitResult | undefined, AgentBrowserError>> => {
+  debugLog(`autoWait start: selector=${selector}`);
   // セレクタがない場合はスキップ
   if (!selector) {
-    return ok('No selector to wait for');
+    debugLog('no selector, skipping');
+    return ok(undefined);
   }
 
   const startTime = Date.now();
   const { autoWaitTimeoutMs, autoWaitIntervalMs, executeOptions } = context;
+  debugLog(`timeout=${autoWaitTimeoutMs}ms, interval=${autoWaitIntervalMs}ms`);
 
+  let pollCount = 0;
   // ポーリングループ
   while (true) {
-    // snapshot取得
-    const commandResult = await executeCommand('snapshot', ['--json', '-i'], executeOptions);
+    pollCount++;
+    debugLog(`poll #${pollCount}: calling snapshot...`);
+    // snapshot取得（全要素を対象とする。-iオプションはインタラクティブ要素のみになり、
+    // assertVisibleなどで静的テキスト要素が見つからなくなるため使用しない）
+    const commandResult = await executeCommand('snapshot', ['--json'], executeOptions);
+    debugLog(`poll #${pollCount}: snapshot done, isOk=${commandResult.isOk()}`);
 
     const snapshotResult = commandResult.andThen(parseJsonOutput).andThen(parseSnapshotRefs);
 
     // snapshotのパース失敗は致命的エラー
     if (snapshotResult.isErr()) {
+      debugLog(`poll #${pollCount}: parse error`, snapshotResult.error);
       return err(snapshotResult.error);
     }
 
     const refs = snapshotResult.value;
+    debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
 
     // セレクタに一致する要素を検索
-    if (isElementFound(selector, refs)) {
-      return ok(`Element "${selector}" found`);
+    const foundRefId = findMatchingRefId(selector, refs);
+    if (foundRefId) {
+      const resolvedRef = `@${foundRefId}`;
+      debugLog(`poll #${pollCount}: element found! refId=${foundRefId}, resolvedRef=${resolvedRef}`);
+      return ok({ resolvedRef });
     }
 
     // タイムアウトチェック
     const elapsed = Date.now() - startTime;
+    debugLog(`poll #${pollCount}: not found, elapsed=${elapsed}ms`);
     if (elapsed >= autoWaitTimeoutMs) {
+      debugLog(`poll #${pollCount}: TIMEOUT`);
       return err({
         type: 'timeout',
         command: 'auto-wait',
@@ -70,12 +99,13 @@ export const autoWait = async (
     }
 
     // 次のポーリングまで待機
+    debugLog(`poll #${pollCount}: sleeping ${autoWaitIntervalMs}ms...`);
     await sleep(autoWaitIntervalMs);
   }
 };
 
 /**
- * セレクタに一致する要素が見つかったか判定
+ * セレクタに一致する要素のrefIdを検索する
  *
  * 以下の2つの形式のセレクタをサポート:
  * 1. @e1のような参照ID形式: refsマップ内にキーとして存在するかチェック
@@ -83,19 +113,22 @@ export const autoWait = async (
  *
  * @param selector - 検索する要素のセレクタ
  * @param refs - snapshotコマンドから取得した要素参照のマップ
- * @returns 要素が見つかった場合はtrue、見つからない場合はfalse
+ * @returns マッチした要素のrefId（例: "e1"）、見つからない場合はundefined
  */
-const isElementFound = (selector: string, refs: SnapshotRefs): boolean => {
+const findMatchingRefId = (selector: string, refs: SnapshotRefs): string | undefined => {
   // @e1 形式の参照IDの場合
   if (selector.startsWith('@')) {
     const refId = selector.slice(1);
-    return refId in refs;
+    return refId in refs ? refId : undefined;
   }
 
   // テキストまたはロールでマッチング
-  return Object.values(refs).some(
-    (ref) => ref.name.includes(selector) || ref.role === selector || ref.name === selector,
-  );
+  for (const [refId, ref] of Object.entries(refs)) {
+    if (ref.name.includes(selector) || ref.role === selector || ref.name === selector) {
+      return refId;
+    }
+  }
+  return undefined;
 };
 
 /**

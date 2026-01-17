@@ -5,6 +5,14 @@ import type { HoverCommand, SelectCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
 
 /**
+ * セレクタを解決する
+ * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ */
+const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
+  return context.resolvedRef ?? originalSelector;
+};
+
+/**
  * hover コマンドのハンドラ
  *
  * 指定されたセレクタの要素にマウスホバーする。
@@ -19,8 +27,9 @@ export const handleHover = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('hover', [command.selector, '--json'], context.executeOptions))
+  return (await executeCommand('hover', [selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .map((output) => ({
       stdout: JSON.stringify(output),
@@ -43,13 +52,10 @@ export const handleSelect = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
   return (
-    await executeCommand(
-      'select',
-      [command.selector, command.value, '--json'],
-      context.executeOptions,
-    )
+    await executeCommand('select', [selector, command.value, '--json'], context.executeOptions)
   )
     .andThen(parseJsonOutput)
     .map((output) => ({

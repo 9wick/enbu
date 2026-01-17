@@ -6,10 +6,11 @@
  * エラー時のスクリーンショット撮影を含む実行フローを管理する。
  */
 
+import type { Result } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command } from '../types';
 import type { StepResult, ExecutionContext } from './result';
-import { autoWait } from './auto-wait';
+import { autoWait, type AutoWaitResult } from './auto-wait';
 import { getCommandHandler } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
 
@@ -83,6 +84,75 @@ const getErrorMessage = (error: AgentBrowserError): string => {
 };
 
 /**
+ * 自動待機の結果型
+ * 成功時はresolvedRefを含むコンテキスト、失敗時はエラー情報を持つStepResult
+ */
+type AutoWaitProcessResult =
+  | { success: true; contextWithRef: ExecutionContext }
+  | { success: false; failedResult: StepResult };
+
+/**
+ * 自動待機を処理する
+ *
+ * コマンドが自動待機を必要とする場合、要素が利用可能になるまで待機し、
+ * 解決されたrefをコンテキストに設定する。
+ *
+ * @param command - 実行するコマンド
+ * @param context - 実行コンテキスト
+ * @param index - ステップのインデックス
+ * @param startTime - 実行開始時刻
+ * @param captureScreenshot - スクリーンショットを撮影するか
+ * @returns 処理結果（成功時はコンテキスト、失敗時はStepResult）
+ */
+const processAutoWait = async (
+  command: Command,
+  context: ExecutionContext,
+  index: number,
+  startTime: number,
+  captureScreenshot: boolean,
+): Promise<AutoWaitProcessResult> => {
+  // 自動待機が不要な場合は元のコンテキストをそのまま返す
+  if (!shouldAutoWait(command)) {
+    return { success: true, contextWithRef: context };
+  }
+
+  const selector = getSelectorFromCommand(command);
+  const waitResult: Result<AutoWaitResult | undefined, AgentBrowserError> = await autoWait(
+    selector,
+    context,
+  );
+
+  // 自動待機失敗
+  if (waitResult.isErr()) {
+    const duration = Date.now() - startTime;
+    const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
+
+    return {
+      success: false,
+      failedResult: {
+        index,
+        command,
+        status: 'failed',
+        duration,
+        error: {
+          message: `Auto-wait timeout: ${getErrorMessage(waitResult.error)}`,
+          type: waitResult.error.type,
+          screenshot,
+        },
+      },
+    };
+  }
+
+  // autoWaitで解決されたrefをcontextに設定
+  const autoWaitResult = waitResult.value;
+  const contextWithRef = autoWaitResult
+    ? { ...context, resolvedRef: autoWaitResult.resolvedRef }
+    : context;
+
+  return { success: true, contextWithRef };
+};
+
+/**
  * 単一のステップを実行する
  *
  * ステップの実行は以下の流れで行われる:
@@ -106,35 +176,21 @@ export const executeStep = async (
   const startTime = Date.now();
 
   try {
-    // 自動待機が必要なコマンドの場合
-    if (shouldAutoWait(command)) {
-      const waitResult = await autoWait(getSelectorFromCommand(command), context);
-
-      // 自動待機失敗
-      if (waitResult.isErr()) {
-        const duration = Date.now() - startTime;
-        const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
-
-        return {
-          index,
-          command,
-          status: 'failed',
-          duration,
-          error: {
-            message: `Auto-wait timeout: ${getErrorMessage(waitResult.error)}`,
-            type: waitResult.error.type,
-            screenshot,
-          },
-        };
-      }
+    // 自動待機を処理
+    const autoWaitProcessResult = await processAutoWait(
+      command,
+      context,
+      index,
+      startTime,
+      captureScreenshot,
+    );
+    if (!autoWaitProcessResult.success) {
+      return autoWaitProcessResult.failedResult;
     }
 
-    // コマンドハンドラを取得
+    // コマンドハンドラを取得して実行
     const handler = getCommandHandler(command.command);
-
-    // コマンド実行
-    const result = await handler(command, context);
-
+    const result = await handler(command, autoWaitProcessResult.contextWithRef);
     const duration = Date.now() - startTime;
 
     // 結果の処理
@@ -147,7 +203,6 @@ export const executeStep = async (
         stdout: commandResult.stdout,
       }),
       async (error) => {
-        // エラー時のスクリーンショット
         const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
 
         return {
@@ -164,7 +219,6 @@ export const executeStep = async (
       },
     );
   } catch (error) {
-    // 予期しないエラー（バグの可能性）
     const duration = Date.now() - startTime;
     const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
 

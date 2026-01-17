@@ -15,7 +15,7 @@ agent-browserがインストールされている必要があります。
 
 ```bash
 # agent-browserのインストール（事前に必要）
-cargo install agent-browser
+npm install -g agent-browser
 ```
 
 ## インストール

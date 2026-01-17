@@ -12,6 +12,12 @@ import type { FlowResult, FlowExecutionOptions, StepResult, ExecutionContext } f
 import { executeStep } from './execute-step';
 import { expandEnvVars } from './env-expander';
 
+// デバッグログ用（stderrに出力してno-consoleルールを回避）
+const DEBUG = process.env.DEBUG_FLOW === '1';
+const debugLog = (msg: string, ...args: unknown[]) => {
+  if (DEBUG) process.stderr.write(`[flow-executor] ${msg} ${args.map(String).join(' ')}\n`);
+};
+
 /**
  * 失敗したフロー結果を構築する
  *
@@ -113,13 +119,16 @@ const executeAllSteps = async (
   firstFailureIndex: number;
   earlyResult?: Result<FlowResult, AgentBrowserError>;
 }> => {
+  debugLog('executeAllSteps start', { stepCount: expandedFlow.steps.length, bail, screenshot });
   const steps: StepResult[] = [];
   let hasFailure = false;
   let firstFailureIndex = -1;
 
   for (let i = 0; i < expandedFlow.steps.length; i++) {
     const command = expandedFlow.steps[i];
+    debugLog(`step ${i + 1}/${expandedFlow.steps.length} start:`, command);
     const stepResult = await executeStep(command, i, context, screenshot);
+    debugLog(`step ${i + 1} done:`, { status: stepResult.status, duration: stepResult.duration });
     steps.push(stepResult);
 
     if (stepResult.status === 'failed') {

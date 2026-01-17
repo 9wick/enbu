@@ -1,7 +1,6 @@
 {
-  "name": "@apps/cli",
-  "version": "0.0.0",
-  "private": true,
+  "name": "agent-browser-flow",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/main.mjs",
   "bin": {

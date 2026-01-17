@@ -4,5 +4,6 @@ packages:
   - example/*
 
 onlyBuiltDependencies:
+  - agent-browser
   - esbuild
   - nx

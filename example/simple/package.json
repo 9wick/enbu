@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "tsx server.ts",
-    "dev": "tsx watch server.ts"
+    "dev": "tsx watch server.ts",
+    "test": "agent-browser-flow flows/test.flow.yaml",
+    "test:headed": "agent-browser-flow --headed flows/test.flow.yaml"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -15,6 +17,7 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^22.19.2",
+    "agent-browser-flow": "workspace:*",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

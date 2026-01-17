@@ -115,6 +115,12 @@ export type ExecutionContext = {
   autoWaitTimeoutMs: number;
   /** 自動待機のポーリング間隔（ミリ秒） */
   autoWaitIntervalMs: number;
+  /**
+   * autoWaitで解決されたref形式のセレクタ（例: "@e1"）
+   * テキストセレクタをagent-browser内部のref形式に変換したもの。
+   * コマンドハンドラはセレクタを使用する際、このrefを優先して使用すべき。
+   */
+  resolvedRef?: string;
 };
 
 /**

@@ -5,6 +5,14 @@ import type { ClickCommand, TypeCommand, FillCommand, PressCommand } from '../..
 import type { ExecutionContext, CommandResult } from '../result';
 
 /**
+ * セレクタを解決する
+ * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ */
+const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
+  return context.resolvedRef ?? originalSelector;
+};
+
+/**
  * click コマンドのハンドラ
  *
  * 指定されたセレクタの要素をクリックする。
@@ -19,8 +27,9 @@ export const handleClick = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  const args = [command.selector];
+  const args = [selector];
   if (command.index !== undefined) {
     args.push('--index', command.index.toString());
   }
@@ -49,8 +58,9 @@ export const handleType = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  const args = [command.selector, command.value];
+  const args = [selector, command.value];
   if (command.clear) {
     args.push('--clear');
   }
@@ -79,13 +89,10 @@ export const handleFill = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
   return (
-    await executeCommand(
-      'fill',
-      [command.selector, command.value, '--json'],
-      context.executeOptions,
-    )
+    await executeCommand('fill', [selector, command.value, '--json'], context.executeOptions)
   )
     .andThen(parseJsonOutput)
     .map((output) => ({

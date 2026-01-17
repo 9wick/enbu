@@ -5,6 +5,14 @@ import type { ScrollCommand, ScrollIntoViewCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
 
 /**
+ * セレクタを解決する
+ * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ */
+const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
+  return context.resolvedRef ?? originalSelector;
+};
+
+/**
  * scroll コマンドのハンドラ
  *
  * ページを指定された方向と量でスクロールする。
@@ -49,10 +57,9 @@ export const handleScrollIntoView = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('scrollintoview', [command.selector, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('scrollintoview', [selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .map((output) => ({
       stdout: JSON.stringify(output),
