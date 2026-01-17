@@ -84,6 +84,7 @@ export const executeCommand = (
         resolveOnce(
           err({
             type: 'command_failed',
+            message: errorMessage || `Command failed: ${command} ${args.join(' ')}`,
             command,
             args,
             exitCode: exitCode ?? 1,

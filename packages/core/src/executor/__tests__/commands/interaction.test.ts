@@ -88,6 +88,7 @@ describe('handleClick', () => {
     vi.mocked(executeCommand).mockResolvedValue(
       err({
         type: 'command_failed',
+        message: 'Element not found',
         command: 'click',
         args: ['存在しないボタン', '--json'],
         exitCode: 1,

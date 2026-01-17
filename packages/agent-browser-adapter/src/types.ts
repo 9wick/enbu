@@ -15,6 +15,7 @@ export type AgentBrowserError =
     }
   | {
       type: 'command_failed';
+      message: string;
       command: string;
       args: readonly string[];
       exitCode: number;

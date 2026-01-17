@@ -221,6 +221,18 @@ export type AssertVisibleCommand = {
 };
 
 /**
+ * 要素が表示されていないことを確認
+ *
+ * @example
+ * // YAML: - assertNotVisible: "エラーメッセージ"
+ * { command: 'assertNotVisible', selector: 'エラーメッセージ' }
+ */
+export type AssertNotVisibleCommand = {
+  command: 'assertNotVisible';
+  selector: string;
+};
+
+/**
  * 要素が有効化されていることを確認
  *
  * @example
@@ -271,5 +283,6 @@ export type Command =
   | SnapshotCommand
   | EvalCommand
   | AssertVisibleCommand
+  | AssertNotVisibleCommand
   | AssertEnabledCommand
   | AssertCheckedCommand;

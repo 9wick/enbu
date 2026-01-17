@@ -138,15 +138,13 @@ npx agent-browser-flow .abflow/login.flow.yaml
 
 ### 環境変数の指定方法
 
+#### CLI引数で指定
+
 ```bash
-# .envファイル
-echo "PASSWORD=secret123" > .env
-
-# CLI引数
 npx agent-browser-flow --env PASSWORD=secret123
-
-# YAML内定義
 ```
+
+#### YAML内で定義
 
 `.abflow/login.flow.yaml`:
 ```yaml

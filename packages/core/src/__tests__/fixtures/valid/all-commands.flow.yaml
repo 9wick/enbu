@@ -21,5 +21,6 @@
 - snapshot: {}
 - eval: "document.title"
 - assertVisible: "完了"
+- assertNotVisible: "エラーメッセージ"
 - assertEnabled: "送信ボタン"
 - assertChecked: "同意チェックボックス"

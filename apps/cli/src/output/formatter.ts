@@ -237,6 +237,7 @@ COMMANDS:
 
 OPTIONS:
   -h, --help        Show this help message
+  -V, --version     Show version number
   -v, --verbose     Enable verbose logging
   --headed          Show browser (disable headless mode)
   --env KEY=VALUE   Set environment variable (can be used multiple times)
@@ -256,4 +257,21 @@ For more information, visit: https://github.com/9wick/agent-browser-flow
 `;
 
   process.stdout.write(helpText);
+};
+
+/**
+ * バージョン情報を表示
+ *
+ * CLIのバージョン番号を標準出力に表示します。
+ * ビルド時に埋め込まれたバージョン情報（__VERSION__定数）を使用します。
+ * --version フラグまたは -V フラグが指定された際に呼び出されます。
+ *
+ * 実装の詳細:
+ * tsdown.config.tsのdefineオプションにより、__VERSION__定数が
+ * ビルド時にpackage.jsonのバージョン情報で置換されます。
+ * これにより、実行時のファイル読み込みオーバーヘッドがなく、
+ * ビルド構造の変更にも影響を受けません。
+ */
+export const showVersion = (): void => {
+  process.stdout.write(`${__VERSION__}\n`);
 };

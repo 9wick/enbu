@@ -88,6 +88,7 @@ describe('handleOpen', () => {
     vi.mocked(executeCommand).mockResolvedValue(
       err({
         type: 'command_failed',
+        message: 'Invalid URL',
         command: 'open',
         args: ['https://invalid-url', '--json'],
         exitCode: 1,

@@ -1,9 +1,7 @@
-#!/usr/bin/env node
-
 import { parseArgs } from './args-parser';
 import { runInitCommand } from './commands/init';
 import { runFlowCommand } from './commands/run';
-import { showHelp, OutputFormatter } from './output/formatter';
+import { showHelp, showVersion, OutputFormatter } from './output/formatter';
 import { EXIT_CODE, exitWithCode } from './output/exit-code';
 
 /**
@@ -20,6 +18,12 @@ const main = async (): Promise<void> => {
   await argsResult.match(
     async (args) => {
       // 引数のパースに成功した場合
+
+      // バージョン表示
+      if (args.version) {
+        showVersion();
+        exitWithCode(EXIT_CODE.SUCCESS);
+      }
 
       // ヘルプ表示
       if (args.help) {

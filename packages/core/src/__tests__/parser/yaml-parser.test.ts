@@ -92,8 +92,8 @@ describe('parseFlowYaml', () => {
     // Assert
     result.match(
       (flow) => {
-        // 全MVPコマンド（16種類）が含まれることを確認
-        expect(flow.steps.length).toBe(16);
+        // 全MVPコマンド（17種類）が含まれることを確認
+        expect(flow.steps.length).toBe(17);
 
         // 各コマンド型の存在を確認
         const commands = flow.steps.map((step) => step.command);
@@ -111,6 +111,7 @@ describe('parseFlowYaml', () => {
         expect(commands).toContain('snapshot');
         expect(commands).toContain('eval');
         expect(commands).toContain('assertVisible');
+        expect(commands).toContain('assertNotVisible');
         expect(commands).toContain('assertEnabled');
         expect(commands).toContain('assertChecked');
       },

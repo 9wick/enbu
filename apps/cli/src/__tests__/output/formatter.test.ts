@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { OutputFormatter } from '../../output/formatter';
+import { OutputFormatter, showVersion } from '../../output/formatter';
 
 describe('OutputFormatter', () => {
   let stdoutWrite: typeof process.stdout.write;
@@ -179,5 +179,43 @@ describe('OutputFormatter', () => {
 
     // クリーンアップ
     vi.useRealTimers();
+  });
+});
+
+describe('showVersion', () => {
+  let stdoutWrite: typeof process.stdout.write;
+  let stdoutCalls: string[];
+
+  beforeEach(() => {
+    stdoutWrite = process.stdout.write;
+    stdoutCalls = [];
+
+    process.stdout.write = vi.fn((chunk: unknown) => {
+      stdoutCalls.push(chunk?.toString() ?? '');
+      return true;
+    }) as unknown as typeof process.stdout.write;
+  });
+
+  afterEach(() => {
+    process.stdout.write = stdoutWrite;
+  });
+
+  /**
+   * showVersion-1: ビルド時に埋め込まれたバージョン情報を出力
+   *
+   * 前提条件: __VERSION__がビルド時に定義されている
+   * 検証項目: __VERSION__の値が改行付きでstdoutに出力される
+   */
+  it('showVersion-1: ビルド時に埋め込まれたバージョン情報を出力する', () => {
+    // Act
+    showVersion();
+
+    // Assert
+    // __VERSION__はビルド時に埋め込まれるため、
+    // テスト時には実際のバージョン文字列が出力される
+    expect(stdoutCalls).toHaveLength(1);
+    // セマンティックバージョニング形式（X.Y.Z）を検証
+    // 例: 0.0.0, 1.2.3, 10.20.30
+    expect(stdoutCalls[0]).toMatch(/^\d+\.\d+\.\d+\n$/);
   });
 });

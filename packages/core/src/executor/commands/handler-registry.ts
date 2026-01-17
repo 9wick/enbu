@@ -9,7 +9,12 @@ import { handleScroll, handleScrollIntoView } from './scroll';
 import { handleWait } from './wait';
 import { handleScreenshot, handleSnapshot } from './capture';
 import { handleEval } from './eval';
-import { handleAssertVisible, handleAssertEnabled, handleAssertChecked } from './assertions';
+import {
+  handleAssertVisible,
+  handleAssertNotVisible,
+  handleAssertEnabled,
+  handleAssertChecked,
+} from './assertions';
 
 /**
  * コマンド名に対応するハンドラを取得する
@@ -81,7 +86,28 @@ const routeScrollWaitCommand = (
 };
 
 /**
- * キャプチャ・eval・assertion系コマンドのルーター
+ * assertion系コマンドのルーター
+ */
+const routeAssertionCommand = (
+  command: Command,
+  context: ExecutionContext,
+): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+  switch (command.command) {
+    case 'assertVisible':
+      return handleAssertVisible(command, context);
+    case 'assertNotVisible':
+      return handleAssertNotVisible(command, context);
+    case 'assertEnabled':
+      return handleAssertEnabled(command, context);
+    case 'assertChecked':
+      return handleAssertChecked(command, context);
+    default:
+      return null;
+  }
+};
+
+/**
+ * キャプチャ・eval系コマンドのルーター
  */
 const routeUtilityCommand = (
   command: Command,
@@ -94,12 +120,6 @@ const routeUtilityCommand = (
       return handleSnapshot(command, context);
     case 'eval':
       return handleEval(command, context);
-    case 'assertVisible':
-      return handleAssertVisible(command, context);
-    case 'assertEnabled':
-      return handleAssertEnabled(command, context);
-    case 'assertChecked':
-      return handleAssertChecked(command, context);
     default:
       return null;
   }
@@ -116,7 +136,8 @@ const routeCommand: CommandHandler<Command> = (command, context) => {
     routeNavigationInputCommand(command, context) ??
     routeInteractionCommand(command, context) ??
     routeScrollWaitCommand(command, context) ??
-    routeUtilityCommand(command, context);
+    routeUtilityCommand(command, context) ??
+    routeAssertionCommand(command, context);
 
   return result!;
 };

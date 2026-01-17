@@ -381,6 +381,58 @@ describe('parseArgs', () => {
   });
 
   /**
+   * A-14-1: --versionフラグが指定された場合
+   *
+   * 前提条件: argv = ['--version']
+   * 検証項目: { command: 'run', version: true } が返される
+   */
+  it('A-14-1: --versionフラグが指定された場合、versionフラグをtrueに設定', () => {
+    // Arrange
+    const argv = ['--version'];
+
+    // Act
+    const result = parseArgs(argv);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (parsed) => {
+        expect(parsed.command).toBe('run');
+        expect(parsed.version).toBe(true);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * A-14-2: -Vフラグが指定された場合
+   *
+   * 前提条件: argv = ['-V']
+   * 検証項目: { command: 'run', version: true } が返される
+   */
+  it('A-14-2: -Vフラグが指定された場合、versionフラグをtrueに設定', () => {
+    // Arrange
+    const argv = ['-V'];
+
+    // Act
+    const result = parseArgs(argv);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (parsed) => {
+        expect(parsed.command).toBe('run');
+        expect(parsed.version).toBe(true);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
    * A-15: 未知のオプション
    *
    * 前提条件: argv = ['--unknown']

@@ -19,6 +19,7 @@ export type {
   SnapshotCommand,
   EvalCommand,
   AssertVisibleCommand,
+  AssertNotVisibleCommand,
   AssertEnabledCommand,
   AssertCheckedCommand,
 } from './commands';

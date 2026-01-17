@@ -8,6 +8,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * コマンドライン引数をパースする
  *
  * process.argvから渡された引数を解析し、ParsedArgs型に変換する。
+ * バージョンフラグが指定されている場合は、他の引数に関わらずバージョンモードとして返す。
  * ヘルプフラグが指定されている場合は、他の引数に関わらずヘルプモードとして返す。
  * 最初の位置引数がinitの場合はinitコマンド、それ以外はrunコマンドとして扱う。
  *
@@ -15,11 +16,28 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * @returns パース済み引数、またはエラー
  */
 export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
+  // バージョンフラグの確認
+  if (argv.includes('-V') || argv.includes('--version')) {
+    return ok({
+      command: 'run',
+      help: false,
+      version: true,
+      verbose: false,
+      files: [],
+      headed: false,
+      env: {},
+      timeout: DEFAULT_TIMEOUT_MS,
+      screenshot: false,
+      bail: false,
+    });
+  }
+
   // ヘルプフラグの確認
   if (argv.includes('-h') || argv.includes('--help')) {
     return ok({
       command: 'run',
       help: true,
+      version: false,
       verbose: false,
       files: [],
       headed: false,
@@ -78,6 +96,7 @@ const parseInitArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, Cli
   return ok({
     command: 'init',
     help: false,
+    version: false,
     verbose,
     force,
   });
@@ -129,6 +148,7 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
   return ok({
     command: 'run',
     help: false,
+    version: false,
     verbose,
     files: state.files,
     headed: state.headed,

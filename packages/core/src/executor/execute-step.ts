@@ -24,6 +24,7 @@ const hasMessageField = (
 ): error is Extract<AgentBrowserError, { message: string }> => {
   return (
     error.type === 'not_installed' ||
+    error.type === 'command_failed' ||
     error.type === 'parse_error' ||
     error.type === 'assertion_failed' ||
     error.type === 'validation_error'
@@ -31,21 +32,50 @@ const hasMessageField = (
 };
 
 /**
+ * コマンド実行エラーのフォールバックメッセージを生成する
+ *
+ * @param error - コマンド実行エラー
+ * @returns フォールバックメッセージ
+ */
+const getCommandFailedFallback = (
+  error: Extract<
+    AgentBrowserError,
+    { errorMessage: string | null; stderr: string; command: string }
+  >,
+): string => {
+  return error.errorMessage || error.stderr || `Command failed: ${error.command}`;
+};
+
+/**
  * AgentBrowserErrorからメッセージを取得する
  *
  * エラーの種類によってメッセージの形式が異なるため、
  * 統一的なメッセージを生成する。
+ * messageフィールドが空文字列の場合は、errorMessageまたはstderrから
+ * フォールバックメッセージを生成する。
  *
  * @param error - AgentBrowserError
  * @returns エラーメッセージ
  */
 const getErrorMessage = (error: AgentBrowserError): string => {
   if (hasMessageField(error)) {
-    return error.message;
-  }
+    // messageが空文字列でない場合はそのまま返す
+    if (error.message) {
+      return error.message;
+    }
 
-  if (error.type === 'command_failed') {
-    return error.errorMessage ?? `Command failed: ${error.command}`;
+    // messageが空文字列の場合、errorMessageまたはstderrからフォールバック
+    if (
+      error.type === 'command_failed' ||
+      error.type === 'assertion_failed' ||
+      error.type === 'validation_error'
+    ) {
+      return getCommandFailedFallback(error);
+    }
+
+    // その他のエラー型（not_installed, parse_error）は空文字列でも返す
+    // （これらは意図的に空にすることはないはず）
+    return error.message;
   }
 
   // error.type === 'timeout'

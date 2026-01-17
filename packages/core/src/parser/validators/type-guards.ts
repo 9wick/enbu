@@ -22,6 +22,7 @@ import type {
   SnapshotCommand,
   EvalCommand,
   AssertVisibleCommand,
+  AssertNotVisibleCommand,
   AssertEnabledCommand,
   AssertCheckedCommand,
   Command,
@@ -741,6 +742,34 @@ export const normalizeAssertVisibleCommand = (value: unknown): AssertVisibleComm
 };
 
 /**
+ * AssertNotVisibleCommandを正規化
+ *
+ * 正規化済み形式: { command: 'assertNotVisible', selector: '...' }
+ * YAML簡略形式: { assertNotVisible: '...' }
+ *
+ * @param value - 検証対象の値
+ * @returns 正規化されたAssertNotVisibleCommand、または不正な場合null
+ */
+export const normalizeAssertNotVisibleCommand = (
+  value: unknown,
+): AssertNotVisibleCommand | null => {
+  const obj: Record<string, unknown> | null = toRecord(value);
+  if (obj === null) {
+    return null;
+  }
+
+  if (obj.command === 'assertNotVisible' && typeof obj.selector === 'string') {
+    return { command: 'assertNotVisible', selector: obj.selector };
+  }
+
+  if (hasYamlKey(obj, 'assertNotVisible') && typeof obj.assertNotVisible === 'string') {
+    return { command: 'assertNotVisible', selector: obj.assertNotVisible };
+  }
+
+  return null;
+};
+
+/**
  * AssertEnabledCommandを正規化
  *
  * 正規化済み形式: { command: 'assertEnabled', selector: '...' }
@@ -872,6 +901,7 @@ export const normalizers: Array<(value: unknown) => Command | null> = [
   normalizeSnapshotCommand,
   normalizeEvalCommand,
   normalizeAssertVisibleCommand,
+  normalizeAssertNotVisibleCommand,
   normalizeAssertEnabledCommand,
   normalizeAssertCheckedCommand,
 ];

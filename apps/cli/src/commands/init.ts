@@ -9,13 +9,10 @@ import { fileExists, createDirectory, writeFileContent, readFileContent } from '
 const ABFLOW_DIR = '.abflow';
 
 /** サンプルフローファイルの内容 */
-const SAMPLE_FLOW_YAML = `name: Example Flow
-description: agent-browser-flowのサンプルフロー
-steps:
-  - action: open
-    url: https://example.com
-  - action: click
-    target: More information...
+const SAMPLE_FLOW_YAML = `# agent-browser-flowのサンプルフロー
+- open: https://example.com
+- click: "More information..."
+- assertVisible: "Example Domain"
 `;
 
 /**

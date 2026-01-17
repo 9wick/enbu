@@ -13,6 +13,8 @@ export type ParsedArgs = {
   command: 'init' | 'run';
   /** ヘルプメッセージを表示するかどうか */
   help: boolean;
+  /** バージョン情報を表示するかどうか */
+  version: boolean;
   /** 詳細なログ出力を行うかどうか */
   verbose: boolean;
 } & (
