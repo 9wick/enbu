@@ -1,0 +1,40 @@
+# フォーム入力テストフロー
+# ポート3020を使用（example/form-inputサーバー専用ポート）
+# テスト用HTTPサーバー（localhost:3020）が起動していることを前提とする
+
+env:
+  BASE_URL: http://localhost:3020
+
+steps:
+  # ステップ1: フォームページを開く
+  - open: ${BASE_URL}
+
+  # ステップ2: "Form Input Test"の表示確認
+  - assertVisible: Form Input Test
+
+  # ステップ3: テキスト欄に追記入力（既存テキスト"初期値"に"追加"を追記）
+  # HTMLのlabelテキスト「Type コマンド（追記入力）」を使用
+  - type:
+      selector: Type コマンド（追記入力）
+      value: 追加
+
+  # ステップ4: 別のテキスト欄をクリア後入力
+  # HTMLのlabelテキスト「Fill コマンド（クリア後入力）」を使用
+  - fill:
+      selector: Fill コマンド（クリア後入力）
+      value: 新しい値
+
+  # ステップ5: 検索欄に入力
+  # HTMLのlabelテキスト「Press コマンド（Enterキーで検索）」を使用
+  - type:
+      selector: Press コマンド（Enterキーで検索）
+      value: テスト検索
+
+  # ステップ6: Enterキーで検索実行
+  - press: Enter
+
+  # ステップ6.5: 検索結果ページの読み込みを待機
+  - wait: Search Results
+
+  # ステップ7: 検索結果ページの表示確認
+  - assertVisible: Search Results

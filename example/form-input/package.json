@@ -1,7 +1,7 @@
 {
-  "name": "@example/simple",
+  "name": "@example/form-input",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Form input commands example (type, fill, press, select)",
   "private": true,
   "type": "module",
   "scripts": {

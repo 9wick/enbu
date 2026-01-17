@@ -1,7 +1,7 @@
 {
-  "name": "@example/simple",
+  "name": "@example/utility",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Utility commands example (wait, screenshot, snapshot, eval)",
   "private": true,
   "type": "module",
   "scripts": {

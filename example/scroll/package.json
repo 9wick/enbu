@@ -1,7 +1,7 @@
 {
-  "name": "@example/simple",
+  "name": "@example/scroll",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Scroll commands example (scroll, scrollIntoView)",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,0 +1,37 @@
+# ナビゲーション機能のテストフロー
+# ポート3010を使用（example/navigationサーバー専用ポート）
+# テスト用HTTPサーバー（localhost:3010）が起動していることを前提とする
+
+env:
+  BASE_URL: http://localhost:3010
+
+steps:
+  # ステップ1: トップページを開く
+  - open: ${BASE_URL}
+
+  # ステップ2: "Navigation Test"テキストの存在を確認
+  - assertVisible: Navigation Test
+
+  # ステップ3: "Page 1"リンクをクリック
+  - click: Page 1へ移動
+
+  # ステップ4: "Page 1 Content"の存在を確認
+  - assertVisible: Page 1 Content
+
+  # ステップ5: トップページへ戻るリンクをクリック
+  - click: トップへ戻る
+
+  # ステップ6: トップページに戻ったことを確認
+  - assertVisible: Navigation Test
+
+  # ステップ7: ドロップダウンメニューにホバー
+  - hover: ドロップダウンメニュー
+
+  # ステップ8: ホバー後に表示されるサブメニューの確認
+  - assertVisible: サブメニュー項目
+
+  # ステップ9: サブメニュー項目をクリック
+  - click: サブメニュー項目
+
+  # ステップ10: 遷移先ページの確認
+  - assertVisible: Dropdown Page

@@ -1,7 +1,7 @@
 {
-  "name": "@example/simple",
+  "name": "@example/assertions",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Assertion commands example (assertVisible, assertNotVisible, assertEnabled, assertChecked)",
   "private": true,
   "type": "module",
   "scripts": {

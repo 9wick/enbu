@@ -1,0 +1,42 @@
+# スクロールコマンドテストフロー
+# ポート3030を使用（example/scrollサーバー専用ポート）
+# テスト用HTTPサーバー（localhost:3030）が起動していることを前提とする
+
+env:
+  BASE_URL: http://localhost:3030
+
+steps:
+  # ステップ1: 長いページを開く
+  - open: ${BASE_URL}
+
+  # ステップ2: "Scroll Test"タイトルの表示確認
+  - assertVisible: Scroll Test
+
+  # ステップ3: 下方向に500pxスクロール
+  - scroll:
+      direction: down
+      amount: 500
+
+  # ステップ4: 中部セクションの表示確認
+  - assertVisible: 中部セクション
+
+  # ステップ5: さらに下方向に500pxスクロール
+  - scroll:
+      direction: down
+      amount: 500
+
+  # ステップ6: 下部セクションの表示確認
+  - assertVisible: 下部セクション
+
+  # ステップ7: フッターまでスクロール
+  # HTMLのh2テキスト「フッター」を使用
+  - scrollIntoView: フッター
+
+  # ステップ8: フッターの表示確認
+  - assertVisible: フッター
+
+  # ステップ9: 上部に戻る
+  - scrollIntoView: Scroll Test
+
+  # ステップ10: トップの表示確認
+  - assertVisible: Scroll Test

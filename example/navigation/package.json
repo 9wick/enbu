@@ -1,7 +1,7 @@
 {
-  "name": "@example/simple",
+  "name": "@example/navigation",
   "version": "1.0.0",
-  "description": "Simple example with static HTML hosting",
+  "description": "Navigation commands example (open, click, hover)",
   "private": true,
   "type": "module",
   "scripts": {

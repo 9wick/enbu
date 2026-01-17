@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scroll Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+    }
+
+    /* 各セクションのスタイル */
+    section {
+      min-height: 900px;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 4px solid #ddd;
+    }
+
+    /* 上部セクション */
+    .top-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    /* 中部セクション */
+    .middle-section {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    /* 下部セクション */
+    .bottom-section {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    /* フッター */
+    footer {
+      min-height: 300px;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+
+    h1, h2 {
+      margin: 0 0 20px 0;
+      font-size: 3rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin: 10px 0;
+      text-align: center;
+      max-width: 600px;
+    }
+
+    /* スクロール位置インジケーター */
+    .scroll-indicator {
+      margin-top: 30px;
+      padding: 15px 30px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- 上部セクション -->
+  <section class="top-section">
+    <h1 data-testid="top-title">Scroll Test</h1>
+    <p>このページはスクロール機能のテスト用ページです。</p>
+    <p>各セクションは900px以上の高さがあり、スクロールして各要素を確認できます。</p>
+    <div class="scroll-indicator">
+      ↓ 下にスクロールして中部セクションを確認してください
+    </div>
+  </section>
+
+  <!-- 中部セクション -->
+  <section class="middle-section">
+    <h2 data-testid="middle-title">中部セクション</h2>
+    <p>ここは中部セクションです。</p>
+    <p>scroll コマンドで下方向に500pxスクロールすると、このセクションが表示されます。</p>
+    <div class="scroll-indicator">
+      ↓ さらに下にスクロールして下部セクションを確認してください
+    </div>
+  </section>
+
+  <!-- 下部セクション -->
+  <section class="bottom-section">
+    <h2 data-testid="bottom-title">下部セクション</h2>
+    <p>ここは下部セクションです。</p>
+    <p>さらに500pxスクロールすると、このセクションが表示されます。</p>
+    <div class="scroll-indicator">
+      ↓ scrollIntoView コマンドでフッターまでジャンプできます
+    </div>
+  </section>
+
+  <!-- フッター -->
+  <footer data-testid="footer">
+    <h2>フッター</h2>
+    <p>ページの最下部に到達しました。</p>
+    <p>scrollIntoView コマンドを使用すると、特定の要素まで一度にスクロールできます。</p>
+    <div class="scroll-indicator">
+      ↑ scrollIntoView コマンドで上部に戻ることもできます
+    </div>
+  </footer>
+</body>
+</html>
