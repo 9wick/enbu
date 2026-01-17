@@ -51,7 +51,7 @@
       "dependsOn": ["pnpm-sync:sync-deps"]
     },
     "test": {
-      "dependsOn": ["pnpm-sync:sync-deps", "^test"]
+      "dependsOn": ["pnpm-sync:sync-deps", "^build", "^test"]
     },
     "typecheck": {
       "dependsOn": ["pnpm-sync:sync-deps", "^typecheck", "^build"],
