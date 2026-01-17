@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "schema",
+  "projectType": "library",
+  "sourceRoot": "apps/schema",
+  "tags": ["scope:schema", "type:lib"],
+  "implicitDependencies": ["core"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "commands": ["mkdir -p dist", "cp ../../packages/core/schemas/flow.schema.json dist/"],
+        "cwd": "apps/schema",
+        "parallel": false
+      }
+    }
+  }
+}

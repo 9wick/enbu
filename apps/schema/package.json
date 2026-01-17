@@ -1,0 +1,29 @@
+{
+  "name": "@agent-browser-flow/schema",
+  "version": "0.1.0",
+  "description": "JSON Schema for agent-browser-flow YAML files",
+  "type": "module",
+  "main": "./dist/flow.schema.json",
+  "exports": {
+    ".": "./dist/flow.schema.json",
+    "./flow.schema.json": "./dist/flow.schema.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nx run schema:build"
+  },
+  "keywords": [
+    "json-schema",
+    "yaml",
+    "agent-browser-flow",
+    "browser-automation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agent-browser-flow/agent-browser-flow.git",
+    "directory": "apps/schema"
+  }
+}

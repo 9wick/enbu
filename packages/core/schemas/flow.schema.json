@@ -1,0 +1,458 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-browser-flow.dev/schemas/flow.schema.json",
+  "title": "Agent Browser Flow",
+  "description": "YAMLフローファイルのスキーマ定義",
+  "type": "object",
+  "properties": {
+    "env": {
+      "type": "object",
+      "description": "環境変数の定義（オプション）",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "実行するコマンドのリスト",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/command"
+      }
+    }
+  },
+  "required": ["steps"],
+  "additionalProperties": false,
+  "definitions": {
+    "command": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/openCommand"
+        },
+        {
+          "$ref": "#/definitions/clickCommand"
+        },
+        {
+          "$ref": "#/definitions/typeCommand"
+        },
+        {
+          "$ref": "#/definitions/fillCommand"
+        },
+        {
+          "$ref": "#/definitions/pressCommand"
+        },
+        {
+          "$ref": "#/definitions/hoverCommand"
+        },
+        {
+          "$ref": "#/definitions/selectCommand"
+        },
+        {
+          "$ref": "#/definitions/scrollCommand"
+        },
+        {
+          "$ref": "#/definitions/scrollIntoViewCommand"
+        },
+        {
+          "$ref": "#/definitions/waitCommand"
+        },
+        {
+          "$ref": "#/definitions/screenshotCommand"
+        },
+        {
+          "$ref": "#/definitions/snapshotCommand"
+        },
+        {
+          "$ref": "#/definitions/evalCommand"
+        },
+        {
+          "$ref": "#/definitions/assertVisibleCommand"
+        },
+        {
+          "$ref": "#/definitions/assertNotVisibleCommand"
+        },
+        {
+          "$ref": "#/definitions/assertEnabledCommand"
+        },
+        {
+          "$ref": "#/definitions/assertCheckedCommand"
+        }
+      ]
+    },
+    "openCommand": {
+      "description": "ページを開く",
+      "type": "object",
+      "properties": {
+        "open": {
+          "type": "string",
+          "description": "開くページのURL"
+        }
+      },
+      "required": ["open"],
+      "additionalProperties": false
+    },
+    "clickCommand": {
+      "description": "要素をクリック",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "click": {
+              "type": "string",
+              "description": "クリックする要素のセレクタ"
+            }
+          },
+          "required": ["click"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "click": {
+              "type": "object",
+              "properties": {
+                "selector": {
+                  "type": "string",
+                  "description": "クリックする要素のセレクタ"
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "同名要素が複数ある場合のインデックス指定（0始まり）"
+                }
+              },
+              "required": ["selector"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["click"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "typeCommand": {
+      "description": "テキストを入力（既存のテキストをクリアしない）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "入力先要素のセレクタ"
+            },
+            "text": {
+              "type": "string",
+              "description": "入力するテキスト"
+            },
+            "value": {
+              "type": "string",
+              "description": "入力するテキスト（textの別名）"
+            },
+            "clear": {
+              "type": "boolean",
+              "description": "入力前に既存のテキストをクリアするか",
+              "default": false
+            }
+          },
+          "required": ["selector"],
+          "oneOf": [
+            {
+              "required": ["text"]
+            },
+            {
+              "required": ["value"]
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "fillCommand": {
+      "description": "フォームにテキストを入力（既存のテキストをクリア）",
+      "type": "object",
+      "properties": {
+        "fill": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "入力先要素のセレクタ"
+            },
+            "text": {
+              "type": "string",
+              "description": "入力するテキスト"
+            },
+            "value": {
+              "type": "string",
+              "description": "入力するテキスト（textの別名）"
+            }
+          },
+          "required": ["selector"],
+          "oneOf": [
+            {
+              "required": ["text"]
+            },
+            {
+              "required": ["value"]
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": ["fill"],
+      "additionalProperties": false
+    },
+    "pressCommand": {
+      "description": "キーボードキーを押す",
+      "type": "object",
+      "properties": {
+        "press": {
+          "type": "string",
+          "description": "押すキーの名前（例: Enter, Escape, ArrowDown）"
+        }
+      },
+      "required": ["press"],
+      "additionalProperties": false
+    },
+    "hoverCommand": {
+      "description": "要素にホバー",
+      "type": "object",
+      "properties": {
+        "hover": {
+          "type": "string",
+          "description": "ホバーする要素のセレクタ"
+        }
+      },
+      "required": ["hover"],
+      "additionalProperties": false
+    },
+    "selectCommand": {
+      "description": "セレクトボックスから選択",
+      "type": "object",
+      "properties": {
+        "select": {
+          "type": "object",
+          "properties": {
+            "selector": {
+              "type": "string",
+              "description": "セレクトボックスのセレクタ"
+            },
+            "value": {
+              "type": "string",
+              "description": "選択する値"
+            }
+          },
+          "required": ["selector", "value"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["select"],
+      "additionalProperties": false
+    },
+    "scrollCommand": {
+      "description": "ページをスクロール",
+      "type": "object",
+      "properties": {
+        "scroll": {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": ["up", "down"],
+              "description": "スクロール方向"
+            },
+            "amount": {
+              "type": "number",
+              "description": "スクロール量（ピクセル）"
+            }
+          },
+          "required": ["direction", "amount"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["scroll"],
+      "additionalProperties": false
+    },
+    "scrollIntoViewCommand": {
+      "description": "要素をビューにスクロール",
+      "type": "object",
+      "properties": {
+        "scrollIntoView": {
+          "type": "string",
+          "description": "スクロール先の要素のセレクタ"
+        }
+      },
+      "required": ["scrollIntoView"],
+      "additionalProperties": false
+    },
+    "waitCommand": {
+      "description": "待機",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "wait": {
+              "type": "number",
+              "description": "待機時間（ミリ秒）"
+            }
+          },
+          "required": ["wait"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "wait": {
+              "type": "string",
+              "description": "待機対象の要素セレクタ"
+            }
+          },
+          "required": ["wait"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "screenshotCommand": {
+      "description": "スクリーンショットを保存",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "screenshot": {
+              "type": "string",
+              "description": "保存先のファイルパス"
+            }
+          },
+          "required": ["screenshot"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "screenshot": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "保存先のファイルパス"
+                },
+                "fullPage": {
+                  "type": "boolean",
+                  "description": "ページ全体のスクリーンショットを撮影",
+                  "default": false
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["screenshot"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "snapshotCommand": {
+      "description": "ページの構造をスナップショット",
+      "type": "object",
+      "properties": {
+        "snapshot": {
+          "type": "object",
+          "description": "引数なし（空オブジェクト）",
+          "additionalProperties": false
+        }
+      },
+      "required": ["snapshot"],
+      "additionalProperties": false
+    },
+    "evalCommand": {
+      "description": "JavaScriptを実行",
+      "type": "object",
+      "properties": {
+        "eval": {
+          "type": "string",
+          "description": "実行するJavaScriptコード"
+        }
+      },
+      "required": ["eval"],
+      "additionalProperties": false
+    },
+    "assertVisibleCommand": {
+      "description": "要素が表示されていることを確認",
+      "type": "object",
+      "properties": {
+        "assertVisible": {
+          "type": "string",
+          "description": "確認する要素のセレクタ"
+        }
+      },
+      "required": ["assertVisible"],
+      "additionalProperties": false
+    },
+    "assertNotVisibleCommand": {
+      "description": "要素が表示されていないことを確認",
+      "type": "object",
+      "properties": {
+        "assertNotVisible": {
+          "type": "string",
+          "description": "確認する要素のセレクタ"
+        }
+      },
+      "required": ["assertNotVisible"],
+      "additionalProperties": false
+    },
+    "assertEnabledCommand": {
+      "description": "要素が有効化されていることを確認",
+      "type": "object",
+      "properties": {
+        "assertEnabled": {
+          "type": "string",
+          "description": "確認する要素のセレクタ"
+        }
+      },
+      "required": ["assertEnabled"],
+      "additionalProperties": false
+    },
+    "assertCheckedCommand": {
+      "description": "チェックボックスがチェックされていることを確認",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "assertChecked": {
+              "type": "string",
+              "description": "確認する要素のセレクタ"
+            }
+          },
+          "required": ["assertChecked"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "assertChecked": {
+              "type": "object",
+              "properties": {
+                "selector": {
+                  "type": "string",
+                  "description": "確認する要素のセレクタ"
+                },
+                "checked": {
+                  "type": "boolean",
+                  "description": "期待されるチェック状態",
+                  "default": true
+                }
+              },
+              "required": ["selector"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["assertChecked"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
