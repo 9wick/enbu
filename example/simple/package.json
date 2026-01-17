@@ -7,8 +7,7 @@
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test": "start-server-and-test start http://localhost:3000 test:run",
-    "test:run": "agent-browser-flow flows/test.flow.yaml",
+    "test": "start-server-and-test start http://localhost:3000 test:e2e",
     "test:e2e": "agent-browser-flow flows/test.flow.yaml",
     "test:headed": "agent-browser-flow --headed flows/test.flow.yaml"
   },
