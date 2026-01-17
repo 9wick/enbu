@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フォーム要素テスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .checkbox-group,
+    .radio-group {
+      margin-top: 5px;
+    }
+    .checkbox-group label,
+    .radio-group label {
+      display: inline-block;
+      margin-right: 15px;
+      font-weight: normal;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>フォーム要素テスト</h1>
+
+  <form id="testForm">
+    <!-- テキスト入力 -->
+    <label for="username">
+      ユーザー名
+      <input type="text" id="username" name="username">
+    </label>
+
+    <!-- メールアドレス -->
+    <label for="email">
+      メールアドレス
+      <input type="email" id="email" name="email">
+    </label>
+
+    <!-- 数値入力 -->
+    <label for="age">
+      年齢
+      <input type="number" id="age" name="age" min="0" max="150">
+    </label>
+
+    <!-- チェックボックス -->
+    <label>趣味(複数選択可)</label>
+    <div class="checkbox-group">
+      <label>
+        <input type="checkbox" name="hobby" value="reading" id="hobbyReading">
+        読書
+      </label>
+      <label>
+        <input type="checkbox" name="hobby" value="sports" id="hobbySports">
+        スポーツ
+      </label>
+      <label>
+        <input type="checkbox" name="hobby" value="music" id="hobbyMusic" checked>
+        音楽
+      </label>
+    </div>
+
+    <!-- ラジオボタン -->
+    <label>性別</label>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="gender" value="male" id="genderMale">
+        男性
+      </label>
+      <label>
+        <input type="radio" name="gender" value="female" id="genderFemale">
+        女性
+      </label>
+      <label>
+        <input type="radio" name="gender" value="other" id="genderOther" checked>
+        その他
+      </label>
+    </div>
+
+    <!-- セレクトボックス -->
+    <label for="country">
+      国
+      <select id="country" name="country">
+        <option value="">選択してください</option>
+        <option value="jp">日本</option>
+        <option value="us">アメリカ</option>
+        <option value="uk">イギリス</option>
+      </select>
+    </label>
+
+    <!-- テキストエリア -->
+    <label for="bio">
+      自己紹介
+      <textarea id="bio" name="bio" rows="4"></textarea>
+    </label>
+
+    <button type="submit">送信</button>
+  </form>
+
+  <script>
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      console.log('フォーム送信');
+    });
+  </script>
+</body>
+</html>

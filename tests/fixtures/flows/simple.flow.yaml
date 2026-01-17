@@ -1,0 +1,15 @@
+# シンプルなフローファイル
+# ポート8080を使用（basic-flow.test.ts専用ポート）
+# テスト用HTTPサーバー（localhost:8080）が起動していることを前提とする
+
+# ステップ1: ページを開く
+- open: http://localhost:8080/login-form.html
+
+# ステップ2: タイトルの存在を確認
+- assertVisible: ログイン
+
+# ステップ3: メールアドレス入力フィールドの存在を確認
+- assertVisible: メールアドレス
+
+# ステップ4: スクリーンショットを撮影(オプション指定時のみ)
+- screenshot: login-page

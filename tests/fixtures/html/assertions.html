@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アサーションテスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    section {
+      margin-top: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>アサーションテスト</h1>
+
+  <section>
+    <h2>可視性テスト</h2>
+    <p id="visibleText">これは表示されています</p>
+    <p id="hiddenText" class="hidden">これは非表示です</p>
+  </section>
+
+  <section>
+    <h2>ボタン状態テスト</h2>
+    <button id="enabledButton">有効</button>
+    <button id="disabledButton" disabled>無効</button>
+  </section>
+
+  <section>
+    <h2>チェックボックステスト</h2>
+    <label>
+      <input type="checkbox" id="checkedBox" checked>
+      チェック済み
+    </label>
+    <label>
+      <input type="checkbox" id="uncheckedBox">
+      未チェック
+    </label>
+  </section>
+</body>
+</html>

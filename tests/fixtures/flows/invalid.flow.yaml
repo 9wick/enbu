@@ -1,0 +1,5 @@
+# 意図的に不正なYAML構文を含むファイル
+
+- open: http://localhost:8080/login-form.html
+- assertVisible: ログイン
+  - invalid: syntax error here  # インデントエラー

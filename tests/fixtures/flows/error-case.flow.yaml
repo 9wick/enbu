@@ -1,0 +1,8 @@
+# エラーケーステストフロー
+# ポート8083を使用（error-cases.test.ts専用ポート）
+
+# ページを開く
+- open: http://localhost:8083/assertions.html
+
+# 存在しない要素を検索(失敗すべき)
+- assertVisible: 存在しない要素

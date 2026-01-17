@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      # 1-5. Test ワークフローと同じ（チェックアウト～依存関係）
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 6. バージョン検証
+      - name: Verify version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+
+      # 7. ビルド
+      - name: Build
+        run: pnpm run build
+
+      # 8. テスト（統合テストのみ、E2Eはスキップして高速化）
+      - name: Run tests
+        run: pnpm run test:integration
+
+      # 9. npm公開
+      - name: Publish to npm
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # 10. GitHub Releaseの作成
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release ${{ github.ref }}
+
+            ## Installation
+            ```bash
+            npm install agent-browser-flow
+            ```
+
+            ## Changes
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+          draft: false
+          prerelease: false

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ボタンテスト</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>ボタンテスト</h1>
+
+  <section>
+    <h2>基本ボタン</h2>
+    <button id="enabledBtn">有効なボタン</button>
+    <button id="disabledBtn" disabled>無効なボタン</button>
+  </section>
+
+  <section>
+    <h2>カウンターボタン</h2>
+    <button id="counterBtn">クリック回数: 0</button>
+  </section>
+
+  <section>
+    <h2>状態変更ボタン</h2>
+    <button id="toggleBtn">クリックして無効化</button>
+  </section>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    // カウンターボタン
+    let count = 0;
+    document.getElementById('counterBtn').addEventListener('click', function() {
+      count++;
+      this.textContent = `クリック回数: ${count}`;
+      document.getElementById('result').textContent = `カウント: ${count}`;
+    });
+
+    // トグルボタン
+    document.getElementById('toggleBtn').addEventListener('click', function() {
+      this.disabled = true;
+      this.textContent = '無効化されました';
+    });
+  </script>
+</body>
+</html>

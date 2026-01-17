@@ -1,9 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'node:path';
 
+/**
+ * 統合テスト用のVitest設定
+ *
+ * tests/integration/ 配下のテストファイルを実行するための設定。
+ * エイリアスを設定して、@packages/* のモジュールを解決できるようにします。
+ */
 export default defineConfig({
   test: {
-    projects: ['apps/*', 'packages/*'],
+    include: ['tests/integration/**/*.test.ts'],
+    globals: true,
+    environment: 'node',
   },
   resolve: {
     alias: {

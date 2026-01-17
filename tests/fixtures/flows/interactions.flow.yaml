@@ -1,0 +1,29 @@
+# 操作テストフロー
+# ポート8082を使用（interactions.test.ts専用ポート）
+
+# ページを開く
+- open: http://localhost:8082/form-elements.html
+
+# テキスト入力
+- type:
+    selector: ユーザー名
+    text: テストユーザー
+
+# メールアドレス入力
+- type:
+    selector: メールアドレス
+    text: test@example.com
+
+# 年齢入力
+- fill:
+    selector: 年齢
+    value: 25
+
+# チェックボックスをクリック
+- click: 読書
+
+# チェックされたことを確認
+- assertChecked: 読書
+
+# ボタンをクリック
+- click: 送信
