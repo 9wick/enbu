@@ -767,10 +767,73 @@ export const normalizeAssertEnabledCommand = (value: unknown): AssertEnabledComm
 };
 
 /**
+ * AssertCheckedCommandを構築するヘルパー
+ *
+ * @param selector - セレクタ文字列
+ * @param checked - 期待されるチェック状態（オプショナル）
+ * @returns AssertCheckedCommand、またはcheckedが不正な型の場合null
+ */
+const buildAssertCheckedCommand = (
+  selector: string,
+  checked: unknown,
+): AssertCheckedCommand | null => {
+  // checkedが存在し、かつboolean以外の場合は不正
+  if (checked !== undefined && typeof checked !== 'boolean') {
+    return null;
+  }
+
+  const result: AssertCheckedCommand = { command: 'assertChecked', selector };
+  if (typeof checked === 'boolean') {
+    result.checked = checked;
+  }
+  return result;
+};
+
+/**
+ * 正規化済みAssertCheckedCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertCheckedCommand、または不正な場合null
+ */
+const checkNormalizedAssertChecked = (
+  obj: Record<string, unknown>,
+): AssertCheckedCommand | null => {
+  if (obj.command === 'assertChecked' && typeof obj.selector === 'string') {
+    return buildAssertCheckedCommand(obj.selector, obj.checked);
+  }
+  return null;
+};
+
+/**
+ * YAML簡略形式のAssertCheckedCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertCheckedCommand、または不正な場合null
+ */
+const checkYamlAssertChecked = (obj: Record<string, unknown>): AssertCheckedCommand | null => {
+  if (!hasYamlKey(obj, 'assertChecked')) {
+    return null;
+  }
+
+  // { assertChecked: 'セレクタ' }
+  if (typeof obj.assertChecked === 'string') {
+    return { command: 'assertChecked', selector: obj.assertChecked };
+  }
+
+  // { assertChecked: { selector: '...', checked?: boolean } }
+  const inner: Record<string, unknown> | null = toRecord(obj.assertChecked);
+  if (inner !== null && typeof inner.selector === 'string') {
+    return buildAssertCheckedCommand(inner.selector, inner.checked);
+  }
+
+  return null;
+};
+
+/**
  * AssertCheckedCommandを正規化
  *
- * 正規化済み形式: { command: 'assertChecked', selector: '...' }
- * YAML簡略形式: { assertChecked: '...' }
+ * 正規化済み形式: { command: 'assertChecked', selector: '...', checked?: boolean }
+ * YAML簡略形式: { assertChecked: '...' } または { assertChecked: { selector: '...', checked?: boolean } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたAssertCheckedCommand、または不正な場合null
@@ -781,15 +844,12 @@ export const normalizeAssertCheckedCommand = (value: unknown): AssertCheckedComm
     return null;
   }
 
-  if (obj.command === 'assertChecked' && typeof obj.selector === 'string') {
-    return { command: 'assertChecked', selector: obj.selector };
+  const normalized: AssertCheckedCommand | null = checkNormalizedAssertChecked(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'assertChecked') && typeof obj.assertChecked === 'string') {
-    return { command: 'assertChecked', selector: obj.assertChecked };
-  }
-
-  return null;
+  return checkYamlAssertChecked(obj);
 };
 
 /**

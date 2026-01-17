@@ -259,4 +259,198 @@ describe('parseFlowYaml', () => {
       },
     );
   });
+
+  /**
+   * YP-9: assertCheckedコマンドのcheckedフィールドをパースできる
+   *
+   * 前提条件: checked: falseを含むassertCheckedコマンド
+   * 検証項目:
+   * - ok(Flow) が返される
+   * - checkedフィールドがfalseとして正しくパースされる
+   */
+  it('YP-9: assertCheckedコマンドのcheckedフィールドを正しくパースできる', () => {
+    // Arrange: checked: falseを持つassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "チェックボックス"
+    checked: false
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked.flow.yaml');
+
+    // Assert
+    result.match(
+      (flow) => {
+        expect(flow.steps.length).toBe(1);
+        const command = flow.steps[0];
+        expect(command.command).toBe('assertChecked');
+        if (command.command === 'assertChecked') {
+          expect(command.selector).toBe('チェックボックス');
+          expect(command.checked).toBe(false);
+        }
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * YP-10: assertCheckedコマンドのcheckedフィールドがtrueの場合も正しくパースできる
+   *
+   * 前提条件: checked: trueを含むassertCheckedコマンド
+   * 検証項目:
+   * - ok(Flow) が返される
+   * - checkedフィールドがtrueとして正しくパースされる
+   */
+  it('YP-10: assertCheckedコマンドのcheckedフィールド(true)を正しくパースできる', () => {
+    // Arrange: checked: trueを持つassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "同意チェックボックス"
+    checked: true
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked-true.flow.yaml');
+
+    // Assert
+    result.match(
+      (flow) => {
+        expect(flow.steps.length).toBe(1);
+        const command = flow.steps[0];
+        expect(command.command).toBe('assertChecked');
+        if (command.command === 'assertChecked') {
+          expect(command.selector).toBe('同意チェックボックス');
+          expect(command.checked).toBe(true);
+        }
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * YP-11: assertCheckedコマンドでcheckedフィールドが省略された場合
+   *
+   * 前提条件: checkedフィールドが省略されたassertCheckedコマンド
+   * 検証項目:
+   * - ok(Flow) が返される
+   * - checkedフィールドがundefinedである
+   */
+  it('YP-11: assertCheckedコマンドでcheckedフィールドが省略された場合は正しくパースできる', () => {
+    // Arrange: checkedフィールドが省略されたassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "規約チェックボックス"
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked-omit.flow.yaml');
+
+    // Assert
+    result.match(
+      (flow) => {
+        expect(flow.steps.length).toBe(1);
+        const command = flow.steps[0];
+        expect(command.command).toBe('assertChecked');
+        if (command.command === 'assertChecked') {
+          expect(command.selector).toBe('規約チェックボックス');
+          expect(command.checked).toBeUndefined();
+        }
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * YP-12: assertCheckedコマンドでcheckedフィールドが文字列の場合はエラー
+   *
+   * 前提条件: checked: "yes"（文字列）を含むassertCheckedコマンド
+   * 検証項目:
+   * - err({ type: 'invalid_command', ... }) が返される
+   */
+  it('YP-12: assertCheckedコマンドでcheckedフィールドが文字列の場合はエラーを返す', () => {
+    // Arrange: checkedフィールドが文字列のassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "チェックボックス"
+    checked: "yes"
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked-invalid.flow.yaml');
+
+    // Assert
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('invalid_command');
+      },
+    );
+  });
+
+  /**
+   * YP-13: assertCheckedコマンドでcheckedフィールドが数値の場合はエラー
+   *
+   * 前提条件: checked: 1（数値）を含むassertCheckedコマンド
+   * 検証項目:
+   * - err({ type: 'invalid_command', ... }) が返される
+   */
+  it('YP-13: assertCheckedコマンドでcheckedフィールドが数値の場合はエラーを返す', () => {
+    // Arrange: checkedフィールドが数値のassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "チェックボックス"
+    checked: 1
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked-number.flow.yaml');
+
+    // Assert
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('invalid_command');
+      },
+    );
+  });
+
+  /**
+   * YP-14: assertCheckedコマンドでcheckedフィールドがnullの場合はエラー
+   *
+   * 前提条件: checked: null を含むassertCheckedコマンド
+   * 検証項目:
+   * - err({ type: 'invalid_command', ... }) が返される
+   */
+  it('YP-14: assertCheckedコマンドでcheckedフィールドがnullの場合はエラーを返す', () => {
+    // Arrange: checkedフィールドがnullのassertCheckedコマンド
+    const yamlContent = `
+- assertChecked:
+    selector: "チェックボックス"
+    checked: null
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'assert-checked-null.flow.yaml');
+
+    // Assert
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('invalid_command');
+      },
+    );
+  });
 });
