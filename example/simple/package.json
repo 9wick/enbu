@@ -7,7 +7,8 @@
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test": "agent-browser-flow flows/test.flow.yaml",
+    "test": "start-server-and-test start http://localhost:3000 test:run",
+    "test:run": "agent-browser-flow flows/test.flow.yaml",
     "test:headed": "agent-browser-flow --headed flows/test.flow.yaml"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.19.2",
     "agent-browser-flow": "workspace:*",
+    "start-server-and-test": "^2.0.9",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
