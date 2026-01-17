@@ -312,6 +312,16 @@ export default tseslint.config(
     },
   },
   /**
+   * example/ ディレクトリでは no-console を許可する。
+   * サンプルコードではデバッグ出力や動作確認のための console.log が有用なため。
+   */
+  {
+    files: ['example/**/*.{ts,tsx,js,mjs}'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  /**
    * E2Eテストではモックを禁止する。
    * E2Eテストは実際のシステム動作を検証するため、モックの使用は不適切。
    */
