@@ -1,3 +1,4 @@
 # YAMLの構文エラー（不正なタブ文字）
-- open: https://example.com
+steps:
+  - open: https://example.com
 	- click: "タブエラー"

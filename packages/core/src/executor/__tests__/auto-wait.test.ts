@@ -42,7 +42,7 @@ describe('autoWait', () => {
    * AW-1: 要素が最初のsnapshotで見つかる
    *
    * 前提条件: snapshot に "ログイン" が含まれる
-   * 検証項目: ok("Element found") が返される
+   * 検証項目: ok({ resolvedRef: '@e1' }) が返される
    */
   it('AW-1: 要素が最初のsnapshotで見つかる場合、すぐに成功を返す', async () => {
     // Arrange: snapshotが "ログイン" 要素を含む
@@ -65,10 +65,10 @@ describe('autoWait', () => {
     await vi.runAllTimersAsync();
     const result = await promise;
 
-    // Assert: 成功が返される
+    // Assert: 成功が返され、解決されたrefが含まれる
     expect(result.isOk()).toBe(true);
     result.match(
-      (message) => expect(message).toContain('found'),
+      (value) => expect(value?.resolvedRef).toBe('@e1'),
       () => {
         throw new Error('Expected ok result');
       },
@@ -154,16 +154,16 @@ describe('autoWait', () => {
    * AW-4: セレクタが undefined の場合
    *
    * 前提条件: selector が undefined
-   * 検証項目: ok("No selector to wait for") が返される
+   * 検証項目: ok(undefined) が返される（待機スキップ）
    */
   it('AW-4: セレクタがundefinedの場合、スキップして成功を返す', async () => {
     // Act: undefinedセレクタで待機
     const result = await autoWait(undefined, mockContext);
 
-    // Assert: スキップして成功が返される
+    // Assert: スキップして成功が返される（値はundefined）
     expect(result.isOk()).toBe(true);
     result.match(
-      (message) => expect(message).toContain('No selector'),
+      (value) => expect(value).toBeUndefined(),
       () => {
         throw new Error('Expected ok result');
       },

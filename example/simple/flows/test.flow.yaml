@@ -2,20 +2,24 @@
 # ポート3000を使用（example/simpleサーバー専用ポート）
 # テスト用HTTPサーバー（localhost:3000）が起動していることを前提とする
 
-# ステップ1: トップページを開く
-- open: http://localhost:3000
+env:
+  BASE_URL: http://localhost:3000
 
-# ステップ2: "Welcome"テキストの存在を確認
-- assertVisible: Welcome
+steps:
+  # ステップ1: トップページを開く
+  - open: ${BASE_URL}
 
-# ステップ3: ページ1へのリンクをクリック
-- click: ページ1へ移動
+  # ステップ2: "Welcome"テキストの存在を確認
+  - assertVisible: Welcome
 
-# ステップ4: "Page 1"テキストの存在を確認
-- assertVisible: Page 1
+  # ステップ3: ページ1へのリンクをクリック
+  - click: ページ1へ移動
 
-# ステップ5: ページ2へのリンクをクリック
-- click: ページ2へ移動
+  # ステップ4: "Page 1"テキストの存在を確認
+  - assertVisible: Page 1
 
-# ステップ6: "Page 2"テキストの存在を確認
-- assertVisible: Page 2
+  # ステップ5: ページ2へのリンクをクリック
+  - click: ページ2へ移動
+
+  # ステップ6: "Page 2"テキストの存在を確認
+  - assertVisible: Page 2

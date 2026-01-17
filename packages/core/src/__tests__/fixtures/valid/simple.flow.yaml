@@ -1,4 +1,5 @@
 # 基本的なフロー
-- open: https://example.com
-- click: "ログインボタン"
-- assertVisible: "ダッシュボード"
+steps:
+  - open: https://example.com
+  - click: "ログインボタン"
+  - assertVisible: "ダッシュボード"

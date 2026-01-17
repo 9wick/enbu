@@ -2,6 +2,19 @@
  * YAMLパーサー
  *
  * YAML形式のフロー定義をパースし、型安全なFlowオブジェクトに変換する。
+ *
+ * @remarks
+ * 新しいYAML形式のみをサポート：
+ * ```yaml
+ * env:
+ *   BASE_URL: http://localhost:3000
+ * steps:
+ *   - open: ${BASE_URL}
+ *   - assertVisible: Welcome
+ * ```
+ *
+ * - ルートはオブジェクト形式（`steps`キーは必須、`env`キーはオプション）
+ * - 旧形式（配列形式や`---`区切り）はサポートしない
  */
 
 import { Result, ok, err, fromThrowable } from 'neverthrow';
@@ -12,10 +25,13 @@ import { validateCommand } from './validators/command-validator';
 /**
  * YAMLパースをResult型でラップ
  *
- * fromThrowableのスコープは最小限（yaml.parseAllDocumentsのみ）
+ * fromThrowableのスコープは最小限（yaml.parseのみ）
+ *
+ * @remarks
+ * 新形式では単一ドキュメントのみをサポートするため、parseAllDocumentsではなくparseを使用
  */
 const safeYamlParse = fromThrowable(
-  (text: string) => yaml.parseAllDocuments(text),
+  (text: string) => yaml.parse(text),
   (error): ParseError => {
     if (error instanceof yaml.YAMLParseError) {
       return {
@@ -43,13 +59,55 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 /**
- * 値がenvセクションを含むオブジェクトかどうかを判定する型ガード
+ * ルートオブジェクトの構造を検証する
  *
- * @param value - 判定対象の値
- * @returns envセクションを持つオブジェクトの場合true
+ * @param root - パース済みのYAMLルートオブジェクト
+ * @returns 成功時: ルートオブジェクト、失敗時: ParseError
+ *
+ * @remarks
+ * - ルートが配列の場合: `invalid_flow_structure`エラー
+ * - ルートがオブジェクトでない場合: `invalid_flow_structure`エラー
+ * - `steps`キーがない場合: `invalid_flow_structure`エラー
+ * - `steps`が配列でない場合: `invalid_flow_structure`エラー
  */
-const hasEnvSection = (value: unknown): value is { env: unknown } => {
-  return typeof value === 'object' && value !== null && 'env' in value;
+const validateRootStructure = (root: unknown): Result<Record<string, unknown>, ParseError> => {
+  // ルートが配列の場合はエラー
+  if (Array.isArray(root)) {
+    return err({
+      type: 'invalid_flow_structure' as const,
+      message: "Flow must be an object with 'steps' key, not an array",
+      details: 'Array format is no longer supported. Use object format with steps key.',
+    });
+  }
+
+  // ルートがオブジェクトでない場合はエラー
+  if (!isRecord(root)) {
+    return err({
+      type: 'invalid_flow_structure' as const,
+      message: 'Flow must be an object',
+      details: 'Root must be an object with steps key',
+    });
+  }
+
+  // stepsキーがない場合はエラー
+  if (!('steps' in root)) {
+    return err({
+      type: 'invalid_flow_structure' as const,
+      message: "Missing required 'steps' key in flow",
+      details: 'Flow object must have a steps key containing an array of commands',
+    });
+  }
+
+  // stepsが配列でない場合はエラー
+  if (!Array.isArray(root.steps)) {
+    return err({
+      type: 'invalid_flow_structure' as const,
+      message: "'steps' must be an array",
+      details: 'The steps key must contain an array of command objects',
+    });
+  }
+
+  return ok(root);
 };
 
 /**
@@ -57,6 +115,10 @@ const hasEnvSection = (value: unknown): value is { env: unknown } => {
  *
  * @param envSection - envセクションのオブジェクト
  * @returns 環境変数マップ
+ *
+ * @remarks
+ * - 全ての値を文字列に変換
+ * - nullとundefinedは除外
  */
 const buildEnvMap = (envSection: Record<string, unknown>): Record<string, string> => {
   const env: Record<string, string> = {};
@@ -71,18 +133,21 @@ const buildEnvMap = (envSection: Record<string, unknown>): Record<string, string
 };
 
 /**
- * 最初のドキュメントからenv情報を抽出する
+ * ルートオブジェクトからenv情報を抽出する
  *
- * @param documents - YAMLドキュメント配列
+ * @param root - 検証済みのルートオブジェクト
  * @returns env情報
+ *
+ * @remarks
+ * - envキーがない場合: 空のオブジェクトを返す
+ * - envがオブジェクトでない場合: 空のオブジェクトを返す
  */
-const extractEnvFromDocument = (documents: yaml.Document.Parsed[]): FlowEnv => {
-  const envDoc = documents[0].toJSON();
-  if (!hasEnvSection(envDoc)) {
+const extractEnvFromRoot = (root: Record<string, unknown>): FlowEnv => {
+  if (!('env' in root)) {
     return {};
   }
 
-  const envSection = envDoc.env;
+  const envSection = root.env;
   if (!isRecord(envSection)) {
     return {};
   }
@@ -91,66 +156,17 @@ const extractEnvFromDocument = (documents: yaml.Document.Parsed[]): FlowEnv => {
 };
 
 /**
- * 最後のドキュメントからコマンド配列を抽出する
+ * ルートオブジェクトからsteps配列を抽出する
  *
- * @param documents - YAMLドキュメント配列
- * @returns コマンド配列
+ * @param root - 検証済みのルートオブジェクト
+ * @returns steps配列
+ *
+ * @remarks
+ * validateRootStructureで既に配列であることは検証済み
  */
-const extractCommandsFromDocument = (documents: yaml.Document.Parsed[]): unknown[] => {
-  const commandsDoc = documents[documents.length - 1].toJSON();
-  return Array.isArray(commandsDoc) ? commandsDoc : [];
-};
-
-/**
- * YAMLドキュメントの構文エラーをチェックする
- *
- * 各ドキュメントの errors 配列をチェックし、エラーがあれば yaml_syntax_error を返す。
- * yamlライブラリは構文エラーを throw せず、document.errors に格納する仕様のため、
- * この関数で明示的にチェックする必要がある。
- *
- * @param documents - YAMLドキュメント配列
- * @returns エラーがない場合: ok(documents)、エラーがある場合: err(ParseError)
- */
-const checkDocumentErrors = (
-  documents: yaml.Document.Parsed[],
-): Result<yaml.Document.Parsed[], ParseError> => {
-  for (const doc of documents) {
-    if (doc.errors.length > 0) {
-      const firstError = doc.errors[0];
-      return err({
-        type: 'yaml_syntax_error' as const,
-        message: firstError.message,
-        line: firstError.linePos?.[0]?.line,
-        column: firstError.linePos?.[0]?.col,
-      });
-    }
-  }
-  return ok(documents);
-};
-
-/**
- * YAMLドキュメントからenvとコマンド配列を抽出する
- *
- * 純粋関数として実装。
- * - ドキュメントが1つの場合: コマンド配列のみ
- * - ドキュメントが2つ以上の場合: 最初がenv、最後がコマンド配列
- */
-const extractEnvAndCommands = (
-  documents: yaml.Document.Parsed[],
-): { env: FlowEnv; commands: unknown[] } => {
-  // ドキュメントが1つの場合: コマンド配列のみ
-  if (documents.length === 1) {
-    return {
-      env: {},
-      commands: extractCommandsFromDocument(documents),
-    };
-  }
-
-  // ドキュメントが2つ以上の場合: 最初がenv、最後がコマンド配列
-  return {
-    env: extractEnvFromDocument(documents),
-    commands: extractCommandsFromDocument(documents),
-  };
+const extractStepsFromRoot = (root: Record<string, unknown>): unknown[] => {
+  const steps: unknown[] = Array.isArray(root.steps) ? root.steps : [];
+  return steps;
 };
 
 /**
@@ -233,18 +249,19 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  * @returns 成功時: Flowオブジェクト、失敗時: ParseError
  *
  * @remarks
- * - YAMLは `---` 区切りで複数ドキュメントに対応
- * - 最初のドキュメントは env セクション（オプション）
- * - 最後のドキュメントはコマンド配列
+ * 新しいYAML形式のみをサポート：
+ * - ルートはオブジェクト形式（`steps`キーは必須、`env`キーはオプション）
+ * - 旧形式（配列形式や`---`区切り）はサポートしない
  * - コマンドは型検証され、不正な形式はエラーとなる
  *
  * @example
+ * ```typescript
  * const yamlContent = `
  * env:
  *   BASE_URL: https://example.com
- * ---
- * - open: \${BASE_URL}
- * - click: "ログイン"
+ * steps:
+ *   - open: \${BASE_URL}
+ *   - click: "ログイン"
  * `;
  *
  * const result = parseFlowYaml(yamlContent, 'login.flow.yaml');
@@ -252,28 +269,23 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  *   (flow) => console.log(flow.steps),
  *   (error) => console.error(error)
  * );
+ * ```
  */
 export const parseFlowYaml = (yamlContent: string, fileName: string): Result<Flow, ParseError> => {
-  // 1. YAMLをパース
+  // 1. YAMLをパース（単一ドキュメント）
   return (
     safeYamlParse(yamlContent)
-      // 2. ドキュメントの構文エラーをチェック
-      .andThen(checkDocumentErrors)
-      .andThen((documents) => {
-        // 3. ドキュメント数の確認
-        if (documents.length === 0) {
-          return err({
-            type: 'invalid_flow_structure' as const,
-            message: 'YAML contains no documents',
-            details: 'Expected at least one document with command array',
-          });
-        }
+      // 2. ルート構造を検証（オブジェクト形式、stepsキー必須）
+      .andThen(validateRootStructure)
+      .andThen((root) => {
+        // 3. envセクションを抽出（オプション）
+        const env = extractEnvFromRoot(root);
 
-        // 4. envセクションとコマンド配列を抽出
-        const { env, commands } = extractEnvAndCommands(documents);
+        // 4. steps配列を抽出
+        const steps = extractStepsFromRoot(root);
 
-        // 5. コマンド配列の検証
-        return validateCommands(commands).map((validatedCommands) => {
+        // 5. steps配列の検証
+        return validateCommands(steps).map((validatedCommands) => {
           // 6. フロー名をファイル名から生成（拡張子を除去）
           const name = fileName.replace(/\.flow\.yaml$/, '');
 

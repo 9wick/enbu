@@ -91,9 +91,7 @@ export const handleFill = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('fill', [selector, command.value, '--json'], context.executeOptions)
-  )
+  return (await executeCommand('fill', [selector, command.value, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .map((output) => ({
       stdout: JSON.stringify(output),

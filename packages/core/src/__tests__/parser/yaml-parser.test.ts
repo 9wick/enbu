@@ -132,8 +132,9 @@ describe('parseFlowYaml', () => {
   it('YP-4: 簡略形式のコマンドが正規化される', () => {
     // Arrange
     const yamlContent = `
-- click: "ログインボタン"
-- open: https://example.com
+steps:
+  - click: "ログインボタン"
+  - open: https://example.com
 `;
 
     // Act
@@ -245,7 +246,7 @@ describe('parseFlowYaml', () => {
    */
   it('YP-8: 空のコマンド配列でinvalid_flow_structureを返す', () => {
     // Arrange
-    const yamlContent = '[]';
+    const yamlContent = 'steps: []';
 
     // Act
     const result = parseFlowYaml(yamlContent, 'empty.flow.yaml');
@@ -272,9 +273,10 @@ describe('parseFlowYaml', () => {
   it('YP-9: assertCheckedコマンドのcheckedフィールドを正しくパースできる', () => {
     // Arrange: checked: falseを持つassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "チェックボックス"
-    checked: false
+steps:
+  - assertChecked:
+      selector: "チェックボックス"
+      checked: false
 `;
 
     // Act
@@ -308,9 +310,10 @@ describe('parseFlowYaml', () => {
   it('YP-10: assertCheckedコマンドのcheckedフィールド(true)を正しくパースできる', () => {
     // Arrange: checked: trueを持つassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "同意チェックボックス"
-    checked: true
+steps:
+  - assertChecked:
+      selector: "同意チェックボックス"
+      checked: true
 `;
 
     // Act
@@ -344,8 +347,9 @@ describe('parseFlowYaml', () => {
   it('YP-11: assertCheckedコマンドでcheckedフィールドが省略された場合は正しくパースできる', () => {
     // Arrange: checkedフィールドが省略されたassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "規約チェックボックス"
+steps:
+  - assertChecked:
+      selector: "規約チェックボックス"
 `;
 
     // Act
@@ -378,9 +382,10 @@ describe('parseFlowYaml', () => {
   it('YP-12: assertCheckedコマンドでcheckedフィールドが文字列の場合はエラーを返す', () => {
     // Arrange: checkedフィールドが文字列のassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "チェックボックス"
-    checked: "yes"
+steps:
+  - assertChecked:
+      selector: "チェックボックス"
+      checked: "yes"
 `;
 
     // Act
@@ -407,9 +412,10 @@ describe('parseFlowYaml', () => {
   it('YP-13: assertCheckedコマンドでcheckedフィールドが数値の場合はエラーを返す', () => {
     // Arrange: checkedフィールドが数値のassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "チェックボックス"
-    checked: 1
+steps:
+  - assertChecked:
+      selector: "チェックボックス"
+      checked: 1
 `;
 
     // Act
@@ -436,9 +442,10 @@ describe('parseFlowYaml', () => {
   it('YP-14: assertCheckedコマンドでcheckedフィールドがnullの場合はエラーを返す', () => {
     // Arrange: checkedフィールドがnullのassertCheckedコマンド
     const yamlContent = `
-- assertChecked:
-    selector: "チェックボックス"
-    checked: null
+steps:
+  - assertChecked:
+      selector: "チェックボックス"
+      checked: null
 `;
 
     // Act
@@ -451,6 +458,64 @@ describe('parseFlowYaml', () => {
       },
       (error) => {
         expect(error.type).toBe('invalid_command');
+      },
+    );
+  });
+
+  /**
+   * YP-15: 旧形式（配列形式）はエラーを返す
+   *
+   * 前提条件: ルートが配列形式のYAML
+   * 検証項目:
+   * - err({ type: 'invalid_flow_structure', ... }) が返される
+   * - エラーメッセージに「配列形式はサポートされていない」旨が含まれる
+   */
+  it('YP-15: 旧形式（配列形式）はinvalid_flow_structureを返す', () => {
+    // Arrange: 旧形式の配列形式
+    const yamlContent = `
+- open: https://example.com
+- click: "ボタン"
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'old-format.flow.yaml');
+
+    // Assert
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('invalid_flow_structure');
+        expect(error.message).toContain('not an array');
+      },
+    );
+  });
+
+  /**
+   * YP-16: stepsが配列でない場合はエラーを返す
+   *
+   * 前提条件: stepsが文字列のYAML
+   * 検証項目:
+   * - err({ type: 'invalid_flow_structure', ... }) が返される
+   */
+  it('YP-16: stepsが配列でない場合はinvalid_flow_structureを返す', () => {
+    // Arrange: stepsが文字列
+    const yamlContent = `
+steps: "not an array"
+`;
+
+    // Act
+    const result = parseFlowYaml(yamlContent, 'invalid-steps.flow.yaml');
+
+    // Assert
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('invalid_flow_structure');
+        expect(error.message).toContain('must be an array');
       },
     );
   });

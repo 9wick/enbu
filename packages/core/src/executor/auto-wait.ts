@@ -81,7 +81,9 @@ export const autoWait = async (
     const foundRefId = findMatchingRefId(selector, refs);
     if (foundRefId) {
       const resolvedRef = `@${foundRefId}`;
-      debugLog(`poll #${pollCount}: element found! refId=${foundRefId}, resolvedRef=${resolvedRef}`);
+      debugLog(
+        `poll #${pollCount}: element found! refId=${foundRefId}, resolvedRef=${resolvedRef}`,
+      );
       return ok({ resolvedRef });
     }
 

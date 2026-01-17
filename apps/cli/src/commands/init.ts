@@ -10,9 +10,10 @@ const ABFLOW_DIR = '.abflow';
 
 /** サンプルフローファイルの内容 */
 const SAMPLE_FLOW_YAML = `# agent-browser-flowのサンプルフロー
-- open: https://example.com
-- click: "More information..."
-- assertVisible: "Example Domain"
+steps:
+  - open: https://example.com
+  - click: "More information..."
+  - assertVisible: "Example Domain"
 `;
 
 /**

@@ -36,8 +36,9 @@ describe('loadFlows', () => {
   it('FL-1: 単一ファイルを正しく読み込める', async () => {
     // Arrange: 1つの有効なフローファイルを作成
     const yamlContent = `
-- open: https://example.com
-- click: "ボタン"
+steps:
+  - open: https://example.com
+  - click: "ボタン"
 `;
     await writeFile(join(TEST_DIR, 'test.flow.yaml'), yamlContent);
 
@@ -74,9 +75,9 @@ describe('loadFlows', () => {
    */
   it('FL-2: 複数ファイルを正しく読み込める', async () => {
     // Arrange: 3つの有効なフローファイルを作成
-    await writeFile(join(TEST_DIR, 'flow1.flow.yaml'), '- open: https://example1.com');
-    await writeFile(join(TEST_DIR, 'flow2.flow.yaml'), '- open: https://example2.com');
-    await writeFile(join(TEST_DIR, 'flow3.flow.yaml'), '- open: https://example3.com');
+    await writeFile(join(TEST_DIR, 'flow1.flow.yaml'), 'steps:\n  - open: https://example1.com');
+    await writeFile(join(TEST_DIR, 'flow2.flow.yaml'), 'steps:\n  - open: https://example2.com');
+    await writeFile(join(TEST_DIR, 'flow3.flow.yaml'), 'steps:\n  - open: https://example3.com');
 
     // Act: loadFlowsを実行
     const result = await loadFlows(TEST_DIR);
@@ -105,9 +106,9 @@ describe('loadFlows', () => {
    */
   it('FL-3: ファイル名順にソートされる', async () => {
     // Arrange: アルファベット順でない順序でファイルを作成
-    await writeFile(join(TEST_DIR, 'c.flow.yaml'), '- open: https://c.example.com');
-    await writeFile(join(TEST_DIR, 'a.flow.yaml'), '- open: https://a.example.com');
-    await writeFile(join(TEST_DIR, 'b.flow.yaml'), '- open: https://b.example.com');
+    await writeFile(join(TEST_DIR, 'c.flow.yaml'), 'steps:\n  - open: https://c.example.com');
+    await writeFile(join(TEST_DIR, 'a.flow.yaml'), 'steps:\n  - open: https://a.example.com');
+    await writeFile(join(TEST_DIR, 'b.flow.yaml'), 'steps:\n  - open: https://b.example.com');
 
     // Act: loadFlowsを実行
     const result = await loadFlows(TEST_DIR);
@@ -133,7 +134,7 @@ describe('loadFlows', () => {
    */
   it('FL-4: .envファイルの値が使用される', async () => {
     // Arrange: 環境変数を使用するフローファイルと.envファイルを作成
-    const yamlContent = '- open: ${BASE_URL}';
+    const yamlContent = 'steps:\n  - open: ${BASE_URL}';
     const envContent = 'BASE_URL=https://from-dotenv.com';
 
     await writeFile(join(TEST_DIR, 'test.flow.yaml'), yamlContent);
@@ -220,8 +221,8 @@ describe('loadFlows', () => {
    */
   it('FL-7: パースエラーのあるファイルでエラーを返す', async () => {
     // Arrange: 有効なファイルと無効なファイルを作成
-    await writeFile(join(TEST_DIR, 'valid.flow.yaml'), '- open: https://example.com');
-    await writeFile(join(TEST_DIR, 'invalid.flow.yaml'), '- invalidCommand: "テスト"');
+    await writeFile(join(TEST_DIR, 'valid.flow.yaml'), 'steps:\n  - open: https://example.com');
+    await writeFile(join(TEST_DIR, 'invalid.flow.yaml'), 'steps:\n  - invalidCommand: "テスト"');
 
     // Act: loadFlowsを実行
     const result = await loadFlows(TEST_DIR);

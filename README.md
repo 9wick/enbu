@@ -42,16 +42,17 @@ npx agent-browser-flow init
 
 ```yaml
 # ログインフローのテスト
-- open: https://example.com/login
-- click: "ログイン"
-- type:
-    selector: "メールアドレス"
-    text: "user@example.com"
-- type:
-    selector: "パスワード"
-    text: "password123"
-- click: "送信"
-- assertVisible: "ダッシュボード"
+steps:
+  - open: https://example.com/login
+  - click: "ログイン"
+  - type:
+      selector: "メールアドレス"
+      text: "user@example.com"
+  - type:
+      selector: "パスワード"
+      text: "password123"
+  - click: "送信"
+  - assertVisible: "ダッシュボード"
 ```
 
 ### 3. テストの実行
@@ -69,48 +70,54 @@ npx agent-browser-flow .abflow/login.flow.yaml
 ### ページを開く
 
 ```yaml
-- open: https://example.com
+steps:
+  - open: https://example.com
 ```
 
 ### クリック
 
 ```yaml
-# セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
-- click: "ログイン"
+steps:
+  # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
+  - click: "ログイン"
 
-# CSSセレクタ
-- click:
-    selector: "#submit-button"
+  # CSSセレクタ
+  - click:
+      selector: "#submit-button"
 ```
 
 ### テキスト入力
 
 ```yaml
-- type:
-    selector: "ユーザー名"
-    text: "山田太郎"
+steps:
+  - type:
+      selector: "ユーザー名"
+      text: "山田太郎"
 ```
 
 ### アサーション
 
 ```yaml
-# 要素が表示されていることを確認
-- assertVisible: "ログイン成功"
+steps:
+  # 要素が表示されていることを確認
+  - assertVisible: "ログイン成功"
 
-# 要素が表示されていないことを確認
-- assertNotVisible: "エラー"
+  # 要素が表示されていないことを確認
+  - assertNotVisible: "エラー"
 ```
 
 ### スクリーンショット
 
 ```yaml
-- screenshot: ./screenshots/result.png
+steps:
+  - screenshot: ./screenshots/result.png
 ```
 
 ### スナップショット（デバッグ用）
 
 ```yaml
-- snapshot
+steps:
+  - snapshot
 ```
 
 現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
@@ -118,12 +125,13 @@ npx agent-browser-flow .abflow/login.flow.yaml
 ### JavaScript実行
 
 ```yaml
-- eval: "document.title"
+steps:
+  - eval: "document.title"
 
-# 複数行
-- eval: |
-    const element = document.querySelector('#result');
-    return element.textContent;
+  # 複数行
+  - eval: |
+      const element = document.querySelector('#result');
+      return element.textContent;
 ```
 
 ## 環境変数
@@ -131,9 +139,10 @@ npx agent-browser-flow .abflow/login.flow.yaml
 フロー内で環境変数を使用できます：
 
 ```yaml
-- type:
-    selector: "パスワード"
-    text: ${PASSWORD}
+steps:
+  - type:
+      selector: "パスワード"
+      text: ${PASSWORD}
 ```
 
 ### 環境変数の指定方法
@@ -150,8 +159,8 @@ npx agent-browser-flow --env PASSWORD=secret123
 ```yaml
 env:
   BASE_URL: https://staging.example.com
----
-- open: ${BASE_URL}/login
+steps:
+  - open: ${BASE_URL}/login
 ```
 
 ## CLI オプション

@@ -1,26 +1,27 @@
 # 全てのMVPコマンドを含むフロー
-- open: https://example.com
-- click: "ボタン"
-- type:
-    selector: "検索欄"
-    text: "検索キーワード"
-- fill:
-    selector: "パスワード"
-    text: "secret123"
-- press: Enter
-- hover: "メニュー"
-- select:
-    selector: "国選択"
-    value: "日本"
-- scroll:
-    direction: down
-    amount: 500
-- scrollIntoView: "フッター"
-- wait: 1000
-- screenshot: ./result.png
-- snapshot: {}
-- eval: "document.title"
-- assertVisible: "完了"
-- assertNotVisible: "エラーメッセージ"
-- assertEnabled: "送信ボタン"
-- assertChecked: "同意チェックボックス"
+steps:
+  - open: https://example.com
+  - click: "ボタン"
+  - type:
+      selector: "検索欄"
+      text: "検索キーワード"
+  - fill:
+      selector: "パスワード"
+      text: "secret123"
+  - press: Enter
+  - hover: "メニュー"
+  - select:
+      selector: "国選択"
+      value: "日本"
+  - scroll:
+      direction: down
+      amount: 500
+  - scrollIntoView: "フッター"
+  - wait: 1000
+  - screenshot: ./result.png
+  - snapshot: {}
+  - eval: "document.title"
+  - assertVisible: "完了"
+  - assertNotVisible: "エラーメッセージ"
+  - assertEnabled: "送信ボタン"
+  - assertChecked: "同意チェックボックス"
