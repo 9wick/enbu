@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runFlowCommand } from '../../commands/run';
 import { OutputFormatter } from '../../output/formatter';
-import { checkAgentBrowser } from '@packages/agent-browser-adapter';
+import { checkAgentBrowser, closeSession } from '@packages/agent-browser-adapter';
 import { executeFlow, parseFlowYaml } from '@packages/core';
 import { ok, err } from 'neverthrow';
 import type { Flow, FlowResult } from '@packages/core';
@@ -42,6 +42,7 @@ describe('runFlowCommand', () => {
 
     // デフォルトのモック動作
     vi.mocked(checkAgentBrowser).mockResolvedValue(ok('agent-browser is installed') as never);
+    vi.mocked(closeSession).mockResolvedValue(ok(undefined) as never);
   });
 
   /**
@@ -139,6 +140,7 @@ describe('runFlowCommand', () => {
 
     const mockFlowResult: FlowResult = {
       flow: mockFlow,
+      sessionName: 'test-session',
       status: 'passed',
       duration: 1500,
       steps: [
@@ -203,6 +205,7 @@ describe('runFlowCommand', () => {
 
     const mockFlowResult: FlowResult = {
       flow: mockFlow,
+      sessionName: 'test-session',
       status: 'failed',
       duration: 2000,
       steps: [
@@ -281,6 +284,7 @@ describe('runFlowCommand', () => {
 
     const mockFlowResult1: FlowResult = {
       flow: mockFlow1,
+      sessionName: 'test-session',
       status: 'passed',
       duration: 1500,
       steps: [
@@ -295,6 +299,7 @@ describe('runFlowCommand', () => {
 
     const mockFlowResult2: FlowResult = {
       flow: mockFlow2,
+      sessionName: 'test-session',
       status: 'failed',
       duration: 2000,
       steps: [
@@ -375,6 +380,7 @@ describe('runFlowCommand', () => {
 
     const mockFlowResult1: FlowResult = {
       flow: mockFlow1,
+      sessionName: 'test-session',
       status: 'failed',
       duration: 2000,
       steps: [
@@ -432,5 +438,206 @@ describe('runFlowCommand', () => {
         throw new Error('Expected ok result');
       },
     );
+  });
+
+  /**
+   * R-7: 正常終了時にcloseSessionが呼ばれる
+   *
+   * 前提条件: フローが正常に実行される（status: 'passed'）
+   * 検証項目: closeSessionが正しいsessionNameで呼び出されること
+   */
+  it('R-7: 正常終了時にcloseSessionが呼ばれる', async () => {
+    // Arrange
+    const mockFlow: Flow = {
+      name: 'ログイン',
+      steps: [{ command: 'open', url: 'https://example.com' }],
+      env: {},
+    };
+
+    const mockFlowResult: FlowResult = {
+      flow: mockFlow,
+      sessionName: 'test-session-123',
+      status: 'passed',
+      duration: 1500,
+      steps: [
+        {
+          index: 0,
+          command: mockFlow.steps[0],
+          status: 'passed',
+          duration: 1500,
+        },
+      ],
+    };
+
+    const { readFile } = await import('node:fs/promises');
+    vi.mocked(readFile).mockResolvedValue(
+      `name: ログイン\ndescription: ログインフロー\nsteps:\n  - command: open\n    url: https://example.com` as never,
+    );
+
+    vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
+    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+
+    // Act
+    await runFlowCommand(
+      {
+        files: ['login.flow.yaml'],
+        headed: false,
+        env: {},
+        timeout: 30000,
+        screenshot: false,
+        bail: false,
+        verbose: false,
+      },
+      formatter,
+    );
+
+    // Assert
+    // closeSessionが呼び出されたことを確認
+    // sessionNameは動的に生成されるため、パターンマッチで確認
+    expect(vi.mocked(closeSession)).toHaveBeenCalledTimes(1);
+    const sessionName = vi.mocked(closeSession).mock.calls[0][0];
+    expect(sessionName).toMatch(/^abf-ログイン-\d+$/);
+  });
+
+  /**
+   * R-8: 失敗終了時にデバッグ案内が表示される
+   *
+   * 前提条件: フローが失敗する（status: 'failed'）
+   * 検証項目:
+   * - closeSessionが呼ばれないこと
+   * - formatter.infoが「💡 Debug:」で呼ばれること
+   * - formatter.indentが「npx agent-browser snapshot --session xxx」で呼ばれること
+   */
+  it('R-8: 失敗終了時にデバッグ案内が表示される', async () => {
+    // Arrange
+    const mockFlow: Flow = {
+      name: 'ログイン',
+      steps: [{ command: 'click', selector: 'NotExist' }],
+      env: {},
+    };
+
+    const mockFlowResult: FlowResult = {
+      flow: mockFlow,
+      sessionName: 'test-session-456',
+      status: 'failed',
+      duration: 2000,
+      steps: [
+        {
+          index: 0,
+          command: mockFlow.steps[0],
+          status: 'failed',
+          duration: 2000,
+          error: {
+            message: 'Element not found',
+            type: 'command_failed',
+          },
+        },
+      ],
+      error: {
+        message: 'Element not found',
+        stepIndex: 0,
+      },
+    };
+
+    const { readFile } = await import('node:fs/promises');
+    vi.mocked(readFile).mockResolvedValue(
+      `name: ログイン\ndescription: ログインフロー\nsteps:\n  - command: click\n    selector: NotExist` as never,
+    );
+
+    vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
+    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+
+    // Act
+    await runFlowCommand(
+      {
+        files: ['login.flow.yaml'],
+        headed: false,
+        env: {},
+        timeout: 30000,
+        screenshot: false,
+        bail: false,
+        verbose: false,
+      },
+      formatter,
+    );
+
+    // Assert
+    // closeSessionが呼ばれないことを確認
+    expect(vi.mocked(closeSession)).not.toHaveBeenCalled();
+
+    // デバッグ案内が表示されることを確認
+    expect(vi.mocked(formatter.info)).toHaveBeenCalledWith(
+      '💡 Debug: To inspect the browser state, run:',
+    );
+    // sessionNameは動的に生成されるため、パターンマッチで確認
+    const indentCalls = vi.mocked(formatter.indent).mock.calls;
+    const debugCommand = indentCalls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].startsWith('npx agent-browser snapshot --session abf-ログイン-') &&
+        call[1] === 1,
+    );
+    expect(debugCommand).toBeDefined();
+  });
+
+  /**
+   * R-9: 異常終了時（エラー）にデバッグ案内が表示されない
+   *
+   * 前提条件: executeFlowがerrを返す（初期化エラーなど）
+   * 検証項目:
+   * - closeSessionが呼ばれないこと
+   * - デバッグ案内が表示されないこと（セッションが作成されていない可能性があるため）
+   */
+  it('R-9: 異常終了時（エラー）にデバッグ案内が表示されない', async () => {
+    // Arrange
+    const mockFlow: Flow = {
+      name: 'ログイン',
+      steps: [{ command: 'open', url: 'https://example.com' }],
+      env: {},
+    };
+
+    const { readFile } = await import('node:fs/promises');
+    vi.mocked(readFile).mockResolvedValue(
+      `name: ログイン\ndescription: ログインフロー\nsteps:\n  - command: open\n    url: https://example.com` as never,
+    );
+
+    vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
+    // executeFlowがエラーを返すようにモック（初期化エラーなど）
+    vi.mocked(executeFlow).mockResolvedValue(
+      err({
+        type: 'command_failed',
+        command: 'open',
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Browser launch failed',
+        errorMessage: 'Browser launch failed',
+      }) as never,
+    );
+
+    // Act
+    await runFlowCommand(
+      {
+        files: ['login.flow.yaml'],
+        headed: false,
+        env: {},
+        timeout: 30000,
+        screenshot: false,
+        bail: false,
+        verbose: false,
+      },
+      formatter,
+    );
+
+    // Assert
+    // closeSessionが呼ばれないことを確認
+    expect(vi.mocked(closeSession)).not.toHaveBeenCalled();
+
+    // executeFlowがerrを返した場合、セッションが作成されていない可能性があるため
+    // デバッグ案内は表示されないことを確認
+    const infoCalls = vi.mocked(formatter.info).mock.calls;
+    const debugInfo = infoCalls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('💡 Debug:'),
+    );
+    expect(debugInfo).toBeUndefined();
   });
 });

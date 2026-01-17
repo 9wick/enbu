@@ -72,6 +72,8 @@ export type StepResult = {
 export type FlowResult = {
   /** 実行したフロー */
   flow: Flow;
+  /** セッション名 */
+  sessionName: string;
   /** 全体の実行ステータス */
   status: 'passed' | 'failed';
   /** 全体の実行時間（ミリ秒） */

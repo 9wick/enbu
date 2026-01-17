@@ -11,7 +11,11 @@ import { readFile } from 'node:fs/promises';
 import { glob } from 'glob';
 import type { CliError, FlowExecutionResult } from '../types';
 import type { OutputFormatter } from '../output/formatter';
-import { checkAgentBrowser, type AgentBrowserError } from '@packages/agent-browser-adapter';
+import {
+  checkAgentBrowser,
+  closeSession,
+  type AgentBrowserError,
+} from '@packages/agent-browser-adapter';
 import { parseFlowYaml, type Flow, executeFlow, type FlowResult } from '@packages/core';
 
 /**
@@ -232,15 +236,14 @@ const formatCommandDescription = (command: Flow['steps'][number]): string => {
  *
  * @param flow - 実行するフロー
  * @param args - 実行オプション
+ * @param sessionName - セッション名
  * @returns 成功時: FlowResult、失敗時: CliError
  */
 const executeFlowWithProgress = async (
   flow: Flow,
   args: RunCommandArgs,
+  sessionName: string,
 ): Promise<Result<FlowResult, CliError>> => {
-  // セッション名を生成（指定がない場合）
-  const sessionName = args.session ?? `abf-${Date.now()}`;
-
   // フロー実行
   const executeResult = await executeFlow(flow, {
     sessionName,
@@ -346,26 +349,43 @@ const executeAllFlows = async (
 
     const flowStartTime = Date.now();
 
-    // フロー実行
-    const executeResult = await executeFlowWithProgress(flow, args);
+    // セッション名を生成
+    // args.sessionが指定されている場合でも、各フローごとにユニークなセッション名を生成する
+    // これにより、複数フロー実行時に最初のフローがセッションをクローズしても
+    // 2番目以降のフローが影響を受けないようにする
+    const sessionName = `abf-${args.session || flow.name}-${Date.now()}`;
 
-    executeResult.match(
-      (result) => {
+    // フロー実行
+    const executeResult = await executeFlowWithProgress(flow, args, sessionName);
+
+    await executeResult.match(
+      async (result) => {
         displayFlowResult(flow, result, formatter, args.verbose);
 
         if (result.status === 'passed') {
           passed++;
+          // 正常終了時はセッションをクローズ
+          const closeResult = await closeSession(sessionName);
+          closeResult.mapErr((error) => {
+            formatter.debug(`Failed to close session: ${error.type}`);
+          });
         } else {
           failed++;
+          // 失敗時はデバッグ案内を表示
+          formatter.info('💡 Debug: To inspect the browser state, run:');
+          formatter.indent(`npx agent-browser snapshot --session ${sessionName}`, 1);
         }
       },
-      (error) => {
+      async (error) => {
         failed++;
         const duration = Date.now() - flowStartTime;
         formatter.newline();
         formatter.failure(`FAILED: ${flow.name}.flow.yaml`, duration);
         formatter.indent(error.message, 1);
         formatter.newline();
+        // executeFlowWithProgressがerrを返した場合、初期化エラーなどで
+        // セッションが作成されていない可能性があるため、デバッグ案内は表示しない
+        // （result.status === 'failed'の場合のみセッションが確実に存在する）
       },
     );
 

@@ -355,4 +355,85 @@ describe('executeFlow', () => {
       },
     );
   });
+
+  /**
+   * FE-10: FlowResultにsessionNameが含まれる（成功時）
+   *
+   * 前提条件: 正常に実行されるフロー
+   * 検証項目: FlowResult.sessionName が options.sessionName と一致すること
+   */
+  it('FE-10: FlowResultにsessionNameが含まれる（成功時）', async () => {
+    // Arrange
+    const flow: Flow = {
+      name: 'テストフロー',
+      env: {},
+      steps: [{ command: 'open', url: 'https://example.com' }],
+    };
+
+    const options: FlowExecutionOptions = {
+      sessionName: 'test-session-success',
+    };
+
+    vi.mocked(executeCommand).mockResolvedValueOnce(
+      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
+    );
+
+    // Act
+    const result = await executeFlow(flow, options);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (flowResult) => {
+        expect(flowResult.status).toBe('passed');
+        expect(flowResult.sessionName).toBe('test-session-success');
+        expect(flowResult.sessionName).toBe(options.sessionName);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * FE-11: FlowResultにsessionNameが含まれる（失敗時）
+   *
+   * 前提条件: agent-browserが未インストールでコマンドが失敗
+   * 検証項目: FlowResult.sessionName が options.sessionName と一致すること（status: 'failed' でも）
+   */
+  it('FE-11: FlowResultにsessionNameが含まれる（失敗時）', async () => {
+    // Arrange
+    const flow: Flow = {
+      name: 'テストフロー',
+      env: {},
+      steps: [{ command: 'open', url: 'https://example.com' }],
+    };
+
+    const options: FlowExecutionOptions = {
+      sessionName: 'test-session-failure',
+    };
+
+    vi.mocked(executeCommand).mockResolvedValueOnce(
+      err({ type: 'not_installed', message: 'agent-browser not found' }),
+    );
+
+    // Act
+    const result = await executeFlow(flow, options);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (flowResult) => {
+        expect(flowResult.status).toBe('failed');
+        expect(flowResult.sessionName).toBe('test-session-failure');
+        expect(flowResult.sessionName).toBe(options.sessionName);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
 });

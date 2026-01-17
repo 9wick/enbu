@@ -22,6 +22,7 @@ const debugLog = (msg: string, ...args: unknown[]) => {
  * 失敗したフロー結果を構築する
  *
  * @param expandedFlow - 環境変数が展開されたフロー定義
+ * @param sessionName - セッション名
  * @param duration - 全体の実行時間（ミリ秒）
  * @param steps - 実行済みのステップ結果の配列
  * @param firstFailureStep - 最初に失敗したステップの結果
@@ -30,6 +31,7 @@ const debugLog = (msg: string, ...args: unknown[]) => {
  */
 const buildFailedFlowResult = (
   expandedFlow: Flow,
+  sessionName: string,
   duration: number,
   steps: StepResult[],
   firstFailureStep: StepResult,
@@ -37,6 +39,7 @@ const buildFailedFlowResult = (
 ): FlowResult => {
   return {
     flow: expandedFlow,
+    sessionName,
     status: 'failed',
     duration,
     steps,
@@ -52,17 +55,20 @@ const buildFailedFlowResult = (
  * 成功したフロー結果を構築する
  *
  * @param expandedFlow - 環境変数が展開されたフロー定義
+ * @param sessionName - セッション名
  * @param duration - 全体の実行時間（ミリ秒）
  * @param steps - 実行済みのステップ結果の配列
  * @returns 成功したフロー結果
  */
 const buildSuccessFlowResult = (
   expandedFlow: Flow,
+  sessionName: string,
   duration: number,
   steps: StepResult[],
 ): FlowResult => {
   return {
     flow: expandedFlow,
+    sessionName,
     status: 'passed',
     duration,
     steps,
@@ -143,7 +149,16 @@ const executeAllSteps = async (
           steps,
           hasFailure,
           firstFailureIndex,
-          earlyResult: ok(buildFailedFlowResult(expandedFlow, duration, steps, stepResult, i)),
+          earlyResult: ok(
+            buildFailedFlowResult(
+              expandedFlow,
+              context.sessionName,
+              duration,
+              steps,
+              stepResult,
+              i,
+            ),
+          ),
         };
       }
     }
@@ -223,9 +238,16 @@ export const executeFlow = async (
   if (hasFailure) {
     const firstFailureStep = steps[firstFailureIndex];
     return ok(
-      buildFailedFlowResult(expandedFlow, duration, steps, firstFailureStep, firstFailureIndex),
+      buildFailedFlowResult(
+        expandedFlow,
+        context.sessionName,
+        duration,
+        steps,
+        firstFailureStep,
+        firstFailureIndex,
+      ),
     );
   }
 
-  return ok(buildSuccessFlowResult(expandedFlow, duration, steps));
+  return ok(buildSuccessFlowResult(expandedFlow, context.sessionName, duration, steps));
 };

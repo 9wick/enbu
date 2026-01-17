@@ -8,6 +8,7 @@
 export { checkAgentBrowser } from './check';
 export { executeCommand } from './executor';
 export { parseJsonOutput, parseSnapshotRefs } from './parser';
+export { closeSession } from './session';
 
 // 型
 export type {
