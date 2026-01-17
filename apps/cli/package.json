@@ -20,7 +20,9 @@
     "start": "node ./dist/main.mjs"
   },
   "dependencies": {
+    "@packages/agent-browser-adapter": "workspace:*",
     "@packages/core": "workspace:*",
+    "glob": "^11.0.0",
     "neverthrow": "^8.2.0"
   },
   "devDependencies": {

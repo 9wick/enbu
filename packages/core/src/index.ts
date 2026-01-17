@@ -1,7 +1,7 @@
 /**
  * @packages/core
  *
- * フロー定義の型システム、パーサー、ローダーを提供する。
+ * フロー定義の型システム、パーサー、ローダー、実行エンジンを提供する。
  */
 
 // 型
@@ -28,6 +28,10 @@ export type {
   ParseError,
 } from './types';
 
+// Executor型
+export type { FlowResult, StepResult, FlowExecutionOptions, ExecutionErrorType } from './executor';
+
 // 関数
 export { parseFlowYaml, resolveEnvVariables } from './parser';
 export { loadFlows } from './loader';
+export { executeFlow } from './executor';

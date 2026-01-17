@@ -1,22 +1,82 @@
-/**
- * agent-browser-flow CLI エントリーポイント
- */
+#!/usr/bin/env node
+
+import { parseArgs } from './args-parser';
+import { runInitCommand } from './commands/init';
+import { runFlowCommand } from './commands/run';
+import { showHelp, OutputFormatter } from './output/formatter';
+import { EXIT_CODE, exitWithCode } from './output/exit-code';
 
 /**
- * 標準出力への書き込み
- * CLIでの出力用。no-consoleルールの代替として使用する。
- * @param message 出力するメッセージ
+ * CLIエントリポイント
+ *
+ * コマンドライン引数をパースし、適切なコマンドを実行する。
+ * 実行結果に基づいて終了コードを設定する。
  */
-function print(message: string): void {
-  process.stdout.write(`${message}\n`);
-}
+const main = async (): Promise<void> => {
+  // 引数パース
+  const argsResult = parseArgs(process.argv.slice(2));
 
-/**
- * メイン関数
- * CLIの起動処理を行う
- */
-function main(): void {
-  print('agent-browser-flow CLI started');
-}
+  // neverthrowのmatchパターンで処理する
+  await argsResult.match(
+    async (args) => {
+      // 引数のパースに成功した場合
 
+      // ヘルプ表示
+      if (args.help) {
+        showHelp();
+        exitWithCode(EXIT_CODE.SUCCESS);
+      }
+
+      // コマンド実行
+      if (args.command === 'init') {
+        const result = await runInitCommand({
+          force: args.force,
+          verbose: args.verbose,
+        });
+
+        result.match(
+          () => exitWithCode(EXIT_CODE.SUCCESS),
+          (error) => {
+            process.stderr.write(`Error: ${error.message}\n`);
+            exitWithCode(EXIT_CODE.EXECUTION_ERROR);
+          },
+        );
+      } else {
+        const formatter = new OutputFormatter(args.verbose);
+        const result = await runFlowCommand(
+          {
+            files: args.files,
+            headed: args.headed,
+            env: args.env,
+            timeout: args.timeout,
+            screenshot: args.screenshot,
+            bail: args.bail,
+            session: args.session,
+            verbose: args.verbose,
+          },
+          formatter,
+        );
+
+        result.match(
+          (executionResult) => {
+            const exitCode = executionResult.failed > 0 ? EXIT_CODE.FLOW_FAILED : EXIT_CODE.SUCCESS;
+            exitWithCode(exitCode);
+          },
+          (error) => {
+            process.stderr.write(`Error: ${error.message}\n`);
+            exitWithCode(EXIT_CODE.EXECUTION_ERROR);
+          },
+        );
+      }
+    },
+    (error) => {
+      // 引数のパースに失敗した場合
+      process.stderr.write(`Error: ${error.message}\n`);
+      process.stderr.write('Try: npx agent-browser-flow --help\n');
+      exitWithCode(EXIT_CODE.EXECUTION_ERROR);
+    },
+  );
+};
+
+// エントリポイント実行
 main();
