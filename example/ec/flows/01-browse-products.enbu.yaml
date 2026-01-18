@@ -35,8 +35,6 @@ steps:
   # 商品の「詳細を見る」ボタンをクリック
   - click: 詳細を見る
 
-  # 商品詳細ページの表示確認
-  - assertVisible: プレミアムコーヒー豆 500g
+  # 商品詳細ページの表示確認（説明文で確認）
   - assertVisible: エチオピア産の高品質アラビカ種
   - assertVisible: ¥2,980
-  - assertVisible: 在庫

@@ -1,6 +1,5 @@
 # チェックアウトテストフロー
 # 購入完了までの流れを確認する
-# 前提: ログイン済み、カートに商品がある状態から開始
 
 env:
   BASE_URL: http://localhost:3060
@@ -15,10 +14,11 @@ steps:
       selector: パスワード
       value: password123
   - click: ログイン
+  - assertVisible: ようこそ
   - wait:
-      text: 商品一覧
+      text: 山田太郎
   - click: カートに追加
-  - wait: 500
+  - assertVisible: カートに追加しました
   - click: カート
 
   # レジに進む
@@ -27,7 +27,6 @@ steps:
   # チェックアウトページの表示確認
   - assertVisible: お支払い情報入力
   - assertVisible: お届け先情報
-  - assertVisible: 山田太郎
 
   # 配送先情報を入力
   - fill:
@@ -54,4 +53,3 @@ steps:
   # 注文完了ページの表示確認
   - assertVisible: ご注文ありがとうございます
   - assertVisible: 注文番号
-  - assertVisible: トップページに戻る

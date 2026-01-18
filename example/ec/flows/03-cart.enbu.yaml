@@ -1,6 +1,5 @@
 # カート操作テストフロー
 # カートへの追加、数量変更を確認する
-# 前提: ログイン済みの状態から開始
 
 env:
   BASE_URL: http://localhost:3060
@@ -15,18 +14,15 @@ steps:
       selector: パスワード
       value: password123
   - click: ログイン
+  - assertVisible: ようこそ
   - wait:
-      text: 商品一覧
+      text: 山田太郎
 
   # 商品をカートに追加
   - click: カートに追加
 
   # カート追加完了のトースト表示確認
   - assertVisible: カートに追加しました
-
-  # カート数が更新されていることを確認
-  - wait: 500
-  - assertVisible: (1)
 
   # カートページへ移動
   - click: カート

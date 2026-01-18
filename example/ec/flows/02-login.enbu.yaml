@@ -8,9 +8,9 @@ steps:
   # ログインページへ移動
   - open: ${BASE_URL}/login.html
 
-  # ログインフォームの表示確認
-  - assertVisible: ログイン
+  # ログインフォームの表示確認（テスト用アカウント情報で確認）
   - assertVisible: テスト用アカウント
+  - assertVisible: メールアドレス
 
   # メールアドレスを入力
   - fill:
@@ -22,7 +22,7 @@ steps:
       selector: パスワード
       value: password123
 
-  # ログインボタンをクリック
+  # ログインボタンをクリック（type=submitのボタン）
   - click: ログイン
 
   # ログイン成功メッセージの表示確認
