@@ -32,3 +32,6 @@ coverage
 
 # ESLint cache
 .eslintcache
+
+# Test screenshots (keep .gitkeep)
+**/screenshots/*.png
