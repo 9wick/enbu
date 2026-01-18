@@ -9,6 +9,19 @@ import * as vscode from 'vscode';
 import { getStepLineNumbers } from '@packages/core';
 import { FlowRunner } from './flowRunner';
 import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from './types';
+import {
+  extractStepLabel,
+  collectItemsFromInclude,
+  collectAllItems,
+  filterExcludedItems,
+  handleStepStart,
+  handleStepComplete,
+  handleFlowComplete,
+  handleCancellation,
+  validateFlowTestParams,
+  handleValidationError,
+  enqueueSteps,
+} from './testControllerUtils';
 
 /**
  * ファイルTestItemに紐づくステップTestItemの配列を保持するWeakMap
@@ -163,78 +176,27 @@ const updateTestItemSteps = async (
   fileStepItems.set(fileItem, stepItems);
 };
 
-/**
- * YAML行からステップのラベルを抽出する
- *
- * @param lineText - 行のテキスト
- * @param index - ステップインデックス
- * @returns ステップのラベル
- */
-const extractStepLabel = (lineText: string, index: number): string => {
-  // "- action:" のような形式からactionを抽出
-  const match = lineText.match(/^\s*-\s*(\w+):/);
-  if (match?.[1]) {
-    return `Step ${index + 1}: ${match[1]}`;
-  }
-  return `Step ${index + 1}`;
-};
 
 /**
- * request.includeから実行対象のファイルTestItemを収集する
+ * request.includeからVSCode TestItemを収集する
  *
- * ステップが選択された場合は親ファイルを実行対象とする。
+ * collectItemsFromIncludeのVSCode固有ラッパー。
+ * 親アイテムもvscode.TestItem型であることが実行時に保証されているため、
+ * 型ガードでフィルタリングして正しい型を返す。
  *
  * @param include - 実行対象として指定されたTestItem配列
  * @returns 実行対象のファイルTestItem配列
  */
-const collectItemsFromInclude = (include: readonly vscode.TestItem[]): vscode.TestItem[] => {
-  const itemsToRun: vscode.TestItem[] = [];
-
-  for (const item of include) {
-    // ステップが選択された場合は親ファイルを実行
-    if (item.parent) {
-      const parentNotAdded = !itemsToRun.some((i) => i.id === item.parent?.id);
-      if (parentNotAdded && item.parent) {
-        itemsToRun.push(item.parent);
-      }
-    } else {
-      itemsToRun.push(item);
-    }
-  }
-
-  return itemsToRun;
-};
-
-/**
- * controller.itemsから全てのTestItemを収集する
- *
- * @param controller - TestController
- * @returns 全てのTestItem配列
- */
-const collectAllItems = (controller: vscode.TestController): vscode.TestItem[] => {
-  const items: vscode.TestItem[] = [];
-  controller.items.forEach((item) => {
-    items.push(item);
-  });
-  return items;
-};
-
-/**
- * 除外リストに含まれないアイテムをフィルタする
- *
- * @param items - フィルタ対象のTestItem配列
- * @param exclude - 除外するTestItem配列（undefined可）
- * @returns フィルタ後のTestItem配列
- */
-const filterExcludedItems = (
-  items: vscode.TestItem[],
-  exclude: readonly vscode.TestItem[] | undefined,
+const collectVscodeItemsFromInclude = (
+  include: readonly vscode.TestItem[],
 ): vscode.TestItem[] => {
-  if (!exclude) {
-    return items;
-  }
-
-  return items.filter((item) => !exclude.some((excluded) => excluded.id === item.id));
+  const items = collectItemsFromInclude(include);
+  // 実行時にはすべてvscode.TestItemであることが保証されている
+  // idとlabelプロパティの存在で型ガードを行う
+  return items.filter(
+    (item): item is vscode.TestItem =>
+      typeof item.id === 'string' && typeof item.label === 'string',
+  );
 };
 
 /**
@@ -255,7 +217,7 @@ const runHandler = async (
 
   // 実行対象のTestItemを取得
   const itemsToRun = request.include
-    ? collectItemsFromInclude(request.include)
+    ? collectVscodeItemsFromInclude(request.include)
     : collectAllItems(controller);
 
   // 除外されたアイテムをフィルタ
@@ -273,69 +235,41 @@ const runHandler = async (
 };
 
 /**
- * ステップ開始イベントを処理する
+ * TestMessageを作成するヘルパー関数
  *
- * @param run - TestRun
- * @param stepItems - ステップTestItem配列
- * @param message - ステップ開始メッセージ
+ * @param text - メッセージテキスト
+ * @returns TestMessage
  */
-const handleStepStart = (
-  run: vscode.TestRun,
-  stepItems: vscode.TestItem[],
-  message: StepStartMessage,
-): void => {
-  const stepItem = stepItems[message.stepIndex];
-  if (stepItem) {
-    run.started(stepItem);
-  }
-};
+const createTestMessage = (text: string): vscode.TestMessage => new vscode.TestMessage(text);
 
 /**
- * ステップ完了イベントを処理する
+ * rangeがvscode.Rangeかどうかを判定する型ガード
  *
- * @param run - TestRun
- * @param stepItems - ステップTestItem配列
- * @param message - ステップ完了メッセージ
+ * @param range - 判定対象
+ * @returns vscode.Rangeの場合true
  */
-const handleStepComplete = (
-  run: vscode.TestRun,
-  stepItems: vscode.TestItem[],
-  message: StepCompleteMessage,
-): void => {
-  const stepItem = stepItems[message.stepIndex];
-  if (!stepItem) {
-    return;
-  }
-
-  if (message.status === 'passed') {
-    run.passed(stepItem, message.duration);
-    return;
-  }
-
-  const testMessage = new vscode.TestMessage(message.error ?? 'ステップが失敗しました');
-  if (stepItem.uri && stepItem.range) {
-    testMessage.location = new vscode.Location(stepItem.uri, stepItem.range);
-  }
-  run.failed(stepItem, testMessage, message.duration);
-};
+const isVscodeRange = (range: unknown): range is vscode.Range =>
+  range !== null &&
+  typeof range === 'object' &&
+  'start' in range &&
+  'end' in range;
 
 /**
- * フロー完了イベントを処理する
+ * TestMessageにLocationを設定するヘルパー関数
  *
- * @param run - TestRun
- * @param fileItem - ファイルTestItem
- * @param message - フロー完了メッセージ
+ * @param message - TestMessage
+ * @param uri - ファイルURI
+ * @param range - 範囲
  */
-const handleFlowComplete = (
-  run: vscode.TestRun,
-  fileItem: vscode.TestItem,
-  message: FlowCompleteMessage,
+const setMessageLocation = (
+  message: vscode.TestMessage,
+  uri: { fsPath: string },
+  range: unknown,
 ): void => {
-  if (message.status === 'passed') {
-    run.passed(fileItem, message.duration);
-  } else {
-    run.failed(fileItem, new vscode.TestMessage('フローが失敗しました'), message.duration);
+  if (!isVscodeRange(range)) {
+    return;
   }
+  message.location = new vscode.Location(vscode.Uri.file(uri.fsPath), range);
 };
 
 /**
@@ -357,59 +291,16 @@ const setupRunnerEventListeners = (
   });
 
   runner.on('step:complete', (message: StepCompleteMessage) => {
-    handleStepComplete(run, stepItems, message);
+    handleStepComplete(run, stepItems, message, createTestMessage, setMessageLocation);
   });
 
   runner.on('flow:complete', (message: FlowCompleteMessage) => {
-    handleFlowComplete(run, fileItem, message);
+    handleFlowComplete(run, fileItem, message, createTestMessage);
   });
 
   runner.on('error', (error: Error) => {
-    run.errored(fileItem, new vscode.TestMessage(error.message));
+    run.errored(fileItem, createTestMessage(error.message));
   });
-};
-
-/**
- * キャンセル時の処理を行う
- *
- * @param run - TestRun
- * @param fileItem - ファイルTestItem
- * @param stepItems - ステップTestItem配列
- */
-const handleCancellation = (
-  run: vscode.TestRun,
-  fileItem: vscode.TestItem,
-  stepItems: vscode.TestItem[],
-): void => {
-  run.skipped(fileItem);
-  for (const stepItem of stepItems) {
-    run.skipped(stepItem);
-  }
-};
-
-/**
- * フロー実行に必要なパラメータを検証して取得する
- *
- * @param fileItem - ファイルTestItem
- * @returns 検証結果（成功時はパラメータ、失敗時はエラーメッセージ）
- */
-const validateFlowTestParams = (
-  fileItem: vscode.TestItem,
-): { ok: true; filePath: string; workspaceRoot: string } | { ok: false; error: string } => {
-  if (!fileItem.uri) {
-    return { ok: false, error: 'skip' };
-  }
-
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileItem.uri);
-  if (!workspaceFolder) {
-    return { ok: false, error: 'ワークスペースフォルダが見つかりません' };
-  }
-
-  return {
-    ok: true,
-    filePath: fileItem.uri.fsPath,
-    workspaceRoot: workspaceFolder.uri.fsPath,
-  };
 };
 
 /**
@@ -436,34 +327,19 @@ const executeFlowRunner = async (
 };
 
 /**
- * 検証失敗時の処理を行う
+ * ワークスペースフォルダを取得するヘルパー関数
  *
- * @param run - TestRun
- * @param fileItem - ファイルTestItem
- * @param error - エラーメッセージ
+ * @param uri - ファイルURI
+ * @returns ワークスペースフォルダ（見つからない場合はundefined）
  */
-const handleValidationError = (
-  run: vscode.TestRun,
-  fileItem: vscode.TestItem,
-  error: string,
-): void => {
-  if (error === 'skip') {
-    run.skipped(fileItem);
-  } else {
-    run.errored(fileItem, new vscode.TestMessage(error));
+const getWorkspaceFolder = (
+  uri: { fsPath: string },
+): { uri: { fsPath: string } } | undefined => {
+  const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(uri.fsPath));
+  if (!folder) {
+    return undefined;
   }
-};
-
-/**
- * ステップをenqueued状態に設定する
- *
- * @param run - TestRun
- * @param stepItems - ステップTestItem配列
- */
-const enqueueSteps = (run: vscode.TestRun, stepItems: vscode.TestItem[]): void => {
-  for (const stepItem of stepItems) {
-    run.enqueued(stepItem);
-  }
+  return { uri: { fsPath: folder.uri.fsPath } };
 };
 
 /**
@@ -478,10 +354,10 @@ const runFlowTest = async (
   fileItem: vscode.TestItem,
   token: vscode.CancellationToken,
 ): Promise<void> => {
-  const params = validateFlowTestParams(fileItem);
+  const params = validateFlowTestParams(fileItem, getWorkspaceFolder);
 
   if (!params.ok) {
-    handleValidationError(run, fileItem, params.error);
+    handleValidationError(run, fileItem, params.error, createTestMessage);
     return;
   }
 
@@ -500,6 +376,6 @@ const runFlowTest = async (
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    run.errored(fileItem, new vscode.TestMessage(message));
+    run.errored(fileItem, createTestMessage(message));
   }
 };
