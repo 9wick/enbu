@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品詳細 - オンラインショップ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; }
+    header a { color: white; text-decoration: none; }
+    nav { display: flex; gap: 1rem; }
+    nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+    .cart-link { background: #e74c3c; }
+    main { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    .breadcrumb { margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3498db; text-decoration: none; }
+    .breadcrumb span { color: #666; margin: 0 0.5rem; }
+    .product-detail { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    @media (max-width: 600px) { .product-detail { grid-template-columns: 1fr; } }
+    .product-image-container { background: #f9f9f9; padding: 2rem; display: flex; align-items: center; justify-content: center; }
+    .product-image { max-width: 100%; height: auto; max-height: 300px; }
+    .product-info { padding: 2rem; }
+    .product-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; }
+    .product-price { color: #e74c3c; font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
+    .product-description { color: #666; line-height: 1.8; margin-bottom: 1.5rem; }
+    .product-stock { margin-bottom: 1.5rem; padding: 0.75rem; background: #e8f5e9; border-radius: 4px; color: #27ae60; }
+    .product-stock.low { background: #fff3e0; color: #e67e22; }
+    .product-stock.out { background: #ffebee; color: #e74c3c; }
+    .quantity-selector { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .quantity-selector label { font-weight: bold; }
+    .quantity-selector select { padding: 0.5rem 1rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; }
+    .btn { padding: 1rem 2rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+    .btn-success { background: #27ae60; color: white; width: 100%; }
+    .btn-success:hover { background: #229954; }
+    .btn-success:disabled { background: #bdc3c7; cursor: not-allowed; }
+    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: #27ae60; color: white; border-radius: 4px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; }
+    .loading { text-align: center; padding: 4rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="index.html">オンラインショップ</a></h1>
+    <nav>
+      <a href="cart.html" class="cart-link">カート (<span id="cart-count">0</span>)</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="breadcrumb">
+      <a href="index.html">トップ</a>
+      <span>></span>
+      <span id="breadcrumb-name">商品詳細</span>
+    </div>
+
+    <div id="product-container">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let sessionId = localStorage.getItem('sessionId');
+    let product = null;
+
+    /** セッションヘッダー付きfetch */
+    function fetchWithSession(url, options = {}) {
+      const headers = { ...options.headers };
+      if (sessionId) {
+        headers['X-Session-Id'] = sessionId;
+      }
+      return fetch(url, { ...options, headers });
+    }
+
+    /** トースト表示 */
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    /** 商品詳細を取得して表示 */
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
+
+      if (!productId) {
+        document.getElementById('product-container').innerHTML = '<p>商品IDが指定されていません</p>';
+        return;
+      }
+
+      try {
+        const response = await fetchWithSession(`/api/products/${productId}`);
+        if (!response.ok) {
+          document.getElementById('product-container').innerHTML = '<p>商品が見つかりません</p>';
+          return;
+        }
+
+        product = await response.json();
+        renderProduct(product);
+        document.getElementById('breadcrumb-name').textContent = product.name;
+        document.title = `${product.name} - オンラインショップ`;
+
+      } catch (error) {
+        document.getElementById('product-container').innerHTML = '<p>エラーが発生しました</p>';
+      }
+    }
+
+    /** 商品を描画 */
+    function renderProduct(product) {
+      const stockClass = product.stock === 0 ? 'out' : product.stock < 10 ? 'low' : '';
+      const stockText = product.stock === 0 ? '在庫切れ' : `在庫: ${product.stock}点`;
+
+      // 数量選択のオプションを生成（最大10個または在庫数のいずれか小さい方）
+      const maxQty = Math.min(10, product.stock);
+      const qtyOptions = Array.from({ length: maxQty }, (_, i) =>
+        `<option value="${i + 1}">${i + 1}</option>`
+      ).join('');
+
+      document.getElementById('product-container').innerHTML = `
+        <div class="product-detail">
+          <div class="product-image-container">
+            <img src="${product.image}" alt="${product.name}" class="product-image">
+          </div>
+          <div class="product-info">
+            <h2 class="product-name">${product.name}</h2>
+            <div class="product-price">¥${product.price.toLocaleString()}</div>
+            <p class="product-description">${product.description}</p>
+            <div class="product-stock ${stockClass}">${stockText}</div>
+            ${product.stock > 0 ? `
+              <div class="quantity-selector">
+                <label for="quantity">数量:</label>
+                <select id="quantity">${qtyOptions}</select>
+              </div>
+              <button class="btn btn-success" onclick="addToCart()">カートに追加</button>
+            ` : `
+              <button class="btn btn-success" disabled>在庫切れ</button>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    /** カートに追加 */
+    async function addToCart() {
+      const quantity = parseInt(document.getElementById('quantity').value, 10);
+
+      const response = await fetchWithSession('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id, quantity })
+      });
+
+      if (response.ok) {
+        showToast(`${product.name}をカートに追加しました`);
+        updateCartCount();
+      } else {
+        const error = await response.json();
+        showToast(error.error || 'エラーが発生しました');
+      }
+    }
+
+    /** カート数を更新 */
+    async function updateCartCount() {
+      const response = await fetchWithSession('/api/cart');
+      const cart = await response.json();
+      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      document.getElementById('cart-count').textContent = count;
+    }
+
+    // 初期化
+    loadProduct();
+    updateCartCount();
+  </script>
+</body>
+</html>
