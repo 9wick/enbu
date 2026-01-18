@@ -16,4 +16,4 @@ fi
 log "Remote session detected, setup repository..."
 
 pnpm install
-pnpm agent-browser install
+pnpm agent-browser install --with-deps
