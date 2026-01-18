@@ -70,6 +70,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -107,6 +108,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -171,6 +173,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -244,6 +247,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -346,6 +350,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -419,6 +424,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: true, // bail フラグ
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -487,6 +493,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -557,6 +564,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );
@@ -624,6 +632,7 @@ describe('runFlowCommand', () => {
         screenshot: false,
         bail: false,
         verbose: false,
+        progressJson: false,
       },
       formatter,
     );

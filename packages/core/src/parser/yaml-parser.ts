@@ -271,6 +271,114 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  * );
  * ```
  */
+/**
+ * YAMLコンテンツから行開始位置の配列を計算する
+ *
+ * @param content - YAMLコンテンツ
+ * @returns 各行の開始オフセット（0始まり）の配列
+ */
+const calculateLineStarts = (content: string): number[] => {
+  const lineStarts: number[] = [0];
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === '\n') {
+      lineStarts.push(i + 1);
+    }
+  }
+  return lineStarts;
+};
+
+/**
+ * オフセットから行番号を計算する
+ *
+ * @param offset - 文字位置のオフセット
+ * @param lineStarts - 各行の開始位置配列
+ * @returns 1始まりの行番号
+ */
+const offsetToLineNumber = (offset: number, lineStarts: number[]): number => {
+  for (let i = lineStarts.length - 1; i >= 0; i--) {
+    if (lineStarts[i] <= offset) {
+      return i + 1;
+    }
+  }
+  return 1;
+};
+
+/**
+ * stepsシーケンスノードから各ステップの行番号を抽出する
+ *
+ * @param stepsNode - YAMLのsteps配列ノード
+ * @param lineStarts - 各行の開始位置配列
+ * @returns 各ステップの行番号配列（1始まり）
+ */
+const extractLineNumbersFromSteps = (stepsNode: yaml.YAMLSeq, lineStarts: number[]): number[] => {
+  const lineNumbers: number[] = [];
+  for (const item of stepsNode.items) {
+    if (yaml.isNode(item) && item.range) {
+      const startOffset = item.range[0];
+      lineNumbers.push(offsetToLineNumber(startOffset, lineStarts));
+    }
+  }
+  return lineNumbers;
+};
+
+/**
+ * YAMLドキュメントを安全にパースする
+ */
+const safeParseDocument = fromThrowable(
+  (text: string) => yaml.parseDocument(text),
+  (error): ParseError => ({
+    type: 'yaml_syntax_error' as const,
+    message: error instanceof Error ? error.message : 'Unknown YAML parse error',
+  }),
+);
+
+/**
+ * YAMLテキスト内の各ステップの行番号を取得する
+ *
+ * VS Code拡張などで、実行中のステップをハイライト表示するために使用する。
+ * yaml.parseDocument()を使用してCST情報を保持し、
+ * 各ステップの開始行番号を抽出する。
+ *
+ * @param yamlContent - YAMLファイルの内容
+ * @returns 成功時: 各ステップの行番号配列（1始まり）、失敗時: ParseError
+ *
+ * @example
+ * ```typescript
+ * const yamlContent = `
+ * steps:
+ *   - open: https://example.com
+ *   - click: button
+ * `;
+ * const result = getStepLineNumbers(yamlContent);
+ * // result.value = [3, 4] (0始まりのインデックスに対応する1始まりの行番号)
+ * ```
+ */
+export const getStepLineNumbers = (yamlContent: string): Result<number[], ParseError> => {
+  return safeParseDocument(yamlContent).andThen((doc) => {
+    const contents = doc.contents;
+    if (!yaml.isMap(contents)) {
+      return err({
+        type: 'invalid_flow_structure' as const,
+        message: 'Root must be an object',
+        details: 'Expected object with steps key',
+      });
+    }
+
+    const stepsNode = contents.get('steps', true);
+    if (!yaml.isSeq(stepsNode)) {
+      return err({
+        type: 'invalid_flow_structure' as const,
+        message: "'steps' must be an array",
+        details: 'The steps key must contain an array of command objects',
+      });
+    }
+
+    const lineStarts = calculateLineStarts(yamlContent);
+    const lineNumbers = extractLineNumbersFromSteps(stepsNode, lineStarts);
+    return ok(lineNumbers);
+  });
+};
+
 export const parseFlowYaml = (yamlContent: string, fileName: string): Result<Flow, ParseError> => {
   // 1. YAMLをパース（単一ドキュメント）
   return (

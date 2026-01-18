@@ -57,6 +57,7 @@ const main = async (): Promise<void> => {
             bail: args.bail,
             session: args.session,
             verbose: args.verbose,
+            progressJson: args.progressJson,
           },
           formatter,
         );

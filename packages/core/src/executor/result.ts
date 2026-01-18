@@ -18,6 +18,28 @@ export type ExecutionErrorType =
   | 'validation_error'; // バリデーションエラー
 
 /**
+ * ステップ進捗コールバックに渡される情報
+ */
+export type StepProgress = {
+  /** ステップのインデックス（0始まり） */
+  stepIndex: number;
+  /** 全ステップ数 */
+  stepTotal: number;
+  /** 進捗ステータス */
+  status: 'started' | 'completed';
+  /** ステップ結果（completedの場合のみ） */
+  stepResult?: StepResult;
+};
+
+/**
+ * ステップ進捗コールバック関数の型
+ *
+ * 各ステップの開始時・完了時に呼び出されるコールバック。
+ * リアルタイムな進捗表示（VS Code拡張など）で使用する。
+ */
+export type StepProgressCallback = (progress: StepProgress) => void | Promise<void>;
+
+/**
  * フロー実行時のオプション
  */
 export type FlowExecutionOptions = {
@@ -39,6 +61,8 @@ export type FlowExecutionOptions = {
   screenshot?: boolean;
   /** エラー時に即座に停止するか（デフォルト: true） */
   bail?: boolean;
+  /** ステップ進捗コールバック（各ステップの開始・完了時に呼び出される） */
+  onStepProgress?: StepProgressCallback;
 };
 
 /**

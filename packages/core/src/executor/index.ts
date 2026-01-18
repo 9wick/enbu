@@ -13,4 +13,6 @@ export type {
   StepResult,
   FlowExecutionOptions,
   ExecutionErrorType,
+  StepProgress,
+  StepProgressCallback,
 } from './result';

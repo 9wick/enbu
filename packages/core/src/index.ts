@@ -29,9 +29,16 @@ export type {
 } from './types';
 
 // Executor型
-export type { FlowResult, StepResult, FlowExecutionOptions, ExecutionErrorType } from './executor';
+export type {
+  FlowResult,
+  StepResult,
+  FlowExecutionOptions,
+  ExecutionErrorType,
+  StepProgress,
+  StepProgressCallback,
+} from './executor';
 
 // 関数
-export { parseFlowYaml, resolveEnvVariables } from './parser';
+export { parseFlowYaml, resolveEnvVariables, getStepLineNumbers } from './parser';
 export { loadFlows } from './loader';
 export { executeFlow } from './executor';

@@ -41,6 +41,8 @@ export type ParsedArgs = {
       bail: boolean;
       /** agent-browserのセッション名（省略可） */
       session?: string;
+      /** 進捗をJSON形式で出力するか（VS Code拡張など外部ツール連携用） */
+      progressJson: boolean;
     }
 );
 
