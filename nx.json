@@ -61,5 +61,32 @@
   "tui": {
     "enabled": false,
     "autoExit": true
+  },
+  "release": {
+    "projects": ["cli"],
+    "projectsRelationship": "fixed",
+    "version": {
+      "preVersionCommand": "pnpm nx run-many -t build -p cli",
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk"
+    },
+    "changelog": {
+      "automaticFromRef": true,
+      "projectChangelogs": {
+        "file": "{projectRoot}/CHANGELOG.md",
+        "renderOptions": {
+          "authors": false,
+          "commitReferences": true,
+          "versionTitleDate": true
+        }
+      },
+      "workspaceChangelog": false
+    },
+    "releaseTagPattern": "v{version}",
+    "git": {
+      "commit": true,
+      "commitMessage": "chore(release): {version}",
+      "tag": true
+    }
   }
 }
