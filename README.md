@@ -280,13 +280,13 @@ jobs:
 
 | agent-browser | 対応 | YAML記法 |
 |---------------|:----:|----------|
-| `find role <role> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find text <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find label <label> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find placeholder <placeholder> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find alt <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find title <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find testid <id> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
+| `find role <role> <action> [value]` | ❌ | - |
+| `find text <text> <action>` | ❌ | - |
+| `find label <label> <action> [value]` | ❌ | - |
+| `find placeholder <placeholder> <action> [value]` | ❌ | - |
+| `find alt <text> <action>` | ❌ | - |
+| `find title <text> <action>` | ❌ | - |
+| `find testid <id> <action> [value]` | ❌ | - |
 | `find first <selector> <action> [value]` | ❌ | - |
 | `find last <selector> <action> [value]` | ❌ | - |
 | `find nth <n> <selector> <action> [value]` | ❌ | - |
