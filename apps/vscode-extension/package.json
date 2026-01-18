@@ -1,7 +1,7 @@
 {
   "name": "enbu-vscode",
   "displayName": "Enbu - Browser Automation Visualizer",
-  "description": "Visualize enbu.yaml flow execution with inline step status decorations",
+  "description": "Run and visualize enbu.yaml flow tests with VS Code Test Explorer",
   "version": "0.0.1",
   "publisher": "agent-browser-flow",
   "type": "module",
@@ -9,22 +9,13 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Testing",
-    "Visualization"
+    "Testing"
   ],
   "activationEvents": [
-    "onLanguage:yaml",
     "workspaceContains:**/*.enbu.yaml"
   ],
   "main": "./dist/extension.mjs",
-  "contributes": {
-    "commands": [
-      {
-        "command": "enbu.runFlow",
-        "title": "Enbu: Run Flow"
-      }
-    ]
-  },
+  "contributes": {},
   "scripts": {
     "build": "nx run vscode-extension:build",
     "dev": "nx run vscode-extension:dev",
