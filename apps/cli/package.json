@@ -1,6 +1,6 @@
 {
   "name": "enbu",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A simple YAML-based E2E testing framework powered by agent-browser. Define test flows in human-readable YAML and perform them in the browser.",
   "keywords": [
     "e2e",
