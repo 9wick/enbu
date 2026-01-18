@@ -44,6 +44,18 @@
         "command": "pnpm exec tsc -p tsconfig.json --noEmit",
         "cwd": "apps/vscode-extension"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec vitest run --config vitest.config.ts",
+        "cwd": "apps/vscode-extension"
+      },
+      "configurations": {
+        "watch": {
+          "command": "pnpm exec vitest --config vitest.config.ts"
+        }
+      }
     }
   }
 }
