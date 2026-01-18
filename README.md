@@ -67,6 +67,163 @@ npx enbu
 npx enbu .abflow/login.enbu.yaml
 ```
 
+## コマンドリファレンス
+
+### ページを開く
+
+```yaml
+steps:
+  - open: https://example.com
+```
+
+### クリック
+
+```yaml
+steps:
+  # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
+  - click: "ログイン"
+
+  # CSSセレクタ
+  - click:
+      selector: "#submit-button"
+```
+
+### テキスト入力
+
+```yaml
+steps:
+  - type:
+      selector: "ユーザー名"
+      text: "山田太郎"
+```
+
+### アサーション
+
+```yaml
+steps:
+  # 要素が表示されていることを確認
+  - assertVisible: "ログイン成功"
+
+  # 要素が表示されていないことを確認
+  - assertNotVisible: "エラー"
+```
+
+### スクリーンショット
+
+```yaml
+steps:
+  - screenshot: ./screenshots/result.png
+```
+
+### スナップショット（デバッグ用）
+
+```yaml
+steps:
+  - snapshot
+```
+
+現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
+
+### JavaScript実行
+
+```yaml
+steps:
+  - eval: "document.title"
+
+  # 複数行
+  - eval: |
+      const element = document.querySelector('#result');
+      return element.textContent;
+```
+
+## 環境変数
+
+フロー内で環境変数を使用できます：
+
+```yaml
+steps:
+  - type:
+      selector: "パスワード"
+      text: ${PASSWORD}
+```
+
+### 環境変数の指定方法
+
+#### CLI引数で指定
+
+```bash
+npx enbu --env PASSWORD=secret123
+```
+
+#### YAML内で定義
+
+`.abflow/login.enbu.yaml`:
+```yaml
+env:
+  BASE_URL: https://staging.example.com
+steps:
+  - open: ${BASE_URL}/login
+```
+
+## CLI オプション
+
+```bash
+npx enbu [options] [flow-files...]
+
+オプション:
+  --headed          ブラウザを表示して実行（デフォルト: ヘッドレス）
+  --env KEY=VALUE   環境変数を設定
+  --timeout <ms>    デフォルトタイムアウト（デフォルト: 30000）
+  --screenshot      失敗時にスクリーンショットを保存
+  -v, --verbose     詳細なログを出力
+  -h, --help        ヘルプを表示
+  --version         バージョンを表示
+```
+
+## ディレクトリ構成
+
+```
+your-project/
+├── .abflow/
+│   ├── login.enbu.yaml
+│   ├── checkout.enbu.yaml
+│   └── shared/
+│       └── auth.enbu.yaml
+└── package.json
+```
+
+## CI/CD統合
+
+### GitHub Actions
+
+```yaml
+name: E2E Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install agent-browser
+        run: npm install -g agent-browser
+
+      - name: Install browsers
+        run: agent-browser install --with-deps
+
+      - name: Run E2E tests
+        run: npx enbu
+        env:
+          PASSWORD: ${{ secrets.TEST_PASSWORD }}
+```
+
 ## agent-browser コマンド対応表
 
 本ツールは [agent-browser](https://github.com/vercel-labs/agent-browser) のコマンドをYAMLから利用できます。以下は対応状況です。
@@ -244,157 +401,6 @@ npx enbu .abflow/login.enbu.yaml
 | コマンド | YAML記法 |
 |----------|----------|
 | assertNotVisible | `- assertNotVisible: <selector>` |
-
-## コマンドリファレンス
-
-### ページを開く
-
-```yaml
-steps:
-  - open: https://example.com
-```
-
-### クリック
-
-```yaml
-steps:
-  # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
-  - click: "ログイン"
-
-  # CSSセレクタ
-  - click:
-      selector: "#submit-button"
-```
-
-### テキスト入力
-
-```yaml
-steps:
-  - type:
-      selector: "ユーザー名"
-      text: "山田太郎"
-```
-
-### アサーション
-
-```yaml
-steps:
-  # 要素が表示されていることを確認
-  - assertVisible: "ログイン成功"
-
-  # 要素が表示されていないことを確認
-  - assertNotVisible: "エラー"
-```
-
-### スクリーンショット
-
-```yaml
-steps:
-  - screenshot: ./screenshots/result.png
-```
-
-### スナップショット（デバッグ用）
-
-```yaml
-steps:
-  - snapshot
-```
-
-現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
-
-### JavaScript実行
-
-```yaml
-steps:
-  - eval: "document.title"
-
-  # 複数行
-  - eval: |
-      const element = document.querySelector('#result');
-      return element.textContent;
-```
-
-## 環境変数
-
-フロー内で環境変数を使用できます：
-
-```yaml
-steps:
-  - type:
-      selector: "パスワード"
-      text: ${PASSWORD}
-```
-
-### 環境変数の指定方法
-
-#### CLI引数で指定
-
-```bash
-npx enbu --env PASSWORD=secret123
-```
-
-#### YAML内で定義
-
-`.abflow/login.enbu.yaml`:
-```yaml
-env:
-  BASE_URL: https://staging.example.com
-steps:
-  - open: ${BASE_URL}/login
-```
-
-## CLI オプション
-
-```bash
-npx enbu [options] [flow-files...]
-
-オプション:
-  --headed          ブラウザを表示して実行（デフォルト: ヘッドレス）
-  --env KEY=VALUE   環境変数を設定
-  --timeout <ms>    デフォルトタイムアウト（デフォルト: 30000）
-  --screenshot      失敗時にスクリーンショットを保存
-  -v, --verbose     詳細なログを出力
-  -h, --help        ヘルプを表示
-  --version         バージョンを表示
-```
-
-## ディレクトリ構成
-
-```
-your-project/
-├── .abflow/
-│   ├── login.enbu.yaml
-│   ├── checkout.enbu.yaml
-│   └── shared/
-│       └── auth.enbu.yaml
-└── package.json
-```
-
-## CI/CD統合
-
-### GitHub Actions
-
-```yaml
-name: E2E Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Run E2E tests
-        run: npx enbu
-        env:
-          PASSWORD: ${{ secrets.TEST_PASSWORD }}
-```
 
 ## ライセンス
 
