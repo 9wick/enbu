@@ -63,8 +63,9 @@ export class FlowRunner extends EventEmitter {
   public run(): Promise<number> {
     return new Promise((resolve, reject) => {
       // CLIプロセスを起動
-      // ユーザーがdev dependencyとして個別にインストールしたenbuコマンドを使用
-      this.process = spawn('npx', ['enbu', 'run', this.filePath, '--progress-json', '--headed'], {
+      // ワークスペースのnode_modules/.bin/enbuを使用（npxはキャッシュ問題があるため）
+      // node_modules/.bin/enbuが見つからない場合はnpx --no経由で実行
+      this.process = spawn('npx', ['--no', 'enbu', 'run', this.filePath, '--progress-json', '--headed'], {
         cwd: process.cwd(),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
