@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": ["Bash(npx agent-browser:*)", "mcp__sequential-thinking__sequentialthinking"]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun x gh-setup-hooks",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "./.claude/hooks/setup_repository.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
