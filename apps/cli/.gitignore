@@ -1,0 +1,5 @@
+# Build output
+dist/
+
+# Copied README (generated during build from root)
+README.md

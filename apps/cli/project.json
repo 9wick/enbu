@@ -9,12 +9,20 @@
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
       "options": {
-        "command": "pnpm exec tsdown --config tsdown.config.ts",
-        "cwd": "apps/cli"
+        "commands": [
+          "pnpm exec tsdown --config tsdown.config.ts",
+          "cp ../../README.md ./README.md"
+        ],
+        "cwd": "apps/cli",
+        "parallel": false
       },
       "configurations": {
         "watch": {
-          "command": "pnpm exec tsdown --config tsdown.config.ts --watch"
+          "commands": [
+            "cp ../../README.md ./README.md",
+            "pnpm exec tsdown --config tsdown.config.ts --watch"
+          ],
+          "parallel": false
         }
       }
     },

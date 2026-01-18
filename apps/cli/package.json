@@ -1,6 +1,30 @@
 {
   "name": "enbu",
   "version": "0.1.0",
+  "description": "A simple YAML-based E2E testing framework powered by agent-browser. Define test flows in human-readable YAML and perform them in the browser.",
+  "keywords": [
+    "e2e",
+    "testing",
+    "browser",
+    "automation",
+    "yaml",
+    "agent-browser",
+    "end-to-end",
+    "test-framework",
+    "selenium-alternative",
+    "playwright-alternative"
+  ],
+  "homepage": "https://github.com/9wick/enbu/tree/main/apps/cli#readme",
+  "bugs": {
+    "url": "https://github.com/9wick/enbu/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/9wick/enbu.git",
+    "directory": "apps/cli"
+  },
+  "license": "MIT",
+  "author": "",
   "type": "module",
   "main": "./dist/main.mjs",
   "bin": {
@@ -9,6 +33,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22.x"
+  },
   "scripts": {
     "build": "nx run cli:build",
     "dev": "nx run cli:dev",
