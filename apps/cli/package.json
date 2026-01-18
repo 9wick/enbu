@@ -45,8 +45,7 @@
     "test": "nx run cli:test",
     "start": "node ./dist/main.mjs"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "@packages/config": "workspace:*",
     "@types/node": "^22.14.1",

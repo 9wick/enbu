@@ -98,7 +98,9 @@ export class FlowRunner extends EventEmitter {
       const enbuBin = findEnbuBinary(fileDir, this.workspaceRoot);
 
       if (!enbuBin) {
-        reject(new Error('enbu not found in node_modules. Please install enbu: npm install -D enbu'));
+        reject(
+          new Error('enbu not found in node_modules. Please install enbu: npm install -D enbu'),
+        );
         return;
       }
 
