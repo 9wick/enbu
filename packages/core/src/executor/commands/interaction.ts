@@ -16,7 +16,6 @@ const resolveSelector = (originalSelector: string, context: ExecutionContext): s
  * click コマンドのハンドラ
  *
  * 指定されたセレクタの要素をクリックする。
- * indexオプションが指定された場合、同名要素の中から該当するインデックスの要素をクリックする。
  *
  * @param command - click コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -29,11 +28,7 @@ export const handleClick = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  const args = [selector];
-  if (command.index !== undefined) {
-    args.push('--index', command.index.toString());
-  }
-  args.push('--json');
+  const args = [selector, '--json'];
 
   return (await executeCommand('click', args, context.executeOptions))
     .andThen(parseJsonOutput)
@@ -47,7 +42,6 @@ export const handleClick = async (
  * type コマンドのハンドラ
  *
  * 指定されたセレクタの要素にテキストを入力する。
- * clearオプションがtrueの場合、入力前に既存のテキストをクリアする。
  *
  * @param command - type コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -60,11 +54,7 @@ export const handleType = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  const args = [selector, command.value];
-  if (command.clear) {
-    args.push('--clear');
-  }
-  args.push('--json');
+  const args = [selector, command.value, '--json'];
 
   return (await executeCommand('type', args, context.executeOptions))
     .andThen(parseJsonOutput)
