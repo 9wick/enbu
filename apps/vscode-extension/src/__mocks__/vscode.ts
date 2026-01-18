@@ -400,6 +400,51 @@ export type CancellationToken = MockCancellationToken;
 export type TextDocument = MockTextDocument;
 export type TextLine = MockTextLine;
 export type WorkspaceFolder = MockWorkspaceFolder;
-export type ExtensionContext = {
+/**
+ * ExtensionContextの最小モック型
+ *
+ * テストに必要な最小限のプロパティのみを定義。
+ * 実際のExtensionContextはより多くのプロパティを持つが、
+ * テストでは必要なものだけをモックする。
+ */
+export interface ExtensionContext {
   subscriptions: Array<{ dispose: () => void }>;
-};
+  // 以下は実際のExtensionContextに存在するが、テストでは使用しない
+  workspaceState: unknown;
+  globalState: unknown;
+  secrets: unknown;
+  extensionUri: Uri;
+  extensionPath: string;
+  environmentVariableCollection: unknown;
+  asAbsolutePath: (relativePath: string) => string;
+  storageUri: Uri | undefined;
+  storagePath: string | undefined;
+  globalStorageUri: Uri;
+  globalStoragePath: string;
+  logUri: Uri;
+  logPath: string;
+  extensionMode: number;
+  extension: unknown;
+}
+
+/**
+ * テスト用のExtensionContextを作成するヘルパー
+ */
+export const createMockExtensionContext = (): ExtensionContext => ({
+  subscriptions: [],
+  workspaceState: {},
+  globalState: {},
+  secrets: {},
+  extensionUri: Uri.file('/mock/extension'),
+  extensionPath: '/mock/extension',
+  environmentVariableCollection: {},
+  asAbsolutePath: (relativePath: string) => `/mock/extension/${relativePath}`,
+  storageUri: Uri.file('/mock/storage'),
+  storagePath: '/mock/storage',
+  globalStorageUri: Uri.file('/mock/global-storage'),
+  globalStoragePath: '/mock/global-storage',
+  logUri: Uri.file('/mock/log'),
+  logPath: '/mock/log',
+  extensionMode: 1,
+  extension: {},
+});
