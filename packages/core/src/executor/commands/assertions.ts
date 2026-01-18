@@ -9,7 +9,7 @@ import type {
   AssertCheckedCommand,
 } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
-import { resolveTextSelector } from './selector-utils';
+import { isCssOrRefSelector, resolveTextSelector } from './selector-utils';
 
 /**
  * セレクタを解決する
@@ -35,13 +35,67 @@ const resolveVisibilitySelector = (originalSelector: string, context: ExecutionC
 };
 
 /**
+ * 要素の出現を待機する
+ *
+ * CSSセレクタ/@ref/text=形式の場合: wait <selector>
+ * テキストの場合: wait --text <text>
+ *
+ * @param originalSelector - 元のセレクタ
+ * @param context - 実行コンテキスト
+ * @returns 成功時はok(undefined)、失敗時はerr(AgentBrowserError)
+ */
+const waitForElement = async (
+  originalSelector: string,
+  context: ExecutionContext,
+): Promise<Result<undefined, AgentBrowserError>> => {
+  // @ref、#id、.class、[attr]、text= 形式の場合: wait <selector>
+  if (isCssOrRefSelector(originalSelector)) {
+    const result = await executeCommand(
+      'wait',
+      [originalSelector, '--json'],
+      context.executeOptions,
+    );
+    return result.map(() => undefined);
+  }
+
+  // テキストの場合: wait --text <text>
+  const result = await executeCommand(
+    'wait',
+    ['--text', originalSelector, '--json'],
+    context.executeOptions,
+  );
+  return result.map(() => undefined);
+};
+
+/**
+ * ページの安定状態（networkidle）を待機する
+ *
+ * @param context - 実行コンテキスト
+ * @returns 成功時はok(undefined)、失敗時はerr(AgentBrowserError)
+ */
+const waitForPageStable = async (
+  context: ExecutionContext,
+): Promise<Result<undefined, AgentBrowserError>> => {
+  const result = await executeCommand(
+    'wait',
+    ['--load', 'networkidle', '--json'],
+    context.executeOptions,
+  );
+  return result.map(() => undefined);
+};
+
+/**
  * assertVisible コマンドのハンドラ
  *
  * 指定されたセレクタの要素が表示されていることを確認する。
- * agent-browser の is visible コマンドを実行し、その結果を検証する。
- * 要素が表示されていない場合は assertion_failed エラーを返す。
  *
- * テキストセレクタの場合は自動的にPlaywrightのtext=形式に変換される。
+ * 処理の流れ:
+ * 1. agent-browserのwaitコマンドで要素の出現を待機
+ *    - CSSセレクタ: wait <selector>
+ *    - テキスト: wait --text <text>
+ * 2. agent-browserのis visibleコマンドで表示状態を確認
+ *
+ * 要素が表示されていない場合は assertion_failed エラーを返す。
  *
  * @param command - assertVisible コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -52,6 +106,21 @@ export const handleAssertVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+
+  // 1. 要素の出現を待機（autoWaitで解決済みでなければ）
+  if (!context.resolvedRef) {
+    const waitResult = await waitForElement(command.selector, context);
+    if (waitResult.isErr()) {
+      return err({
+        type: 'timeout',
+        command: 'wait',
+        args: [command.selector],
+        timeoutMs: context.autoWaitTimeoutMs,
+      });
+    }
+  }
+
+  // 2. 表示状態を確認
   const selector = resolveVisibilitySelector(command.selector, context);
 
   return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
@@ -119,10 +188,13 @@ export const handleAssertVisible = async (
  * assertNotVisible コマンドのハンドラ
  *
  * 指定されたセレクタの要素が表示されていないことを確認する。
- * agent-browser の is visible コマンドを実行し、その結果を検証する。
- * 要素が表示されている場合は assertion_failed エラーを返す。
  *
- * テキストセレクタの場合は自動的にPlaywrightのtext=形式に変換される。
+ * 処理の流れ:
+ * 1. agent-browserのwaitコマンドでページの安定状態（networkidle）を待機
+ *    - ページ遷移直後など、DOMが構築される前に判定しないようにする
+ * 2. agent-browserのis visibleコマンドで表示状態を確認
+ *
+ * 要素が表示されている場合は assertion_failed エラーを返す。
  *
  * @param command - assertNotVisible コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -133,6 +205,19 @@ export const handleAssertNotVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+
+  // 1. ページの安定状態を待機
+  const waitResult = await waitForPageStable(context);
+  if (waitResult.isErr()) {
+    return err({
+      type: 'timeout',
+      command: 'wait',
+      args: ['--load', 'networkidle'],
+      timeoutMs: context.autoWaitTimeoutMs,
+    });
+  }
+
+  // 2. 表示状態を確認
   const selector = resolveVisibilitySelector(command.selector, context);
 
   return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))

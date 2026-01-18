@@ -7,22 +7,20 @@ export const CSS_SELECTOR_PREFIXES = ['@', '#', '.', '[', 'text='];
 /**
  * セレクタがCSSセレクタまたは@ref形式かどうかを判定する
  *
- * CSSセレクタの特徴:
+ * 以下の形式のみCSSセレクタ/@ref形式として扱う:
  * - #で始まる（ID）
  * - .で始まる（クラス）
  * - [で始まる（属性）
  * - @で始まる（ref形式）
  * - text=で始まる（既にテキストセレクタ形式）
- * - タグ名（英字のみで構成される短い文字列）
  *
- * それ以外はテキストセレクタとして扱う
+ * 注意: HTMLタグ名（div, span等）はテキストセレクタとして扱う。
+ * これは意図的な設計で、純粋なテキスト（例: "Welcome"）が
+ * タグ名と誤認識されることを防ぐため。
+ * タグ名でセレクトしたい場合は、ユーザーが明示的にCSSセレクタ形式を使用する必要がある。
  */
 export const isCssOrRefSelector = (selector: string): boolean => {
-  // 既知のプレフィックスで始まるかチェック
-  const hasKnownPrefix = CSS_SELECTOR_PREFIXES.some((prefix) => selector.startsWith(prefix));
-  if (hasKnownPrefix) return true;
-  // タグ名（英字のみで短い文字列）
-  return /^[a-zA-Z][a-zA-Z0-9]*$/.test(selector) && selector.length <= 20;
+  return CSS_SELECTOR_PREFIXES.some((prefix) => selector.startsWith(prefix));
 };
 
 /**
