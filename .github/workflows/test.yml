@@ -52,9 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6. Playwrightブラウザのインストール
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+      # 6. ブラウザのインストール（agent-browserのinstallコマンドを使用）
+      - name: Install browsers
+        run: pnpm exec agent-browser install --with-deps
 
       # 7. agent-browserの確認（devDependenciesからインストール済み）
       - name: Verify agent-browser installation
