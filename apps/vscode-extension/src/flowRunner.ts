@@ -41,15 +41,18 @@ export interface FlowRunnerEvents {
 export class FlowRunner extends EventEmitter {
   private process: ChildProcess | null = null;
   private readonly filePath: string;
+  private readonly workspaceRoot: string;
 
   /**
    * コンストラクタ
    *
    * @param filePath - 実行するフローファイルのパス
+   * @param workspaceRoot - ワークスペースのルートディレクトリ
    */
-  constructor(filePath: string) {
+  constructor(filePath: string, workspaceRoot: string) {
     super();
     this.filePath = filePath;
+    this.workspaceRoot = workspaceRoot;
   }
 
   /**
@@ -64,10 +67,9 @@ export class FlowRunner extends EventEmitter {
     return new Promise((resolve, reject) => {
       // CLIプロセスを起動
       // ワークスペースのnode_modules/.bin/enbuを直接実行（npxはキャッシュ問題があるため）
-      const cwd = process.cwd();
-      const enbuBin = `${cwd}/node_modules/.bin/enbu`;
+      const enbuBin = `${this.workspaceRoot}/node_modules/.bin/enbu`;
       this.process = spawn(enbuBin, ['run', this.filePath, '--progress-json', '--headed'], {
-        cwd,
+        cwd: this.workspaceRoot,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
