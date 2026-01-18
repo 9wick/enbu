@@ -52,35 +52,39 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6. agent-browserの確認（devDependenciesからインストール済み）
+      # 6. Playwrightブラウザのインストール
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      # 7. agent-browserの確認（devDependenciesからインストール済み）
       - name: Verify agent-browser installation
         run: pnpm exec agent-browser --help
 
-      # 7. 型チェック
+      # 8. 型チェック
       - name: Type check
         run: pnpm run typecheck
 
-      # 8. Lint
+      # 9. Lint
       - name: Lint
         run: pnpm run lint:check
 
-      # 9. Format check
+      # 10. Format check
       - name: Format check
         run: pnpm run format:check
 
-      # 10. ビルド
+      # 11. ビルド
       - name: Build
         run: pnpm run build
 
-      # 11. ユニットテスト
+      # 12. ユニットテスト
       - name: Run unit tests
         run: pnpm run test
 
-      # 12. 統合テスト
+      # 13. 統合テスト
       - name: Run integration tests
         run: pnpm run test:integration
 
-      # 13. E2Eテスト
+      # 14. E2Eテスト
       - name: Run E2E tests
         run: pnpm run test:e2e
         env:
@@ -89,11 +93,11 @@ jobs:
           # タイムアウトを延長（CI環境は遅い）
           TEST_TIMEOUT: 60000
 
-      # 14. Exampleテスト（各exampleのフローを実際に実行）
+      # 15. Exampleテスト（各exampleのフローを実際に実行）
       - name: Run example tests
         run: pnpm run test:examples
 
-      # 15. テスト結果のアップロード
+      # 16. テスト結果のアップロード
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -104,7 +108,7 @@ jobs:
             test-results/
           retention-days: 30
 
-      # 16. スクリーンショットのアップロード（失敗時のみ）
+      # 17. スクリーンショットのアップロード（失敗時のみ）
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
