@@ -79,26 +79,25 @@ importers:
         version: 3.2.4(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
   apps/cli:
-    dependencies:
+    devDependencies:
       '@packages/agent-browser-adapter':
         specifier: workspace:*
         version: link:../../packages/agent-browser-adapter
+      '@packages/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@packages/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@types/node':
+        specifier: ^22.14.1
+        version: 22.19.7
       glob:
         specifier: ^11.0.0
         version: 11.1.0
       neverthrow:
         specifier: ^8.2.0
         version: 8.2.0
-    devDependencies:
-      '@packages/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@types/node':
-        specifier: ^22.14.1
-        version: 22.19.7
 
   apps/schema: {}
 
