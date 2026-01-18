@@ -29,11 +29,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      # 3. pnpmのインストール
+      # 3. pnpmのインストール（package.jsonのpackageManagerフィールドからバージョンを自動検出）
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
 
       # 4. 依存関係のキャッシュ
       - name: Get pnpm store directory
