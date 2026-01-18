@@ -11,5 +11,10 @@
     "composite": true,
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "types": ["node"]
-  }
+  },
+  "references": [
+    {
+      "path": "../agent-browser-adapter"
+    }
+  ]
 }

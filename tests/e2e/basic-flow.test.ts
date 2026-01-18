@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestServer } from '../utils/file-server';
-import { runCli } from '../utils/test-helpers';
-import { access } from 'node:fs/promises';
+import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -16,12 +15,15 @@ import { join } from 'node:path';
  * - tests/fixtures/html/login-form.html が存在すること
  */
 describe('E2E: Basic Flow Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>>;
+  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
+    ? T extends { isOk(): true; value: infer V }
+      ? V
+      : never
+    : never;
 
   beforeAll(async () => {
-    // テスト用HTTPサーバーを起動
-    // ポート8080を使用（basic-flow.test.ts専用ポート）
-    const serverResult = await startTestServer(8080);
+    // テスト用HTTPサーバーを起動（空きポートを自動選択）
+    const serverResult = await startTestServer();
     if (serverResult.isErr()) {
       throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
     }
@@ -43,7 +45,7 @@ describe('E2E: Basic Flow Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/flows/simple.enbu.yaml が存在する
-   * - HTTPサーバーが localhost:8080 で起動している
+   * - HTTPサーバーが起動している
    *
    * 検証項目:
    * - CLIが正常に起動する（終了コード0）
@@ -52,18 +54,23 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-1: ページを正常に開ける', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること
-      expect(result.value.exitCode).toBe(0);
-      // フロー実行完了のメッセージが出力されること
-      // （実装に応じて、適切なメッセージを検証）
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること
+        expect(result.value.exitCode).toBe(0);
+        // フロー実行完了のメッセージが出力されること
+        // （実装に応じて、適切なメッセージを検証）
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000); // タイムアウト: 30秒
 
@@ -73,7 +80,7 @@ describe('E2E: Basic Flow Tests', () => {
    * 前提条件:
    * - tests/fixtures/html/login-form.html にh1要素「ログイン」が存在する
    * - simple.enbu.yaml に assertVisible: ログイン が含まれる
-   * - HTTPサーバーが localhost:8080 で起動している
+   * - HTTPサーバーが起動している
    *
    * 検証項目:
    * - assertVisible コマンドでh1要素「ログイン」が見つかる
@@ -81,80 +88,89 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-2: 要素の存在を確認できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること
-      expect(result.value.exitCode).toBe(0);
-      // assertVisible が成功したことを示すログが含まれる
-      // （実装に応じて、適切なログメッセージを検証）
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること
+        expect(result.value.exitCode).toBe(0);
+        // assertVisible が成功したことを示すログが含まれる
+        // （実装に応じて、適切なログメッセージを検証）
+      }
+    } finally {
+      await cleanup();
     }
-  }, 30000);
+  }, 30000); // タイムアウト: 30秒
 
   /**
    * E-BASIC-3: 複数ステップの実行
    *
    * 前提条件:
-   * - tests/fixtures/flows/simple.enbu.yaml が4ステップを含む
-   *   1. open: http://localhost:8080/login-form.html
-   *   2. assertVisible: ログイン
-   *   3. assertVisible: メールアドレス
-   *   4. screenshot: login-page
+   * - simple.enbu.yaml に複数のステップが定義されている
+   * - HTTPサーバーが起動している
    *
    * 検証項目:
-   * - 全ステップが順次実行される
-   * - 各ステップが成功する
+   * - 複数のステップが順番に実行される
+   * - 全てのステップが成功する
    */
   it('E-BASIC-3: 複数ステップを順次実行できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること
-      expect(result.value.exitCode).toBe(0);
-      // 各ステップが実行されたことを示すログが含まれる
-      // （実装に応じて、適切なログメッセージを検証）
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること
+        expect(result.value.exitCode).toBe(0);
+        // 各ステップが実行されたことを示すログが含まれる
+        // （実装に応じて、適切なログメッセージを検証）
+      }
+    } finally {
+      await cleanup();
     }
-  }, 30000);
+  }, 30000); // タイムアウト: 30秒
 
   /**
-   * E-BASIC-4: スクリーンショット
+   * E-BASIC-4: スクリーンショット機能
    *
    * 前提条件:
-   * - tests/fixtures/flows/simple.enbu.yaml が screenshot: login-page を含む
+   * - simple.enbu.yaml に screenshot ステップが含まれる
+   * - HTTPサーバーが起動している
    *
    * 検証項目:
-   * - --screenshot フラグを使用してフローが実行できる
-   *
-   * 注意:
-   * - CLIは --screenshot-dir フラグをサポートしていないため、
-   *   現状は --screenshot フラグでの実行のみを検証する
-   * - スクリーンショットの出力先はデフォルト動作に依存する
+   * - --screenshot フラグでスクリーンショットが有効になる
+   * - フローが正常に完了する
    */
   it('E-BASIC-4: --screenshot フラグでフローを実行できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath, '--screenshot']);
+    try {
+      // Act
+      const result = await runCli(['--screenshot', tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること
-      expect(result.value.exitCode).toBe(0);
-      // スクリーンショット機能は実装されているが、
-      // 出力先を指定できないため、ファイルの存在確認は行わない
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること
+        expect(result.value.exitCode).toBe(0);
+        // スクリーンショット機能は実装されているが、
+        // 出力先を指定できないため、ファイルの存在確認は行わない
+      }
+    } finally {
+      await cleanup();
     }
-  }, 30000);
+  }, 30000); // タイムアウト: 30秒
 });

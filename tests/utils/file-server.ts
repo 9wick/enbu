@@ -10,6 +10,8 @@ import { Result, err, ok } from 'neverthrow';
 type TestServerResult = {
   /** サーバーのベースURL */
   url: string;
+  /** 実際にリスンしているポート番号 */
+  port: number;
   /** サーバーを停止する関数 */
   close: () => Promise<Result<void, ServerCloseError>>;
 };
@@ -57,17 +59,18 @@ type FileReadError = {
  * 全てのレスポンスは `text/html; charset=utf-8` として返されます。
  * 存在しないファイルがリクエストされた場合は404エラーを返します。
  *
- * @param port - リスンするポート番号
- * @returns サーバーのURLとclose関数を含むResult
+ * @param port - リスンするポート番号（0を指定すると空きポートを自動選択）
+ * @returns サーバーのURL、ポート番号、close関数を含むResult
  *
  * @example
  * ```typescript
- * // テスト前にサーバーを起動
- * const serverResult = await startTestServer(8080);
+ * // テスト前にサーバーを起動（空きポートを自動選択）
+ * const serverResult = await startTestServer(0);
  * if (serverResult.isErr()) {
  *   throw new Error('サーバー起動失敗');
  * }
  * const server = serverResult.value;
+ * console.log(`サーバー起動: ${server.url} (ポート: ${server.port})`);
  *
  * // テストロジック...
  * // const url = `${server.url}/login-form.html`;
@@ -77,7 +80,7 @@ type FileReadError = {
  * ```
  */
 export const startTestServer = async (
-  port: number,
+  port = 0,
 ): Promise<Result<TestServerResult, ServerStartError>> => {
   // フィクスチャディレクトリのパスを解決
   const fixturesDir = join(process.cwd(), 'tests', 'fixtures', 'html');
@@ -107,10 +110,16 @@ export const startTestServer = async (
 
   // サーバーの起動を試行
   const listenResult = await listenServer(server, port);
-  return listenResult.map((listeningServer) => ({
-    url: `http://localhost:${port}`,
-    close: async () => closeServer(listeningServer),
-  }));
+  return listenResult.map((listeningServer) => {
+    // 実際に割り当てられたポート番号を取得
+    const address = listeningServer.address();
+    const actualPort = typeof address === 'object' && address !== null ? address.port : port;
+    return {
+      url: `http://localhost:${actualPort}`,
+      port: actualPort,
+      close: async () => closeServer(listeningServer),
+    };
+  });
 };
 
 /**

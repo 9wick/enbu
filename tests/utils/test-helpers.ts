@@ -1,6 +1,8 @@
 import { spawn } from 'node:child_process';
 import { Result, ok } from 'neverthrow';
 import { join } from 'node:path';
+import { writeFile, unlink, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 
 /**
  * CLIの実行結果
@@ -86,4 +88,64 @@ export const runCli = async (args: string[]): Promise<Result<CliResult, never>> 
       );
     });
   });
+};
+
+/**
+ * テスト用の一時フローファイルを作成する
+ *
+ * フィクスチャファイルを読み込み、ポート番号を置換した一時ファイルを作成します。
+ * テスト終了後は cleanup() を呼び出して一時ファイルを削除してください。
+ *
+ * @param fixturePath - フィクスチャファイルのパス
+ * @param port - 置換するポート番号
+ * @param placeholderPort - 置換対象のプレースホルダーポート番号（デフォルト: 0）
+ * @returns 一時ファイルのパスとクリーンアップ関数
+ *
+ * @example
+ * ```typescript
+ * const { tempPath, cleanup } = await createTempFlowWithPort(
+ *   'tests/fixtures/flows/simple.enbu.yaml',
+ *   server.port
+ * );
+ * try {
+ *   const result = await runCli([tempPath]);
+ *   // テストロジック...
+ * } finally {
+ *   await cleanup();
+ * }
+ * ```
+ */
+export const createTempFlowWithPort = async (
+  fixturePath: string,
+  port: number,
+  placeholderPort = 0,
+): Promise<{ tempPath: string; cleanup: () => Promise<void> }> => {
+  // フィクスチャファイルを読み込み
+  const content = await readFile(fixturePath, 'utf-8');
+
+  // プレースホルダーポートを実際のポートに置換
+  // パターン: http://localhost:XXXX/ の XXXX 部分を置換
+  const pattern =
+    placeholderPort === 0
+      ? /http:\/\/localhost:(\d+)/g
+      : new RegExp(`http://localhost:${placeholderPort}`, 'g');
+  const replacedContent = content.replace(pattern, `http://localhost:${port}`);
+
+  // 一時ファイルを作成
+  const tempPath = join(
+    tmpdir(),
+    `enbu-test-${Date.now()}-${Math.random().toString(36).slice(2)}.enbu.yaml`,
+  );
+  await writeFile(tempPath, replacedContent, 'utf-8');
+
+  return {
+    tempPath,
+    cleanup: async () => {
+      try {
+        await unlink(tempPath);
+      } catch {
+        // ファイルが存在しない場合は無視
+      }
+    },
+  };
 };

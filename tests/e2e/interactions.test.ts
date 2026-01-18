@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestServer } from '../utils/file-server';
-import { runCli } from '../utils/test-helpers';
+import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -15,12 +15,15 @@ import { join } from 'node:path';
  * - tests/fixtures/html/form-elements.html が存在すること
  */
 describe('E2E: Interaction Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>>;
+  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
+    ? T extends { isOk(): true; value: infer V }
+      ? V
+      : never
+    : never;
 
   beforeAll(async () => {
-    // テスト用HTTPサーバーを起動
-    // ポート8082を使用（interactions.test.ts専用ポート）
-    const serverResult = await startTestServer(8082);
+    // テスト用HTTPサーバーを起動（空きポートを自動選択）
+    const serverResult = await startTestServer();
     if (serverResult.isErr()) {
       throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
     }
@@ -50,16 +53,21 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-1: type - テキスト入力が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（typeが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（typeが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000); // タイムアウト: 30秒
 
@@ -76,16 +84,21 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-2: fill - フォーム入力が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（fillが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（fillが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
@@ -101,16 +114,21 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-3: click - ボタンクリックが成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（clickが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（clickが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
@@ -128,16 +146,21 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-4: press - キーボード操作が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
@@ -146,14 +169,14 @@ describe('E2E: Interaction Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/flows/interactions.enbu.yaml が複数の操作を含む
-   *   1. open: http://localhost:8082/form-elements.html
+   *   1. open: http://localhost:XXXX/form-elements.html
    *   2. type: ユーザー名 -> テストユーザー
    *   3. type: メールアドレス -> test@example.com
    *   4. fill: 年齢 -> 25
    *   5. click: 読書
    *   6. assertChecked: 読書
    *   7. click: 送信
-   * - HTTPサーバーが localhost:8082 で起動している
+   * - HTTPサーバーが起動している
    *
    * 検証項目:
    * - 連続した操作が全て成功する
@@ -161,16 +184,21 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-5: 複数要素の操作 - 連続した操作が全て成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（全ステップが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（全ステップが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 });

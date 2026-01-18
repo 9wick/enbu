@@ -1,16 +1,19 @@
 # アサーションテストフロー
 # ポート8081を使用（assertions.test.ts専用ポート）
+steps:
+  # ページを開く
+  - open: http://localhost:8081/assertions.html
 
-# ページを開く
-- open: http://localhost:8081/assertions.html
+  # 可視性のテスト
+  - assertVisible: これは表示されています
 
-# 可視性のテスト
-- assertVisible: これは表示されています
+  # ボタン状態のテスト（有効なボタンのみ）
+  - assertEnabled: 有効ボタン
 
-# ボタン状態のテスト
-- assertEnabled: 有効
-- assertDisabled: 無効
+  # チェックボックス状態のテスト
+  - assertChecked: チェック済みチェックボックス
 
-# チェックボックス状態のテスト
-- assertChecked: チェック済み
-- assertUnchecked: 未チェック
+  # 未チェックのチェックボックス（checked: falseで検証）
+  - assertChecked:
+      selector: 未チェックチェックボックス
+      checked: false

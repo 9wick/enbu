@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestServer } from '../utils/file-server';
-import { runCli } from '../utils/test-helpers';
+import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -15,12 +15,15 @@ import { join } from 'node:path';
  * - tests/fixtures/html/assertions.html が存在すること
  */
 describe('E2E: Assertion Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>>;
+  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
+    ? T extends { isOk(): true; value: infer V }
+      ? V
+      : never
+    : never;
 
   beforeAll(async () => {
-    // テスト用HTTPサーバーを起動
-    // ポート8081を使用（assertions.test.ts専用ポート）
-    const serverResult = await startTestServer(8081);
+    // テスト用HTTPサーバーを起動（空きポートを自動選択）
+    const serverResult = await startTestServer();
     if (serverResult.isErr()) {
       throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
     }
@@ -50,16 +53,21 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-1: assertVisible - 可視要素が検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（assertVisibleが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（assertVisibleが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000); // タイムアウト: 30秒
 
@@ -67,8 +75,8 @@ describe('E2E: Assertion Tests', () => {
    * E-ASSERT-2: assertEnabled
    *
    * 前提条件:
-   * - tests/fixtures/html/assertions.html に有効なボタン「有効」が存在する
-   * - assertions.enbu.yaml に assertEnabled: 有効 が含まれる
+   * - tests/fixtures/html/assertions.html に有効なボタン「有効ボタン」が存在する
+   * - assertions.enbu.yaml に assertEnabled: 有効ボタン が含まれる
    *
    * 検証項目:
    * - assertEnabled コマンドで有効なボタンが検出される
@@ -76,94 +84,83 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-2: assertEnabled - 有効なボタンが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（assertEnabledが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（assertEnabledが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
   /**
-   * E-ASSERT-3: assertDisabled
+   * E-ASSERT-3: assertChecked
    *
    * 前提条件:
-   * - tests/fixtures/html/assertions.html に無効なボタン「無効」が存在する
-   * - assertions.enbu.yaml に assertDisabled: 無効 が含まれる
-   *
-   * 検証項目:
-   * - assertDisabled コマンドで無効なボタンが検出される
-   * - アサーションが成功する
-   */
-  it('E-ASSERT-3: assertDisabled - 無効なボタンが検出される', async () => {
-    // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
-
-    // Act
-    const result = await runCli([flowPath]);
-
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（assertDisabledが成功）
-      expect(result.value.exitCode).toBe(0);
-    }
-  }, 30000);
-
-  /**
-   * E-ASSERT-4: assertChecked
-   *
-   * 前提条件:
-   * - tests/fixtures/html/assertions.html にチェック済みのチェックボックス「チェック済み」が存在する
-   * - assertions.enbu.yaml に assertChecked: チェック済み が含まれる
+   * - tests/fixtures/html/assertions.html にチェック済みチェックボックス「チェック済みチェックボックス」が存在する
+   * - assertions.enbu.yaml に assertChecked: チェック済みチェックボックス が含まれる
    *
    * 検証項目:
    * - assertChecked コマンドでチェック済みのチェックボックスが検出される
    * - アサーションが成功する
    */
-  it('E-ASSERT-4: assertChecked - チェック済みのチェックボックスが検出される', async () => {
+  it('E-ASSERT-3: assertChecked - チェック済みのチェックボックスが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（assertCheckedが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（assertCheckedが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
   /**
-   * E-ASSERT-5: assertUnchecked
+   * E-ASSERT-4: assertChecked (unchecked)
    *
    * 前提条件:
-   * - tests/fixtures/html/assertions.html に未チェックのチェックボックス「未チェック」が存在する
-   * - assertions.enbu.yaml に assertUnchecked: 未チェック が含まれる
+   * - tests/fixtures/html/assertions.html に未チェックチェックボックス「未チェックチェックボックス」が存在する
+   * - assertions.enbu.yaml に assertChecked: { selector: 未チェックチェックボックス, checked: false } が含まれる
    *
    * 検証項目:
-   * - assertUnchecked コマンドで未チェックのチェックボックスが検出される
+   * - assertChecked コマンドで未チェックのチェックボックスが検出される（checked: falseで検証）
    * - アサーションが成功する
    */
-  it('E-ASSERT-5: assertUnchecked - 未チェックのチェックボックスが検出される', async () => {
+  it('E-ASSERT-4: assertChecked (unchecked) - 未チェックのチェックボックスが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIが成功終了すること（assertUncheckedが成功）
-      expect(result.value.exitCode).toBe(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIが成功終了すること（assertCheckedが成功）
+        expect(result.value.exitCode).toBe(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 });

@@ -1,23 +1,23 @@
 # ログインフローのテスト
+steps:
+  # ページを開く
+  - open: http://localhost:8080/login-form.html
 
-# ページを開く
-- open: http://localhost:8080/login-form.html
+  # フォームが表示されていることを確認
+  - assertVisible: ログインフォーム
 
-# フォームが表示されていることを確認
-- assertVisible: ログイン
+  # メールアドレスを入力
+  - type:
+      selector: メールアドレス
+      text: test@example.com
 
-# メールアドレスを入力
-- type:
-    selector: メールアドレス
-    text: test@example.com
+  # パスワードを入力
+  - type:
+      selector: パスワード
+      text: password123
 
-# パスワードを入力
-- type:
-    selector: パスワード
-    text: password123
+  # ログインボタンをクリック
+  - click: ログインする
 
-# ログインボタンをクリック
-- click: ログイン
-
-# 送信後のメッセージが表示されることを確認
-- assertVisible: ログイン試行
+  # 送信後のメッセージが表示されることを確認
+  - assertVisible: ログイン試行

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startTestServer } from '../utils/file-server';
-import { runCli } from '../utils/test-helpers';
+import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -15,12 +15,15 @@ import { join } from 'node:path';
  * - tests/fixtures/html/assertions.html が存在すること
  */
 describe('E2E: Error Cases Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>>;
+  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
+    ? T extends { isOk(): true; value: infer V }
+      ? V
+      : never
+    : never;
 
   beforeAll(async () => {
-    // テスト用HTTPサーバーを起動
-    // ポート8083を使用（error-cases.test.ts専用ポート）
-    const serverResult = await startTestServer(8083);
+    // テスト用HTTPサーバーを起動（空きポートを自動選択）
+    const serverResult = await startTestServer();
     if (serverResult.isErr()) {
       throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
     }
@@ -51,20 +54,25 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-1: 存在しない要素 - 適切なエラーメッセージ', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIがエラー終了すること（終了コード非0）
-      expect(result.value.exitCode).not.toBe(0);
-      // エラーメッセージが標準エラー出力に含まれること
-      // （実装に応じて、適切なエラーメッセージを検証）
-      const errorOutput = result.value.stderr || result.value.stdout;
-      expect(errorOutput.length).toBeGreaterThan(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIがエラー終了すること（終了コード非0）
+        expect(result.value.exitCode).not.toBe(0);
+        // エラーメッセージが標準エラー出力に含まれること
+        // （実装に応じて、適切なエラーメッセージを検証）
+        const errorOutput = result.value.stderr || result.value.stdout;
+        expect(errorOutput.length).toBeGreaterThan(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000); // タイムアウト: 30秒
 
@@ -83,19 +91,24 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-2: 無効な操作 - 無効な操作のエラー', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIがエラー終了すること
-      expect(result.value.exitCode).not.toBe(0);
-      // エラーメッセージが含まれること
-      const errorOutput = result.value.stderr || result.value.stdout;
-      expect(errorOutput.length).toBeGreaterThan(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIがエラー終了すること
+        expect(result.value.exitCode).not.toBe(0);
+        // エラーメッセージが含まれること
+        const errorOutput = result.value.stderr || result.value.stdout;
+        expect(errorOutput.length).toBeGreaterThan(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
@@ -114,19 +127,24 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-3: タイムアウト - タイムアウトエラー', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIがエラー終了すること
-      expect(result.value.exitCode).not.toBe(0);
-      // エラーメッセージが含まれること
-      const errorOutput = result.value.stderr || result.value.stdout;
-      expect(errorOutput.length).toBeGreaterThan(0);
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIがエラー終了すること
+        expect(result.value.exitCode).not.toBe(0);
+        // エラーメッセージが含まれること
+        const errorOutput = result.value.stderr || result.value.stdout;
+        expect(errorOutput.length).toBeGreaterThan(0);
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 
@@ -144,21 +162,26 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-4: アサーション失敗 - 期待値との差分表示', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
 
-    // Act
-    const result = await runCli([flowPath]);
+    try {
+      // Act
+      const result = await runCli([tempPath]);
 
-    // Assert
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      // CLIがエラー終了すること（アサーション失敗）
-      expect(result.value.exitCode).not.toBe(0);
-      // エラーメッセージが含まれること
-      const errorOutput = result.value.stderr || result.value.stdout;
-      expect(errorOutput.length).toBeGreaterThan(0);
-      // アサーション失敗のメッセージが含まれること
-      // （実装に応じて、適切なエラーメッセージを検証）
+      // Assert
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        // CLIがエラー終了すること（アサーション失敗）
+        expect(result.value.exitCode).not.toBe(0);
+        // エラーメッセージが含まれること
+        const errorOutput = result.value.stderr || result.value.stdout;
+        expect(errorOutput.length).toBeGreaterThan(0);
+        // アサーション失敗のメッセージが含まれること
+        // （実装に応じて、適切なエラーメッセージを検証）
+      }
+    } finally {
+      await cleanup();
     }
   }, 30000);
 });

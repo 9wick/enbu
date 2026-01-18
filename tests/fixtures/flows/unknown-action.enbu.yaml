@@ -1,8 +1,8 @@
 # 不明なアクションを含むフロー
+steps:
+  # 正常なステップ
+  - open: http://localhost:8080/login-form.html
 
-# 正常なステップ
-- open: http://localhost:8080/login-form.html
-
-# サポートされていないアクション
-- unknownAction:
-    param: value
+  # サポートされていないアクション
+  - unknownAction:
+      param: value

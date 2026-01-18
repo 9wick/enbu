@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "references": [
+    {
+      "path": "./apps/cli"
+    },
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/agent-browser-adapter"
+    },
+    {
+      "path": "./example/assertions"
+    },
+    {
+      "path": "./example/form-input"
+    },
+    {
+      "path": "./example/navigation"
+    },
+    {
+      "path": "./example/utility"
+    },
+    {
+      "path": "./example/scroll"
+    },
+    {
+      "path": "./example/simple"
+    }
+  ],
+  "exclude": ["node_modules", "dist", "example"]
+}

@@ -7,7 +7,7 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "build": "nx run-many --target=build",
-    "prepush": "pnpm run format && pnpm run typecheck && pnpm run lint && pnpm run build && pnpm run test && pnpm run test:examples",
+    "prepush": "pnpm run format && pnpm run typecheck && pnpm run lint && pnpm run build && pnpm run test && pnpm run test:integration && pnpm run test:e2e && pnpm run test:examples",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "nx run-many --target=lint",
