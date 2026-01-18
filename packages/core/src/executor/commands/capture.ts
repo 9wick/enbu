@@ -22,7 +22,7 @@ export const handleScreenshot = async (
 
   const args = [command.path];
   if (command.fullPage) {
-    args.push('--full-page');
+    args.push('--full');
   }
   args.push('--json');
 

@@ -444,10 +444,19 @@ export const normalizeSelectCommand = (value: unknown): SelectCommand | null => 
  * @param obj - 検証対象のオブジェクト
  * @returns ScrollCommand、または不正な場合null
  */
+/**
+ * スクロール方向の型ガード
+ */
+const isScrollDirection = (
+  value: unknown,
+): value is 'up' | 'down' | 'left' | 'right' => {
+  return value === 'up' || value === 'down' || value === 'left' || value === 'right';
+};
+
 const checkNormalizedScroll = (obj: Record<string, unknown>): ScrollCommand | null => {
   if (
     obj.command === 'scroll' &&
-    (obj.direction === 'up' || obj.direction === 'down') &&
+    isScrollDirection(obj.direction) &&
     typeof obj.amount === 'number'
   ) {
     return { command: 'scroll', direction: obj.direction, amount: obj.amount };
@@ -467,11 +476,7 @@ const checkYamlScroll = (obj: Record<string, unknown>): ScrollCommand | null => 
   }
 
   const inner: Record<string, unknown> | null = toRecord(obj.scroll);
-  if (
-    inner === null ||
-    (inner.direction !== 'up' && inner.direction !== 'down') ||
-    typeof inner.amount !== 'number'
-  ) {
+  if (inner === null || !isScrollDirection(inner.direction) || typeof inner.amount !== 'number') {
     return null;
   }
 
@@ -481,8 +486,8 @@ const checkYamlScroll = (obj: Record<string, unknown>): ScrollCommand | null => 
 /**
  * ScrollCommandを正規化
  *
- * 正規化済み形式: { command: 'scroll', direction: 'up' | 'down', amount: number }
- * YAML簡略形式: { scroll: { direction: 'up' | 'down', amount: number } }
+ * 正規化済み形式: { command: 'scroll', direction: 'up' | 'down' | 'left' | 'right', amount: number }
+ * YAML簡略形式: { scroll: { direction: 'up' | 'down' | 'left' | 'right', amount: number } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたScrollCommand、または不正な場合null

@@ -133,7 +133,7 @@ export type SelectCommand = {
  */
 export type ScrollCommand = {
   command: 'scroll';
-  direction: 'up' | 'down';
+  direction: 'up' | 'down' | 'left' | 'right';
   amount: number;
 };
 

@@ -86,7 +86,7 @@ npx agent-browser-flow .abflow/login.flow.yaml
 | `select <selector> <value>` | ✅ | `- select: { selector: <selector>, value: <value> }` |
 | `check <selector>` | ❌ | - |
 | `uncheck <selector>` | ❌ | - |
-| `scroll <direction> [px]` | ✅ | `- scroll: { x: <x>, y: <y> }` |
+| `scroll <direction> [px]` | ✅ | `- scroll: { direction: up\|down\|left\|right, amount: <px> }` |
 | `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
 | `drag <source> <target>` | ❌ | - |
 | `upload <selector> <files>` | ❌ | - |
