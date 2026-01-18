@@ -243,15 +243,14 @@ export const executeStep = async (
  * 要素が利用可能になるまで自動的に待機する必要がある。
  *
  * 注意: 以下のコマンドはautoWait対象外
- * - scrollIntoView: agent-browserのヘルプでは@ref形式をサポートすると記載されているが、
- *   実際の動作では「Unsupported token "@eN" while parsing css selector」エラーが発生する。
- *   これはagent-browserの内部実装（Playwright）とヘルプの記載が一致していないためと思われる。
- *   scrollIntoView自体はPlaywrightのscrollIntoViewIfNeededを使用しており、
- *   要素が見つかるまで内部で待機する仕組みを持っているため、autoWaitは不要。
- *   将来的にagent-browserが@ref形式に対応した場合は、autoWait対象に追加することを検討。
+ * - assertVisible: 静的テキスト要素の確認にも使用されるが、静的テキストは
+ *   snapshotのrefsに含まれないため、autoWaitでは見つけられない。
+ *   ハンドラ内でPlaywrightのtext=形式に変換して処理する。
  * - assertNotVisible: 要素が存在しないか非表示であることを確認するため、
  *   autoWaitで要素の存在を確認してから実行すると論理的に矛盾する。
  *   agent-browserのis visibleコマンドは独自のタイムアウトを持っている。
+ * - scrollIntoView: 画面外の要素にスクロールするコマンドのため、
+ *   auto-wait（画面内要素のみをスナップショット）は不適切
  *
  * @param command - 判定するコマンド
  * @returns 自動待機が必要な場合はtrue、不要な場合はfalse
@@ -263,7 +262,6 @@ const shouldAutoWait = (command: Command): boolean => {
     'fill',
     'hover',
     'select',
-    'assertVisible',
     'assertEnabled',
     'assertChecked',
   ];

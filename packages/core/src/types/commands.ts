@@ -150,19 +150,68 @@ export type ScrollIntoViewCommand = {
 };
 
 /**
- * 待機
+ * ロード状態の種類
+ *
+ * agent-browserのwait --loadオプションで指定可能な状態:
+ * - load: DOMContentLoadedとonloadイベントが発火した状態
+ * - domcontentloaded: DOMが完全に読み込まれて解析された状態
+ * - networkidle: ネットワークアイドル状態（少なくとも500ms間、アクティブな接続が2つ以下）
+ */
+export type LoadState = 'load' | 'domcontentloaded' | 'networkidle';
+
+/**
+ * 待機コマンド
+ *
+ * agent-browserのwaitコマンドと1:1対応:
+ * - ms: 指定ミリ秒待機 (wait <ms>)
+ * - selector: CSSセレクタで要素出現を待つ (wait <selector>)
+ * - text: テキスト出現を待つ (wait --text <text>)
+ * - load: ロード状態を待つ (wait --load <state>)
+ * - url: URL変化を待つ (wait --url <pattern>)
+ * - fn: JS式がtruthyになるのを待つ (wait --fn <expression>)
  *
  * @example
  * // YAML: - wait: 1000
  * { command: 'wait', ms: 1000 }
  *
  * @example
- * // YAML: - wait: "読み込み完了"
- * { command: 'wait', target: '読み込み完了' }
+ * // YAML: - wait: "#loading-spinner"
+ * { command: 'wait', selector: '#loading-spinner' }
+ *
+ * @example
+ * // YAML:
+ * // - wait:
+ * //     text: "読み込み完了"
+ * { command: 'wait', text: '読み込み完了' }
+ *
+ * @example
+ * // YAML:
+ * // - wait:
+ * //     load: networkidle
+ * { command: 'wait', load: 'networkidle' }
+ *
+ * @example
+ * // YAML形式:
+ * // - wait:
+ * //     url: pattern
+ * // TypeScript形式: { command: 'wait', url: pattern }
+ *
+ * @example
+ * // YAML形式:
+ * // - wait:
+ * //     fn: expression
+ * // TypeScript形式: { command: 'wait', fn: expression }
  */
 export type WaitCommand = {
   command: 'wait';
-} & ({ ms: number } | { target: string });
+} & (
+  | { ms: number }
+  | { selector: string }
+  | { text: string }
+  | { load: LoadState }
+  | { url: string }
+  | { fn: string }
+);
 
 /**
  * スクリーンショットを保存

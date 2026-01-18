@@ -18,6 +18,7 @@ import type {
   ScrollCommand,
   ScrollIntoViewCommand,
   WaitCommand,
+  LoadState,
   ScreenshotCommand,
   SnapshotCommand,
   EvalCommand,
@@ -527,12 +528,42 @@ export const normalizeScrollIntoViewCommand = (value: unknown): ScrollIntoViewCo
 };
 
 /**
- * 正規化済みWaitCommandを検証
+ * CSSセレクタかどうかを判定
+ *
+ * CSSセレクタの特徴:
+ * - #で始まる（ID）
+ * - .で始まる（クラス）
+ * - [で始まる（属性）
+ * - タグ名（英字のみで構成される短い文字列）
+ *
+ * @param str - 判定対象の文字列
+ * @returns CSSセレクタの場合true
+ */
+const isCssSelector = (str: string): boolean => {
+  if (str.startsWith('#') || str.startsWith('.') || str.startsWith('[')) {
+    return true;
+  }
+  // タグ名（英字のみで短い文字列）
+  return /^[a-zA-Z][a-zA-Z0-9]*$/.test(str) && str.length <= 20;
+};
+
+/**
+ * LoadStateの型ガード
+ *
+ * @param value - 判定対象の値
+ * @returns LoadStateの場合true
+ */
+const isLoadState = (value: unknown): value is LoadState => {
+  return value === 'load' || value === 'domcontentloaded' || value === 'networkidle';
+};
+
+/**
+ * 正規化済みWaitCommandを検証（基本形式）
  *
  * @param obj - 検証対象のオブジェクト
  * @returns WaitCommand、または不正な場合null
  */
-const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null => {
+const checkNormalizedWaitBasic = (obj: Record<string, unknown>): WaitCommand | null => {
   if (obj.command !== 'wait') {
     return null;
   }
@@ -541,8 +572,74 @@ const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null =
     return { command: 'wait', ms: obj.ms };
   }
 
-  if (typeof obj.target === 'string') {
-    return { command: 'wait', target: obj.target };
+  if (typeof obj.selector === 'string') {
+    return { command: 'wait', selector: obj.selector };
+  }
+
+  if (typeof obj.text === 'string') {
+    return { command: 'wait', text: obj.text };
+  }
+
+  return null;
+};
+
+/**
+ * 正規化済みWaitCommandを検証（拡張形式）
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns WaitCommand、または不正な場合null
+ */
+const checkNormalizedWaitExtended = (obj: Record<string, unknown>): WaitCommand | null => {
+  if (obj.command !== 'wait') {
+    return null;
+  }
+
+  if (isLoadState(obj.load)) {
+    return { command: 'wait', load: obj.load };
+  }
+
+  if (typeof obj.url === 'string') {
+    return { command: 'wait', url: obj.url };
+  }
+
+  if (typeof obj.fn === 'string') {
+    return { command: 'wait', fn: obj.fn };
+  }
+
+  return null;
+};
+
+/**
+ * 正規化済みWaitCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns WaitCommand、または不正な場合null
+ */
+const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null => {
+  return checkNormalizedWaitBasic(obj) ?? checkNormalizedWaitExtended(obj);
+};
+
+/**
+ * YAML簡略形式のWaitCommandを検証（オブジェクト形式）
+ *
+ * @param inner - waitオブジェクトの内容
+ * @returns WaitCommand、または不正な場合null
+ */
+const checkYamlWaitObject = (inner: Record<string, unknown>): WaitCommand | null => {
+  if (typeof inner.text === 'string') {
+    return { command: 'wait', text: inner.text };
+  }
+
+  if (isLoadState(inner.load)) {
+    return { command: 'wait', load: inner.load };
+  }
+
+  if (typeof inner.url === 'string') {
+    return { command: 'wait', url: inner.url };
+  }
+
+  if (typeof inner.fn === 'string') {
+    return { command: 'wait', fn: inner.fn };
   }
 
   return null;
@@ -559,15 +656,28 @@ const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
     return null;
   }
 
+  // { wait: number } → ms指定
   if (typeof obj.wait === 'number') {
     return { command: 'wait', ms: obj.wait };
   }
 
+  // { wait: string } → selectorとして扱う（CSSセレクタの場合のみ）
   if (typeof obj.wait === 'string') {
-    return { command: 'wait', target: obj.wait };
+    if (isCssSelector(obj.wait)) {
+      return { command: 'wait', selector: obj.wait };
+    }
+    // CSSセレクタでない文字列は曖昧なのでエラー
+    // textやその他のオプションはオブジェクト形式で明示的に指定する必要がある
+    return null;
   }
 
-  return null;
+  // { wait: { text: "...", load: "...", url: "...", fn: "..." } }
+  const inner: Record<string, unknown> | null = toRecord(obj.wait);
+  if (inner === null) {
+    return null;
+  }
+
+  return checkYamlWaitObject(inner);
 };
 
 /**
@@ -575,11 +685,19 @@ const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
  *
  * 正規化済み形式:
  * - { command: 'wait', ms: number }
- * - { command: 'wait', target: string }
+ * - { command: 'wait', selector: string }
+ * - { command: 'wait', text: string }
+ * - { command: 'wait', load: LoadState }
+ * - { command: 'wait', url: string }
+ * - { command: 'wait', fn: string }
  *
  * YAML簡略形式:
- * - { wait: number }
- * - { wait: string }
+ * - { wait: number } → ms指定
+ * - { wait: "#selector" } → selector指定（CSSセレクタの場合のみ）
+ * - { wait: { text: "..." } } → text指定
+ * - { wait: { load: "networkidle" } } → load指定
+ * - { wait: { url: "..." } } → url指定
+ * - { wait: { fn: "..." } } → fn指定
  *
  * @param value - 検証対象の値
  * @returns 正規化されたWaitCommand、または不正な場合null

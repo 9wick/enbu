@@ -37,8 +37,5 @@ steps:
   # ステップ6: Enterキーで検索実行
   - press: Enter
 
-  # ステップ7: 検索結果ページの読み込みを待機
-  - wait: Search Results
-
-  # ステップ8: 検索結果ページの表示確認
+  # ステップ7: 検索結果ページの表示確認
   - assertVisible: Search Results

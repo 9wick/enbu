@@ -17,23 +17,22 @@ steps:
       direction: down
       amount: 500
 
-  # ステップ4: 中部セクションの表示確認
-  - assertVisible: 中部セクション
+  # ステップ4: 中部セクションの表示確認（ユニークなテキストを使用）
+  - assertVisible: ここは中部セクションです
 
   # ステップ5: さらに下方向に500pxスクロール
   - scroll:
       direction: down
       amount: 500
 
-  # ステップ6: 下部セクションの表示確認
-  - assertVisible: 下部セクション
+  # ステップ6: 下部セクションの表示確認（ユニークなテキストを使用）
+  - assertVisible: ここは下部セクションです
 
-  # ステップ7: フッターまでスクロール
-  # HTMLのh2テキスト「フッター」を使用
-  - scrollIntoView: フッター
+  # ステップ7: フッターまでスクロール（ユニークなテキストを使用）
+  - scrollIntoView: ページの最下部に到達しました
 
-  # ステップ8: フッターの表示確認
-  - assertVisible: フッター
+  # ステップ8: フッターの表示確認（ユニークなテキストを使用）
+  - assertVisible: ページの最下部に到達しました
 
   # ステップ9: 上部に戻る
   - scrollIntoView: Scroll Test

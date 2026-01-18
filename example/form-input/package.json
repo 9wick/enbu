@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc --noEmit",
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
     "test": "start-server-and-test start http://localhost:3020 test:e2e",

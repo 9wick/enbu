@@ -9,15 +9,17 @@ steps:
   # ステップ1: ページを開く
   - open: ${BASE_URL}
 
-  # ステップ2: "Utility Test"の表示確認
-  - assertVisible: Utility Test
+  # ステップ2: メインタイトルの表示確認
+  # "Utility Test"は他の要素にも含まれるため、data-testidを使用
+  - assertVisible: '[data-testid="main-title"]'
 
   # ステップ3: 2秒待機
   - wait: 2000
 
   # ステップ4: 遅延表示要素の出現を待機（3秒後に表示される）
-  # HTMLのh2テキスト「遅延表示コンテンツ」を使用
-  - wait: 遅延表示コンテンツ
+  # 新しいtext形式を使用（agent-browserの wait --text と1:1対応）
+  - wait:
+      text: "遅延表示コンテンツ"
 
   # ステップ5: 遅延表示要素の確認
   - assertVisible: 遅延表示コンテンツ

@@ -9,6 +9,7 @@ import type {
   AssertCheckedCommand,
 } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
+import { resolveTextSelector } from './selector-utils';
 
 /**
  * セレクタを解決する
@@ -19,11 +20,28 @@ const resolveSelector = (originalSelector: string, context: ExecutionContext): s
 };
 
 /**
+ * assertVisible/assertNotVisible用のセレクタを解決する
+ *
+ * autoWaitで解決されたresolvedRefがあればそれを使用、
+ * なければテキストセレクタ変換を適用する。
+ */
+const resolveVisibilitySelector = (originalSelector: string, context: ExecutionContext): string => {
+  // autoWaitで解決されたrefがあればそれを使用
+  if (context.resolvedRef) {
+    return context.resolvedRef;
+  }
+  // テキストセレクタの変換を適用
+  return resolveTextSelector(originalSelector);
+};
+
+/**
  * assertVisible コマンドのハンドラ
  *
  * 指定されたセレクタの要素が表示されていることを確認する。
  * agent-browser の is visible コマンドを実行し、その結果を検証する。
  * 要素が表示されていない場合は assertion_failed エラーを返す。
+ *
+ * テキストセレクタの場合は自動的にPlaywrightのtext=形式に変換される。
  *
  * @param command - assertVisible コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -34,7 +52,7 @@ export const handleAssertVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
+  const selector = resolveVisibilitySelector(command.selector, context);
 
   return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
@@ -104,6 +122,8 @@ export const handleAssertVisible = async (
  * agent-browser の is visible コマンドを実行し、その結果を検証する。
  * 要素が表示されている場合は assertion_failed エラーを返す。
  *
+ * テキストセレクタの場合は自動的にPlaywrightのtext=形式に変換される。
+ *
  * @param command - assertNotVisible コマンドのパラメータ
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
@@ -113,7 +133,7 @@ export const handleAssertNotVisible = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
+  const selector = resolveVisibilitySelector(command.selector, context);
 
   return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)

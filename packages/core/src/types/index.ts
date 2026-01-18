@@ -15,6 +15,7 @@ export type {
   ScrollCommand,
   ScrollIntoViewCommand,
   WaitCommand,
+  LoadState,
   ScreenshotCommand,
   SnapshotCommand,
   EvalCommand,

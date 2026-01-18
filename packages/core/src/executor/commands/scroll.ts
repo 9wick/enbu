@@ -3,14 +3,7 @@ import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { ScrollCommand, ScrollIntoViewCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
-
-/**
- * セレクタを解決する
- * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
- */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
-  return context.resolvedRef ?? originalSelector;
-};
+import { resolveTextSelector } from './selector-utils';
 
 /**
  * scroll コマンドのハンドラ
@@ -43,10 +36,27 @@ export const handleScroll = async (
 };
 
 /**
+ * セレクタが@ref形式かどうかを判定する
+ *
+ * @param selector - 判定するセレクタ
+ * @returns @ref形式の場合はtrue
+ */
+const isRefSelector = (selector: string): boolean => {
+  return /^@e\d+$/.test(selector);
+};
+
+/**
  * scrollIntoView コマンドのハンドラ
  *
  * 指定されたセレクタの要素がビューポートに表示されるようにスクロールする。
- * agent-browser の scrollintoview コマンドを実行する。
+ *
+ * 注意: agent-browser 0.5.0 の scrollintoview コマンドには @ref 形式を
+ * サポートしないバグがある（browser.getLocator() を使用していない）。
+ * そのため、@ref 形式の場合は focus コマンドを使用してスクロールを実現する。
+ * focus コマンドは Playwright の focus() を使用し、要素をビューポートに
+ * 表示するためにスクロールする動作を持つ。
+ *
+ * テキストセレクタは自動的に text="..." 形式に変換される。
  *
  * @param command - scrollIntoView コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -57,9 +67,14 @@ export const handleScrollIntoView = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
+  // autoWaitで解決されたrefがあればそれを使用、なければテキストセレクタの変換を適用
+  const selector = context.resolvedRef ?? resolveTextSelector(command.selector);
 
-  return (await executeCommand('scrollintoview', [selector, '--json'], context.executeOptions))
+  // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
+  // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
+  const commandName = isRefSelector(selector) ? 'focus' : 'scrollintoview';
+
+  return (await executeCommand(commandName, [selector, '--json'], context.executeOptions))
     .andThen(parseJsonOutput)
     .map((output) => ({
       stdout: JSON.stringify(output),
