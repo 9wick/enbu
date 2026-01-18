@@ -68,7 +68,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -106,7 +105,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -171,7 +169,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -245,7 +242,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -348,7 +344,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -370,12 +365,16 @@ describe('runFlowCommand', () => {
   });
 
   /**
-   * R-6: --bail で最初の失敗で中断
+   * R-6: 複数フローは独立して動作する（1つ失敗しても他は実行）
    *
-   * 前提条件: bail=true, 最初のフローが失敗
-   * 検証項目: 2つ目のフローは実行されず、ok({ passed: 0, failed: 1, total: 1 }) が返される
+   * 仕様: 複数ファイルは独立して動くべき
+   *
+   * 前提条件: 2つのフロー、1つ目が失敗、2つ目が成功
+   * 検証項目:
+   *   - 1つ目が失敗しても2つ目は実行される
+   *   - ok({ passed: 1, failed: 1, total: 2 }) が返される
    */
-  it('R-6: --bailフラグで最初の失敗時に中断する', async () => {
+  it('R-6: 複数フローは独立して動作する（1つ失敗しても他は実行）', async () => {
     // Arrange
     const mockFlow1: Flow = {
       name: 'フロー1',
@@ -383,9 +382,15 @@ describe('runFlowCommand', () => {
       env: {},
     };
 
+    const mockFlow2: Flow = {
+      name: 'フロー2',
+      steps: [{ command: 'open', url: 'https://example.com' }],
+      env: {},
+    };
+
     const mockFlowResult1: FlowResult = {
       flow: mockFlow1,
-      sessionName: 'test-session',
+      sessionName: 'test-session-1',
       status: 'failed',
       duration: 2000,
       steps: [
@@ -406,13 +411,36 @@ describe('runFlowCommand', () => {
       },
     };
 
-    const { readFile } = await import('node:fs/promises');
-    vi.mocked(readFile).mockResolvedValueOnce(
-      `name: フロー1\ndescription: 失敗するフロー\nsteps:\n  - command: click\n    selector: NotExist` as never,
-    );
+    const mockFlowResult2: FlowResult = {
+      flow: mockFlow2,
+      sessionName: 'test-session-2',
+      status: 'passed',
+      duration: 1000,
+      steps: [
+        {
+          index: 0,
+          command: mockFlow2.steps[0],
+          status: 'passed',
+          duration: 1000,
+        },
+      ],
+    };
 
-    vi.mocked(parseFlowYaml).mockReturnValueOnce(ok(mockFlow1) as never);
-    vi.mocked(executeFlow).mockResolvedValueOnce(ok(mockFlowResult1) as never);
+    const { readFile } = await import('node:fs/promises');
+    vi.mocked(readFile)
+      .mockResolvedValueOnce(
+        `name: フロー1\nsteps:\n  - command: click\n    selector: NotExist` as never,
+      )
+      .mockResolvedValueOnce(
+        `name: フロー2\nsteps:\n  - command: open\n    url: https://example.com` as never,
+      );
+
+    vi.mocked(parseFlowYaml)
+      .mockReturnValueOnce(ok(mockFlow1) as never)
+      .mockReturnValueOnce(ok(mockFlow2) as never);
+    vi.mocked(executeFlow)
+      .mockResolvedValueOnce(ok(mockFlowResult1) as never)
+      .mockResolvedValueOnce(ok(mockFlowResult2) as never);
 
     // Act
     const result = await runFlowCommand(
@@ -422,7 +450,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: true, // bail フラグ
         verbose: false,
         progressJson: false,
       },
@@ -433,12 +460,13 @@ describe('runFlowCommand', () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (executionResult) => {
-        expect(executionResult.passed).toBe(0);
+        // 1つ目は失敗、2つ目は成功
+        expect(executionResult.passed).toBe(1);
         expect(executionResult.failed).toBe(1);
-        // 2つ目は実行されない（totalは1）
-        expect(executionResult.total).toBe(1);
-        // executeFlowは1回のみ呼ばれる
-        expect(vi.mocked(executeFlow)).toHaveBeenCalledTimes(1);
+        // 両方実行されている（totalは2）
+        expect(executionResult.total).toBe(2);
+        // executeFlowは2回呼ばれる
+        expect(vi.mocked(executeFlow)).toHaveBeenCalledTimes(2);
       },
       () => {
         throw new Error('Expected ok result');
@@ -491,7 +519,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -501,9 +528,10 @@ describe('runFlowCommand', () => {
     // Assert
     // closeSessionが呼び出されたことを確認
     // sessionNameは動的に生成されるため、パターンマッチで確認
+    // 形式: enbu-<name最大12文字>-<36進数タイムスタンプ>
     expect(vi.mocked(closeSession)).toHaveBeenCalledTimes(1);
     const sessionName = vi.mocked(closeSession).mock.calls[0][0];
-    expect(sessionName).toMatch(/^abf-ログイン-\d+$/);
+    expect(sessionName).toMatch(/^enbu-ログイン-[a-z0-9]+$/);
   });
 
   /**
@@ -562,7 +590,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },
@@ -578,11 +605,12 @@ describe('runFlowCommand', () => {
       '💡 Debug: To inspect the browser state, run:',
     );
     // sessionNameは動的に生成されるため、パターンマッチで確認
+    // 形式: enbu-<name最大12文字>-<36進数タイムスタンプ>
     const indentCalls = vi.mocked(formatter.indent).mock.calls;
     const debugCommand = indentCalls.find(
       (call) =>
         typeof call[0] === 'string' &&
-        call[0].startsWith('npx agent-browser snapshot --session abf-ログイン-') &&
+        call[0].startsWith('npx agent-browser snapshot --session enbu-ログイン-') &&
         call[1] === 1,
     );
     expect(debugCommand).toBeDefined();
@@ -630,7 +658,6 @@ describe('runFlowCommand', () => {
         env: {},
         timeout: 30000,
         screenshot: false,
-        bail: false,
         verbose: false,
         progressJson: false,
       },

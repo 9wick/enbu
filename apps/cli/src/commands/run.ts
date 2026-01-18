@@ -38,8 +38,6 @@ type RunCommandArgs = {
   timeout: number;
   /** スクリーンショットを撮影するか */
   screenshot: boolean;
-  /** 最初の失敗で停止するか */
-  bail: boolean;
   /** セッション名 */
   session?: string;
   /** verboseモード */
@@ -328,14 +326,13 @@ const executeFlowWithProgress = async (
   args: RunCommandArgs,
   sessionName: string,
 ): Promise<Result<FlowResult, CliError>> => {
-  // フロー実行
+  // フロー実行（ステップ失敗時は即停止）
   const executeResult = await executeFlow(flow, {
     sessionName,
     headed: args.headed,
     env: args.env,
     commandTimeoutMs: args.timeout,
     screenshot: args.screenshot,
-    bail: args.bail,
     onStepProgress: createStepProgressCallback(args.progressJson),
   });
 
@@ -447,7 +444,10 @@ const executeAllFlows = async (
     // args.sessionが指定されている場合でも、各フローごとにユニークなセッション名を生成する
     // これにより、複数フロー実行時に最初のフローがセッションをクローズしても
     // 2番目以降のフローが影響を受けないようにする
-    const sessionName = `abf-${args.session || flow.name}-${Date.now()}`;
+    // 注意: Unixドメインソケットのパス長制限（約108バイト）を考慮し、セッション名は短くする
+    const timestamp = Date.now().toString(36); // 短縮したタイムスタンプ
+    const shortName = (args.session || flow.name).slice(0, 12); // 最大12文字
+    const sessionName = `enbu-${shortName}-${timestamp}`;
 
     // フロー実行
     const executeResult = await executeFlowWithProgress(flow, args, sessionName);
@@ -503,13 +503,6 @@ const executeAllFlows = async (
         // （result.status === 'failed'の場合のみセッションが確実に存在する）
       },
     );
-
-    // --bail フラグが指定されていて、失敗した場合は中断
-    if (args.bail && failed > 0) {
-      formatter.error('Stopping due to --bail flag');
-      formatter.newline();
-      break;
-    }
   }
 
   // サマリー表示

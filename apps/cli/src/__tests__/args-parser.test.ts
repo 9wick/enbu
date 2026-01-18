@@ -302,33 +302,6 @@ describe('parseArgs', () => {
   });
 
   /**
-   * A-12: --bailオプション
-   *
-   * 前提条件: argv = ['--bail']
-   * 検証項目: { bail: true } が返される
-   */
-  it('A-12: --bailオプションをパースできる', () => {
-    // Arrange
-    const argv = ['--bail'];
-
-    // Act
-    const result = parseArgs(argv);
-
-    // Assert
-    expect(result.isOk()).toBe(true);
-    result.match(
-      (parsed) => {
-        if (parsed.command === 'run') {
-          expect(parsed.bail).toBe(true);
-        }
-      },
-      () => {
-        throw new Error('Expected err result');
-      },
-    );
-  });
-
-  /**
    * A-13: --session <name>オプション
    *
    * 前提条件: argv = ['--session', 'my-session']

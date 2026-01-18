@@ -436,4 +436,228 @@ describe('executeFlow', () => {
       },
     );
   });
+
+  /**
+   * FE-12: ステップが失敗したら後続のステップは実行されない
+   *
+   * 仕様:
+   *   - 1ファイルの中のstepが失敗したらそのflowは失敗
+   *   - 失敗後の後続ステップは実行されない（実行してもずれる）
+   *
+   * 前提条件: 3ステップのフロー、2番目のステップで失敗
+   * 検証項目:
+   *   - FlowResult.status === 'failed'
+   *   - steps配列には失敗したステップまでしか含まれない（2つ）
+   *   - 3番目のステップは実行されていない
+   */
+  it('FE-12: ステップが失敗したら後続のステップは実行されない', async () => {
+    // Arrange: 3ステップのフロー
+    const flow: Flow = {
+      name: 'ステップ失敗テスト',
+      env: {},
+      steps: [
+        { command: 'open', url: 'https://example.com' },
+        { command: 'click', selector: '存在しないボタン' },
+        { command: 'click', selector: '次のボタン' }, // これは実行されないはず
+      ],
+    };
+
+    const options: FlowExecutionOptions = {
+      sessionName: 'test-session',
+    };
+
+    // 1番目のステップ: open 成功
+    vi.mocked(executeCommand).mockResolvedValueOnce(
+      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
+    );
+
+    // 2番目のステップ: click 自動待機でタイムアウト（要素が見つからない）
+    // 自動待機が空のsnapshotを返し続ける
+    vi.mocked(executeCommand).mockResolvedValue(
+      ok('{"success":true,"data":{"refs":{}},"error":null}'),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValue(
+      ok({ success: true, data: { refs: {} }, error: null }),
+    );
+    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({}));
+
+    // タイマーを使用して自動待機のタイムアウトをシミュレート
+    vi.useFakeTimers();
+    const promise = executeFlow(flow, { ...options, autoWaitTimeoutMs: 100 });
+    await vi.advanceTimersByTimeAsync(200);
+    const result = await promise;
+    vi.useRealTimers();
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (flowResult) => {
+        // フロー全体が失敗
+        expect(flowResult.status).toBe('failed');
+
+        // ステップは失敗したところまでしか実行されない（2ステップ）
+        expect(flowResult.steps).toHaveLength(2);
+
+        // 1番目は成功
+        expect(flowResult.steps[0].status).toBe('passed');
+        expect(flowResult.steps[0].command.command).toBe('open');
+
+        // 2番目は失敗
+        expect(flowResult.steps[1].status).toBe('failed');
+        expect(flowResult.steps[1].command.command).toBe('click');
+
+        // エラー情報が正しく設定されている
+        expect(flowResult.error).toBeDefined();
+        expect(flowResult.error?.stepIndex).toBe(1);
+
+        // 3番目のステップは実行されていない（stepsに含まれない）
+        // つまり steps.length === 2 であることで保証
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * FE-13: 最初のステップが失敗した場合も後続は実行されない
+   *
+   * 仕様: 失敗したら即停止
+   *
+   * 前提条件: 3ステップのフロー、1番目のステップで失敗
+   * 検証項目:
+   *   - FlowResult.status === 'failed'
+   *   - steps配列には1つだけ
+   *   - 2, 3番目のステップは実行されていない
+   */
+  it('FE-13: 最初のステップが失敗した場合も後続は実行されない', async () => {
+    // Arrange: 3ステップのフロー
+    const flow: Flow = {
+      name: '最初のステップ失敗テスト',
+      env: {},
+      steps: [
+        { command: 'open', url: 'https://example.com' },
+        { command: 'click', selector: 'ボタン1' },
+        { command: 'click', selector: 'ボタン2' },
+      ],
+    };
+
+    const options: FlowExecutionOptions = {
+      sessionName: 'test-session',
+    };
+
+    // 1番目のステップ: open 失敗（agent-browser接続エラー）
+    vi.mocked(executeCommand).mockResolvedValueOnce(
+      err({
+        type: 'command_failed',
+        message: 'Connection refused',
+        command: 'open',
+        args: ['https://example.com'],
+        stderr: 'Connection refused',
+        exitCode: 1,
+        errorMessage: 'Connection refused',
+      }),
+    );
+
+    // Act
+    const result = await executeFlow(flow, options);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (flowResult) => {
+        // フロー全体が失敗
+        expect(flowResult.status).toBe('failed');
+
+        // 1ステップだけ実行された
+        expect(flowResult.steps).toHaveLength(1);
+        expect(flowResult.steps[0].status).toBe('failed');
+        expect(flowResult.steps[0].command.command).toBe('open');
+
+        // エラー情報
+        expect(flowResult.error?.stepIndex).toBe(0);
+
+        // 2, 3番目のステップは実行されていない
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * FE-14: onStepProgressコールバックは失敗したステップまでしか呼ばれない
+   *
+   * 仕様: ステップが失敗したら後続は実行されない
+   *
+   * 前提条件: 3ステップのフロー、2番目で失敗、onStepProgressコールバック付き
+   * 検証項目:
+   *   - startedは2回呼ばれる（step 0, step 1）
+   *   - completedも2回呼ばれる（step 0, step 1）
+   *   - step 2のstartedは呼ばれない
+   */
+  it('FE-14: onStepProgressコールバックは失敗したステップまでしか呼ばれない', async () => {
+    // Arrange
+    const flow: Flow = {
+      name: 'コールバックテスト',
+      env: {},
+      steps: [
+        { command: 'open', url: 'https://example.com' },
+        { command: 'click', selector: '存在しないボタン' },
+        { command: 'click', selector: '次のボタン' },
+      ],
+    };
+
+    const progressCalls: Array<{ stepIndex: number; status: string }> = [];
+    const options: FlowExecutionOptions = {
+      sessionName: 'test-session',
+      autoWaitTimeoutMs: 100,
+      onStepProgress: (progress) => {
+        progressCalls.push({ stepIndex: progress.stepIndex, status: progress.status });
+      },
+    };
+
+    // 1番目のステップ: open 成功
+    vi.mocked(executeCommand).mockResolvedValueOnce(
+      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
+    );
+
+    // 2番目のステップ: 自動待機タイムアウト
+    vi.mocked(executeCommand).mockResolvedValue(
+      ok('{"success":true,"data":{"refs":{}},"error":null}'),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValue(
+      ok({ success: true, data: { refs: {} }, error: null }),
+    );
+    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({}));
+
+    // Act
+    vi.useFakeTimers();
+    const promise = executeFlow(flow, options);
+    await vi.advanceTimersByTimeAsync(200);
+    const result = await promise;
+    vi.useRealTimers();
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+
+    // step 0: started, completed
+    // step 1: started, completed（失敗）
+    // step 2: 呼ばれない
+    expect(progressCalls).toEqual([
+      { stepIndex: 0, status: 'started' },
+      { stepIndex: 0, status: 'completed' },
+      { stepIndex: 1, status: 'started' },
+      { stepIndex: 1, status: 'completed' },
+    ]);
+
+    // step 2のstartedは呼ばれていない
+    expect(progressCalls.find((c) => c.stepIndex === 2)).toBeUndefined();
+  });
 });

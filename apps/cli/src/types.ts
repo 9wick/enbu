@@ -37,8 +37,6 @@ export type ParsedArgs = {
       timeout: number;
       /** 失敗時にスクリーンショットを保存するかどうか */
       screenshot: boolean;
-      /** 最初の失敗で実行を中断するかどうか */
-      bail: boolean;
       /** agent-browserのセッション名（省略可） */
       session?: string;
       /** 進捗をJSON形式で出力するか（VS Code拡張など外部ツール連携用） */

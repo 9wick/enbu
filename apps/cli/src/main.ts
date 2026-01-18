@@ -54,7 +54,6 @@ const main = async (): Promise<void> => {
             env: args.env,
             timeout: args.timeout,
             screenshot: args.screenshot,
-            bail: args.bail,
             session: args.session,
             verbose: args.verbose,
             progressJson: args.progressJson,

@@ -125,7 +125,6 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     headed: false,
     timeout: DEFAULT_TIMEOUT_MS,
     screenshot: false,
-    bail: false,
     session: undefined,
     progressJson: false,
   };
@@ -158,7 +157,6 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     env: state.env,
     timeout: state.timeout,
     screenshot: state.screenshot,
-    bail: state.bail,
     session: state.session,
     progressJson: state.progressJson,
   });
@@ -186,7 +184,6 @@ const processRunArg = (
     headed: boolean;
     timeout: number;
     screenshot: boolean;
-    bail: boolean;
     session: string | undefined;
     progressJson: boolean;
   },
@@ -220,7 +217,6 @@ const processFlagArg = (
     files: string[];
     headed: boolean;
     screenshot: boolean;
-    bail: boolean;
     progressJson: boolean;
   },
 ): Result<number, CliError> => {
@@ -248,7 +244,6 @@ const tryProcessKnownFlag = (
   state: {
     headed: boolean;
     screenshot: boolean;
-    bail: boolean;
     progressJson: boolean;
   },
 ): Result<number, CliError> | null => {
@@ -264,11 +259,6 @@ const tryProcessKnownFlag = (
 
   if (arg === '--screenshot') {
     state.screenshot = true;
-    return ok(currentIndex);
-  }
-
-  if (arg === '--bail') {
-    state.bail = true;
     return ok(currentIndex);
   }
 
