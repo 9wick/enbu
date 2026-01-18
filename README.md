@@ -136,12 +136,12 @@ npx agent-browser-flow .abflow/login.flow.yaml
 
 | agent-browser | 対応 | YAML記法 |
 |---------------|:----:|----------|
-| `wait <selector>` | ❌ | - |
+| `wait <selector>` | ✅ | `- wait: "<selector>"` |
 | `wait <ms>` | ✅ | `- wait: <ms>` |
-| `wait --text <text>` | ❌ | - |
-| `wait --url <pattern>` | ❌ | - |
-| `wait --load <state>` | ❌ | - |
-| `wait --fn <condition>` | ❌ | - |
+| `wait --text <text>` | ✅ | `- wait: { text: "<text>" }` |
+| `wait --url <pattern>` | ✅ | `- wait: { url: "<pattern>" }` |
+| `wait --load <state>` | ✅ | `- wait: { load: "<state>" }` |
+| `wait --fn <condition>` | ✅ | `- wait: { fn: "<condition>" }` |
 
 ### Mouse Control
 

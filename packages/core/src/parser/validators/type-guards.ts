@@ -528,26 +528,6 @@ export const normalizeScrollIntoViewCommand = (value: unknown): ScrollIntoViewCo
 };
 
 /**
- * CSSセレクタかどうかを判定
- *
- * CSSセレクタの特徴:
- * - #で始まる（ID）
- * - .で始まる（クラス）
- * - [で始まる（属性）
- * - タグ名（英字のみで構成される短い文字列）
- *
- * @param str - 判定対象の文字列
- * @returns CSSセレクタの場合true
- */
-const isCssSelector = (str: string): boolean => {
-  if (str.startsWith('#') || str.startsWith('.') || str.startsWith('[')) {
-    return true;
-  }
-  // タグ名（英字のみで短い文字列）
-  return /^[a-zA-Z][a-zA-Z0-9]*$/.test(str) && str.length <= 20;
-};
-
-/**
  * LoadStateの型ガード
  *
  * @param value - 判定対象の値
@@ -661,14 +641,10 @@ const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
     return { command: 'wait', ms: obj.wait };
   }
 
-  // { wait: string } → selectorとして扱う（CSSセレクタの場合のみ）
+  // { wait: string } → selectorとして扱う
+  // agent-browser の wait <selector> と同じ動作（そのまま Playwright に渡す）
   if (typeof obj.wait === 'string') {
-    if (isCssSelector(obj.wait)) {
-      return { command: 'wait', selector: obj.wait };
-    }
-    // CSSセレクタでない文字列は曖昧なのでエラー
-    // textやその他のオプションはオブジェクト形式で明示的に指定する必要がある
-    return null;
+    return { command: 'wait', selector: obj.wait };
   }
 
   // { wait: { text: "...", load: "...", url: "...", fn: "..." } }
@@ -693,7 +669,7 @@ const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
  *
  * YAML簡略形式:
  * - { wait: number } → ms指定
- * - { wait: "#selector" } → selector指定（CSSセレクタの場合のみ）
+ * - { wait: "<selector>" } → selector指定（agent-browserと同じ動作）
  * - { wait: { text: "..." } } → text指定
  * - { wait: { load: "networkidle" } } → load指定
  * - { wait: { url: "..." } } → url指定
