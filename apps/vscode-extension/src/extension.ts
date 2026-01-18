@@ -86,8 +86,16 @@ async function runFlow(editor: vscode.TextEditor, document: vscode.TextDocument)
     return;
   }
 
+  // ワークスペースルートを取得
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage('No workspace folder found');
+    return;
+  }
+  const workspaceRoot = workspaceFolder.uri.fsPath;
+
   // フローランナーを作成
-  const runner = new FlowRunner(filePath);
+  const runner = new FlowRunner(filePath, workspaceRoot);
 
   // 進捗イベントをデコレーションに反映
   runner.on('step:start', (message) => {

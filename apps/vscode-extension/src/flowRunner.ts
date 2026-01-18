@@ -5,8 +5,35 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { EventEmitter } from 'node:events';
 import type { ProgressMessage } from './types';
+
+/**
+ * ファイルパスから上に向かってnode_modules/.bin/enbuを探索する
+ *
+ * @param startDir - 探索開始ディレクトリ
+ * @param rootDir - 探索終了ディレクトリ（ワークスペースルート）
+ * @returns enbuバイナリのパス、見つからない場合はnull
+ */
+const findEnbuBinary = (startDir: string, rootDir: string): string | null => {
+  let currentDir = startDir;
+
+  while (currentDir.startsWith(rootDir)) {
+    const enbuPath = join(currentDir, 'node_modules', '.bin', 'enbu');
+    if (existsSync(enbuPath)) {
+      return enbuPath;
+    }
+    const parentDir = dirname(currentDir);
+    if (parentDir === currentDir) {
+      break;
+    }
+    currentDir = parentDir;
+  }
+
+  return null;
+};
 
 /**
  * フローランナーイベント型定義
@@ -41,15 +68,18 @@ export interface FlowRunnerEvents {
 export class FlowRunner extends EventEmitter {
   private process: ChildProcess | null = null;
   private readonly filePath: string;
+  private readonly workspaceRoot: string;
 
   /**
    * コンストラクタ
    *
    * @param filePath - 実行するフローファイルのパス
+   * @param workspaceRoot - ワークスペースのルートディレクトリ
    */
-  constructor(filePath: string) {
+  constructor(filePath: string, workspaceRoot: string) {
     super();
     this.filePath = filePath;
+    this.workspaceRoot = workspaceRoot;
   }
 
   /**
@@ -63,10 +93,19 @@ export class FlowRunner extends EventEmitter {
   public run(): Promise<number> {
     return new Promise((resolve, reject) => {
       // CLIプロセスを起動
-      // ワークスペースのnode_modules/.bin/enbuを使用（npxはキャッシュ問題があるため）
-      // node_modules/.bin/enbuが見つからない場合はnpx --no経由で実行
-      this.process = spawn('npx', ['--no', 'enbu', 'run', this.filePath, '--progress-json', '--headed'], {
-        cwd: process.cwd(),
+      // ファイルパスから上に向かってnode_modules/.bin/enbuを探索
+      const fileDir = dirname(this.filePath);
+      const enbuBin = findEnbuBinary(fileDir, this.workspaceRoot);
+
+      if (!enbuBin) {
+        reject(new Error('enbu not found in node_modules. Please install enbu: npm install -D enbu'));
+        return;
+      }
+
+      // enbuが見つかったディレクトリをcwdとして使用（そのpackage.jsonのコンテキストで実行）
+      const enbuDir = dirname(dirname(dirname(enbuBin))); // node_modules/.bin/enbu -> project root
+      this.process = spawn(enbuBin, ['run', this.filePath, '--progress-json', '--headed'], {
+        cwd: enbuDir,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
