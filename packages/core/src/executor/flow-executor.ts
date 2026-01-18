@@ -8,7 +8,13 @@
 import { type Result, ok, err } from 'neverthrow';
 import type { Flow } from '../types';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
-import type { FlowResult, FlowExecutionOptions, StepResult, ExecutionContext } from './result';
+import type {
+  FlowResult,
+  FlowExecutionOptions,
+  StepResult,
+  ExecutionContext,
+  StepProgressCallback,
+} from './result';
 import { executeStep } from './execute-step';
 import { expandEnvVars } from './env-expander';
 
@@ -111,6 +117,7 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
  * @param screenshot - スクリーンショットを撮影するか
  * @param bail - エラー時に即座に停止するか
  * @param startTime - 実行開始時刻
+ * @param onStepProgress - ステップ進捗コールバック（オプション）
  * @returns ステップの実行結果とフロー結果（bailの場合のみ）
  */
 const executeAllSteps = async (
@@ -119,6 +126,7 @@ const executeAllSteps = async (
   screenshot: boolean,
   bail: boolean,
   startTime: number,
+  onStepProgress?: StepProgressCallback,
 ): Promise<{
   steps: StepResult[];
   hasFailure: boolean;
@@ -129,13 +137,25 @@ const executeAllSteps = async (
   const steps: StepResult[] = [];
   let hasFailure = false;
   let firstFailureIndex = -1;
+  const stepTotal = expandedFlow.steps.length;
 
   for (let i = 0; i < expandedFlow.steps.length; i++) {
     const command = expandedFlow.steps[i];
     debugLog(`step ${i + 1}/${expandedFlow.steps.length} start:`, command);
+
+    // ステップ開始を通知
+    if (onStepProgress) {
+      await onStepProgress({ stepIndex: i, stepTotal, status: 'started' });
+    }
+
     const stepResult = await executeStep(command, i, context, screenshot);
     debugLog(`step ${i + 1} done:`, { status: stepResult.status, duration: stepResult.duration });
     steps.push(stepResult);
+
+    // ステップ完了を通知
+    if (onStepProgress) {
+      await onStepProgress({ stepIndex: i, stepTotal, status: 'completed', stepResult });
+    }
 
     if (stepResult.status === 'failed') {
       if (!hasFailure) {
@@ -227,6 +247,7 @@ export const executeFlow = async (
     screenshot,
     bail,
     startTime,
+    options.onStepProgress,
   );
 
   if (earlyResult) {

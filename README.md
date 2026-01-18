@@ -67,184 +67,6 @@ npx enbu
 npx enbu .abflow/login.enbu.yaml
 ```
 
-## agent-browser コマンド対応表
-
-本ツールは [agent-browser](https://github.com/vercel-labs/agent-browser) のコマンドをYAMLから利用できます。以下は対応状況です。
-
-### Core Commands
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `open <url>` | ✅ | `- open: <url>` |
-| `click <selector>` | ✅ | `- click: <selector>` |
-| `dblclick <selector>` | ❌ | - |
-| `focus <selector>` | ❌ | - |
-| `type <selector> <text>` | ✅ | `- type: { selector: <selector>, value: <text> }` |
-| `fill <selector> <text>` | ✅ | `- fill: { selector: <selector>, value: <text> }` |
-| `press <key>` | ✅ | `- press: <key>` |
-| `keydown <key>` | ❌ | - |
-| `keyup <key>` | ❌ | - |
-| `hover <selector>` | ✅ | `- hover: <selector>` |
-| `select <selector> <value>` | ✅ | `- select: { selector: <selector>, value: <value> }` |
-| `check <selector>` | ❌ | - |
-| `uncheck <selector>` | ❌ | - |
-| `scroll <direction> [px]` | ✅ | `- scroll: { direction: up\|down\|left\|right, amount: <px> }` |
-| `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
-| `drag <source> <target>` | ❌ | - |
-| `upload <selector> <files>` | ❌ | - |
-| `screenshot [path]` | ✅ | `- screenshot: <path>` |
-| `pdf <path>` | ❌ | - |
-| `snapshot` | ✅ | `- snapshot` |
-| `eval <js>` | ✅ | `- eval: <script>` |
-| `close` | ❌ | - |
-
-### Get Info
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `get text <selector>` | ❌ | - |
-| `get html <selector>` | ❌ | - |
-| `get value <selector>` | ❌ | - |
-| `get attr <selector> <attr>` | ❌ | - |
-| `get title` | ❌ | - |
-| `get url` | ❌ | - |
-| `get count <selector>` | ❌ | - |
-| `get box <selector>` | ❌ | - |
-
-### Check State
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `is visible <selector>` | ✅ | `- assertVisible: <selector>` |
-| `is enabled <selector>` | ✅ | `- assertEnabled: <selector>` |
-| `is checked <selector>` | ✅ | `- assertChecked: <selector>` |
-
-### Find Elements
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `find role <role> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find text <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find label <label> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find placeholder <placeholder> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find alt <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find title <text> <action>` | ✅ | セレクタ文字列として利用可能 |
-| `find testid <id> <action> [value]` | ✅ | セレクタ文字列として利用可能 |
-| `find first <selector> <action> [value]` | ❌ | - |
-| `find last <selector> <action> [value]` | ❌ | - |
-| `find nth <n> <selector> <action> [value]` | ❌ | - |
-
-### Wait
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `wait <selector>` | ✅ | `- wait: "<selector>"` |
-| `wait <ms>` | ✅ | `- wait: <ms>` |
-| `wait --text <text>` | ✅ | `- wait: { text: "<text>" }` |
-| `wait --url <pattern>` | ✅ | `- wait: { url: "<pattern>" }` |
-| `wait --load <state>` | ✅ | `- wait: { load: "<state>" }` |
-| `wait --fn <condition>` | ✅ | `- wait: { fn: "<condition>" }` |
-
-### Mouse Control
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `mouse move <x> <y>` | ❌ | - |
-| `mouse down [button]` | ❌ | - |
-| `mouse up [button]` | ❌ | - |
-| `mouse wheel <dy> [dx]` | ❌ | - |
-
-### Browser Settings
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `set viewport <width> <height>` | ❌ | - |
-| `set device <name>` | ❌ | - |
-| `set geo <lat> <lng>` | ❌ | - |
-| `set offline [on\|off]` | ❌ | - |
-| `set headers <json>` | ❌ | - |
-| `set credentials <user> <pass>` | ❌ | - |
-| `set media [dark\|light]` | ❌ | - |
-
-### Cookies & Storage
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `cookies` | ❌ | - |
-| `cookies set <name> <value>` | ❌ | - |
-| `cookies clear` | ❌ | - |
-| `storage local` | ❌ | - |
-| `storage local <key>` | ❌ | - |
-| `storage local set <key> <value>` | ❌ | - |
-| `storage local clear` | ❌ | - |
-| `storage session` | ❌ | - |
-| `storage session <key>` | ❌ | - |
-| `storage session set <key> <value>` | ❌ | - |
-| `storage session clear` | ❌ | - |
-
-### Network
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `network route <url>` | ❌ | - |
-| `network route <url> --abort` | ❌ | - |
-| `network route <url> --body <json>` | ❌ | - |
-| `network unroute [url]` | ❌ | - |
-| `network requests` | ❌ | - |
-| `network requests --filter <pattern>` | ❌ | - |
-
-### Tabs & Windows
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `tab` | ❌ | - |
-| `tab new [url]` | ❌ | - |
-| `tab <n>` | ❌ | - |
-| `tab close [n]` | ❌ | - |
-| `window new` | ❌ | - |
-
-### Frames
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `frame <selector>` | ❌ | - |
-| `frame main` | ❌ | - |
-
-### Dialogs
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `dialog accept [text]` | ❌ | - |
-| `dialog dismiss` | ❌ | - |
-
-### Debug
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `trace start [path]` | ❌ | - |
-| `trace stop [path]` | ❌ | - |
-| `console` | ❌ | - |
-| `console --clear` | ❌ | - |
-| `errors` | ❌ | - |
-| `errors --clear` | ❌ | - |
-| `highlight <selector>` | ❌ | - |
-| `state save <path>` | ❌ | - |
-| `state load <path>` | ❌ | - |
-
-### Navigation
-
-| agent-browser | 対応 | YAML記法 |
-|---------------|:----:|----------|
-| `back` | ❌ | - |
-| `forward` | ❌ | - |
-| `reload` | ❌ | - |
-
-### enbu 独自コマンド
-
-| コマンド | YAML記法 |
-|----------|----------|
-| assertNotVisible | `- assertNotVisible: <selector>` |
-
 ## コマンドリファレンス
 
 ### ページを開く
@@ -390,11 +212,195 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install agent-browser
+        run: npm install -g agent-browser
+
+      - name: Install browsers
+        run: agent-browser install --with-deps
+
       - name: Run E2E tests
         run: npx enbu
         env:
           PASSWORD: ${{ secrets.TEST_PASSWORD }}
 ```
+
+## agent-browser コマンド対応表
+
+本ツールは [agent-browser](https://github.com/vercel-labs/agent-browser) のコマンドをYAMLから利用できます。以下は対応状況です。
+
+### Core Commands
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `open <url>` | ✅ | `- open: <url>` |
+| `click <selector>` | ✅ | `- click: <selector>` |
+| `dblclick <selector>` | ❌ | - |
+| `focus <selector>` | ❌ | - |
+| `type <selector> <text>` | ✅ | `- type: { selector: <selector>, value: <text> }` |
+| `fill <selector> <text>` | ✅ | `- fill: { selector: <selector>, value: <text> }` |
+| `press <key>` | ✅ | `- press: <key>` |
+| `keydown <key>` | ❌ | - |
+| `keyup <key>` | ❌ | - |
+| `hover <selector>` | ✅ | `- hover: <selector>` |
+| `select <selector> <value>` | ✅ | `- select: { selector: <selector>, value: <value> }` |
+| `check <selector>` | ❌ | - |
+| `uncheck <selector>` | ❌ | - |
+| `scroll <direction> [px]` | ✅ | `- scroll: { direction: up\|down\|left\|right, amount: <px> }` |
+| `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
+| `drag <source> <target>` | ❌ | - |
+| `upload <selector> <files>` | ❌ | - |
+| `screenshot [path]` | ✅ | `- screenshot: <path>` |
+| `pdf <path>` | ❌ | - |
+| `snapshot` | ✅ | `- snapshot` |
+| `eval <js>` | ✅ | `- eval: <script>` |
+| `close` | ❌ | - |
+
+### Get Info
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `get text <selector>` | ❌ | - |
+| `get html <selector>` | ❌ | - |
+| `get value <selector>` | ❌ | - |
+| `get attr <selector> <attr>` | ❌ | - |
+| `get title` | ❌ | - |
+| `get url` | ❌ | - |
+| `get count <selector>` | ❌ | - |
+| `get box <selector>` | ❌ | - |
+
+### Check State
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `is visible <selector>` | ✅ | `- assertVisible: <selector>` |
+| `is enabled <selector>` | ✅ | `- assertEnabled: <selector>` |
+| `is checked <selector>` | ✅ | `- assertChecked: <selector>` |
+
+### Find Elements
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `find role <role> <action> [value]` | ❌ | - |
+| `find text <text> <action>` | ❌ | - |
+| `find label <label> <action> [value]` | ❌ | - |
+| `find placeholder <placeholder> <action> [value]` | ❌ | - |
+| `find alt <text> <action>` | ❌ | - |
+| `find title <text> <action>` | ❌ | - |
+| `find testid <id> <action> [value]` | ❌ | - |
+| `find first <selector> <action> [value]` | ❌ | - |
+| `find last <selector> <action> [value]` | ❌ | - |
+| `find nth <n> <selector> <action> [value]` | ❌ | - |
+
+### Wait
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `wait <selector>` | ✅ | `- wait: "<selector>"` |
+| `wait <ms>` | ✅ | `- wait: <ms>` |
+| `wait --text <text>` | ✅ | `- wait: { text: "<text>" }` |
+| `wait --url <pattern>` | ✅ | `- wait: { url: "<pattern>" }` |
+| `wait --load <state>` | ✅ | `- wait: { load: "<state>" }` |
+| `wait --fn <condition>` | ✅ | `- wait: { fn: "<condition>" }` |
+
+### Mouse Control
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `mouse move <x> <y>` | ❌ | - |
+| `mouse down [button]` | ❌ | - |
+| `mouse up [button]` | ❌ | - |
+| `mouse wheel <dy> [dx]` | ❌ | - |
+
+### Browser Settings
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `set viewport <width> <height>` | ❌ | - |
+| `set device <name>` | ❌ | - |
+| `set geo <lat> <lng>` | ❌ | - |
+| `set offline [on\|off]` | ❌ | - |
+| `set headers <json>` | ❌ | - |
+| `set credentials <user> <pass>` | ❌ | - |
+| `set media [dark\|light]` | ❌ | - |
+
+### Cookies & Storage
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `cookies` | ❌ | - |
+| `cookies set <name> <value>` | ❌ | - |
+| `cookies clear` | ❌ | - |
+| `storage local` | ❌ | - |
+| `storage local <key>` | ❌ | - |
+| `storage local set <key> <value>` | ❌ | - |
+| `storage local clear` | ❌ | - |
+| `storage session` | ❌ | - |
+| `storage session <key>` | ❌ | - |
+| `storage session set <key> <value>` | ❌ | - |
+| `storage session clear` | ❌ | - |
+
+### Network
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `network route <url>` | ❌ | - |
+| `network route <url> --abort` | ❌ | - |
+| `network route <url> --body <json>` | ❌ | - |
+| `network unroute [url]` | ❌ | - |
+| `network requests` | ❌ | - |
+| `network requests --filter <pattern>` | ❌ | - |
+
+### Tabs & Windows
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `tab` | ❌ | - |
+| `tab new [url]` | ❌ | - |
+| `tab <n>` | ❌ | - |
+| `tab close [n]` | ❌ | - |
+| `window new` | ❌ | - |
+
+### Frames
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `frame <selector>` | ❌ | - |
+| `frame main` | ❌ | - |
+
+### Dialogs
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `dialog accept [text]` | ❌ | - |
+| `dialog dismiss` | ❌ | - |
+
+### Debug
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `trace start [path]` | ❌ | - |
+| `trace stop [path]` | ❌ | - |
+| `console` | ❌ | - |
+| `console --clear` | ❌ | - |
+| `errors` | ❌ | - |
+| `errors --clear` | ❌ | - |
+| `highlight <selector>` | ❌ | - |
+| `state save <path>` | ❌ | - |
+| `state load <path>` | ❌ | - |
+
+### Navigation
+
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
+| `back` | ❌ | - |
+| `forward` | ❌ | - |
+| `reload` | ❌ | - |
+
+### enbu 独自コマンド
+
+| コマンド | YAML記法 |
+|----------|----------|
+| assertNotVisible | `- assertNotVisible: <selector>` |
 
 ## ライセンス
 

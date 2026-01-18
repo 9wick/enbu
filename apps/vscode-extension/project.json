@@ -1,0 +1,49 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "vscode-extension",
+  "projectType": "application",
+  "sourceRoot": "apps/vscode-extension/src",
+  "tags": ["scope:vscode-extension", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "pnpm exec tsdown --config tsdown.config.ts",
+        "cwd": "apps/vscode-extension"
+      },
+      "configurations": {
+        "watch": {
+          "command": "pnpm exec tsdown --config tsdown.config.ts --watch"
+        }
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec oxlint --fix --fix-suggestions . && pnpm exec eslint --cache --fix .",
+        "cwd": "apps/vscode-extension"
+      },
+      "configurations": {
+        "ci": {
+          "command": "pnpm exec oxlint . && pnpm exec eslint --cache .",
+          "cwd": "apps/vscode-extension"
+        }
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsdown --config tsdown.config.ts --watch",
+        "cwd": "apps/vscode-extension"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsc -p tsconfig.json --noEmit",
+        "cwd": "apps/vscode-extension"
+      }
+    }
+  }
+}

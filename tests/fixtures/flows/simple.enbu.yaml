@@ -11,4 +11,4 @@ steps:
   - assertVisible: メールアドレス
 
   # ステップ4: スクリーンショットを撮影(オプション指定時のみ)
-  - screenshot: login-page
+  - screenshot: login-page.png

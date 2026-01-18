@@ -16,7 +16,13 @@ import {
   closeSession,
   type AgentBrowserError,
 } from '@packages/agent-browser-adapter';
-import { parseFlowYaml, type Flow, executeFlow, type FlowResult } from '@packages/core';
+import {
+  parseFlowYaml,
+  type Flow,
+  executeFlow,
+  type FlowResult,
+  type StepProgress,
+} from '@packages/core';
 
 /**
  * runコマンドの引数
@@ -38,6 +44,8 @@ type RunCommandArgs = {
   session?: string;
   /** verboseモード */
   verbose: boolean;
+  /** 進捗をJSON形式で出力するか */
+  progressJson: boolean;
 };
 
 /**
@@ -174,6 +182,31 @@ const loadFlows = async (
 };
 
 /**
+ * JSON進捗出力の型定義（VS Code拡張など外部ツール連携用）
+ */
+type ProgressJsonMessage =
+  | { type: 'flow:start'; flowName: string; stepTotal: number }
+  | { type: 'step:start'; stepIndex: number; stepTotal: number }
+  | {
+      type: 'step:complete';
+      stepIndex: number;
+      stepTotal: number;
+      status: 'passed' | 'failed';
+      duration: number;
+      error?: string;
+    }
+  | { type: 'flow:complete'; flowName: string; status: 'passed' | 'failed'; duration: number };
+
+/**
+ * JSON進捗メッセージをstdoutに出力する
+ *
+ * @param message - 出力するメッセージ
+ */
+const outputProgressJson = (message: ProgressJsonMessage): void => {
+  process.stdout.write(`${JSON.stringify(message)}\n`);
+};
+
+/**
  * コマンド説明フォーマッター関数の型
  */
 type CommandFormatter = (command: Flow['steps'][number]) => string;
@@ -232,6 +265,57 @@ const formatCommandDescription = (command: Flow['steps'][number]): string => {
 };
 
 /**
+ * ステップ開始時のJSON進捗を出力する
+ *
+ * @param progress - ステップ進捗情報
+ */
+const outputStepStartJson = (progress: StepProgress): void => {
+  outputProgressJson({
+    type: 'step:start',
+    stepIndex: progress.stepIndex,
+    stepTotal: progress.stepTotal,
+  });
+};
+
+/**
+ * ステップ完了時のJSON進捗を出力する
+ *
+ * @param progress - ステップ進捗情報
+ */
+const outputStepCompleteJson = (progress: StepProgress): void => {
+  outputProgressJson({
+    type: 'step:complete',
+    stepIndex: progress.stepIndex,
+    stepTotal: progress.stepTotal,
+    status: progress.stepResult?.status ?? 'failed',
+    duration: progress.stepResult?.duration ?? 0,
+    error: progress.stepResult?.error?.message,
+  });
+};
+
+/**
+ * ステップ進捗コールバックを生成する（progressJsonモード用）
+ *
+ * @param progressJson - JSON進捗出力を有効にするか
+ * @returns ステップ進捗コールバック（progressJson=falseの場合はundefined）
+ */
+const createStepProgressCallback = (
+  progressJson: boolean,
+): ((progress: StepProgress) => void) | undefined => {
+  if (!progressJson) {
+    return undefined;
+  }
+
+  return (progress: StepProgress): void => {
+    if (progress.status === 'started') {
+      outputStepStartJson(progress);
+    } else {
+      outputStepCompleteJson(progress);
+    }
+  };
+};
+
+/**
  * フローを実行しながら進捗を表示する
  *
  * @param flow - 実行するフロー
@@ -252,6 +336,7 @@ const executeFlowWithProgress = async (
     commandTimeoutMs: args.timeout,
     screenshot: args.screenshot,
     bail: args.bail,
+    onStepProgress: createStepProgressCallback(args.progressJson),
   });
 
   return executeResult.mapErr((agentError: AgentBrowserError): CliError => {
@@ -349,6 +434,15 @@ const executeAllFlows = async (
 
     const flowStartTime = Date.now();
 
+    // JSON進捗出力: フロー開始
+    if (args.progressJson) {
+      outputProgressJson({
+        type: 'flow:start',
+        flowName: flow.name,
+        stepTotal: flow.steps.length,
+      });
+    }
+
     // セッション名を生成
     // args.sessionが指定されている場合でも、各フローごとにユニークなセッション名を生成する
     // これにより、複数フロー実行時に最初のフローがセッションをクローズしても
@@ -360,6 +454,16 @@ const executeAllFlows = async (
 
     await executeResult.match(
       async (result) => {
+        // JSON進捗出力: フロー完了
+        if (args.progressJson) {
+          outputProgressJson({
+            type: 'flow:complete',
+            flowName: flow.name,
+            status: result.status,
+            duration: result.duration,
+          });
+        }
+
         displayFlowResult(flow, result, formatter, args.verbose);
 
         if (result.status === 'passed') {
@@ -377,6 +481,17 @@ const executeAllFlows = async (
         }
       },
       async (error) => {
+        // JSON進捗出力: フロー失敗
+        if (args.progressJson) {
+          const duration = Date.now() - flowStartTime;
+          outputProgressJson({
+            type: 'flow:complete',
+            flowName: flow.name,
+            status: 'failed',
+            duration,
+          });
+        }
+
         failed++;
         const duration = Date.now() - flowStartTime;
         formatter.newline();

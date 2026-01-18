@@ -29,6 +29,7 @@ export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
       timeout: DEFAULT_TIMEOUT_MS,
       screenshot: false,
       bail: false,
+      progressJson: false,
     });
   }
 
@@ -45,6 +46,7 @@ export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
       timeout: DEFAULT_TIMEOUT_MS,
       screenshot: false,
       bail: false,
+      progressJson: false,
     });
   }
 
@@ -125,6 +127,7 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     screenshot: false,
     bail: false,
     session: undefined,
+    progressJson: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -157,6 +160,7 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     screenshot: state.screenshot,
     bail: state.bail,
     session: state.session,
+    progressJson: state.progressJson,
   });
 };
 
@@ -184,6 +188,7 @@ const processRunArg = (
     screenshot: boolean;
     bail: boolean;
     session: string | undefined;
+    progressJson: boolean;
   },
 ): Result<number, CliError> => {
   // 値を取るオプション
@@ -216,8 +221,42 @@ const processFlagArg = (
     headed: boolean;
     screenshot: boolean;
     bail: boolean;
+    progressJson: boolean;
   },
 ): Result<number, CliError> => {
+  // 既知のフラグオプションの処理を試行
+  const flagResult = tryProcessKnownFlag(arg, currentIndex, state);
+  if (flagResult !== null) {
+    return flagResult;
+  }
+
+  // 位置引数またはエラー
+  return processPositionalOrUnknown(arg, currentIndex, state);
+};
+
+/**
+ * 既知のフラグオプションを処理する
+ *
+ * @param arg - 現在の引数
+ * @param currentIndex - 現在のインデックス
+ * @param state - パース状態を保持するオブジェクト
+ * @returns 既知のフラグの場合は処理結果、それ以外はnull
+ */
+const tryProcessKnownFlag = (
+  arg: string,
+  currentIndex: number,
+  state: {
+    headed: boolean;
+    screenshot: boolean;
+    bail: boolean;
+    progressJson: boolean;
+  },
+): Result<number, CliError> | null => {
+  // verboseは既に処理済みなのでスキップ
+  if (arg === '-v' || arg === '--verbose') {
+    return ok(currentIndex);
+  }
+
   if (arg === '--headed') {
     state.headed = true;
     return ok(currentIndex);
@@ -233,11 +272,28 @@ const processFlagArg = (
     return ok(currentIndex);
   }
 
-  if (arg === '-v' || arg === '--verbose') {
-    // 既に処理済み
+  if (arg === '--progress-json') {
+    state.progressJson = true;
     return ok(currentIndex);
   }
 
+  // 既知のフラグではない
+  return null;
+};
+
+/**
+ * 位置引数または未知のオプションを処理する
+ *
+ * @param arg - 現在の引数
+ * @param currentIndex - 現在のインデックス
+ * @param state - パース状態を保持するオブジェクト
+ * @returns 成功時: 現在のインデックス、失敗時: エラー
+ */
+const processPositionalOrUnknown = (
+  arg: string,
+  currentIndex: number,
+  state: { files: string[] },
+): Result<number, CliError> => {
   if (arg.startsWith('--')) {
     return err({
       type: 'invalid_args',
