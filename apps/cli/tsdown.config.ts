@@ -16,7 +16,8 @@ export default defineConfig({
   fixedExtension: true,
   dts: false,
   sourcemap: true,
-  external: [],
+  // すべての依存関係をバンドルする（node組み込みモジュール以外）
+  noExternal: [/.*/],
   clean: true,
   // CLIとして実行可能にするためのshebangをバンドル先頭に追加
   banner: {
