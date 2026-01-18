@@ -1,0 +1,57 @@
+# チェックアウトテストフロー
+# 購入完了までの流れを確認する
+# 前提: ログイン済み、カートに商品がある状態から開始
+
+env:
+  BASE_URL: http://localhost:3060
+
+steps:
+  # ログインしてカートに商品を追加
+  - open: ${BASE_URL}/login.html
+  - fill:
+      selector: メールアドレス
+      value: test@example.com
+  - fill:
+      selector: パスワード
+      value: password123
+  - click: ログイン
+  - wait:
+      text: 商品一覧
+  - click: カートに追加
+  - wait: 500
+  - click: カート
+
+  # レジに進む
+  - click: レジに進む
+
+  # チェックアウトページの表示確認
+  - assertVisible: お支払い情報入力
+  - assertVisible: お届け先情報
+  - assertVisible: 山田太郎
+
+  # 配送先情報を入力
+  - fill:
+      selector: 郵便番号
+      value: 123-4567
+  - fill:
+      selector: 住所
+      value: 東京都渋谷区テスト町1-2-3
+  - fill:
+      selector: 電話番号
+      value: 090-1234-5678
+
+  # 支払い方法を選択
+  - select:
+      selector: 支払い方法
+      value: credit
+
+  # 注文内容が表示されていることを確認
+  - assertVisible: 注文内容
+
+  # 注文確定
+  - click: 注文を確定する
+
+  # 注文完了ページの表示確認
+  - assertVisible: ご注文ありがとうございます
+  - assertVisible: 注文番号
+  - assertVisible: トップページに戻る
