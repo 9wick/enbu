@@ -385,9 +385,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install agent-browser
-        run: cargo install agent-browser
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

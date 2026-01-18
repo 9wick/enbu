@@ -52,19 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6. agent-browserのインストール
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Install agent-browser
-        run: cargo install agent-browser
-        env:
-          CARGO_NET_RETRY: 10
-
+      # 6. agent-browserの確認（devDependenciesからインストール済み）
       - name: Verify agent-browser installation
-        run: npx agent-browser --help
+        run: pnpm exec agent-browser --help
 
       # 7. 型チェック
       - name: Type check
@@ -82,11 +72,15 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # 11. 統合テスト
+      # 11. ユニットテスト
+      - name: Run unit tests
+        run: pnpm run test
+
+      # 12. 統合テスト
       - name: Run integration tests
         run: pnpm run test:integration
 
-      # 12. E2Eテスト
+      # 13. E2Eテスト
       - name: Run E2E tests
         run: pnpm run test:e2e
         env:
@@ -95,11 +89,11 @@ jobs:
           # タイムアウトを延長（CI環境は遅い）
           TEST_TIMEOUT: 60000
 
-      # 13. Exampleテスト（各exampleのフローを実際に実行）
+      # 14. Exampleテスト（各exampleのフローを実際に実行）
       - name: Run example tests
         run: pnpm run test:examples
 
-      # 14. テスト結果のアップロード
+      # 15. テスト結果のアップロード
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -110,7 +104,7 @@ jobs:
             test-results/
           retention-days: 30
 
-      # 15. スクリーンショットのアップロード（失敗時のみ）
+      # 16. スクリーンショットのアップロード（失敗時のみ）
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4

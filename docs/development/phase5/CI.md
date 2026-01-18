@@ -89,19 +89,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 6. agent-browserのインストール
-      - name: Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Install agent-browser
-        run: cargo install agent-browser
-        env:
-          CARGO_NET_RETRY: 10
-
+      # 6. agent-browserの確認（devDependenciesからインストール済み）
       - name: Verify agent-browser installation
-        run: npx agent-browser --help
+        run: pnpm exec agent-browser --help
 
       # 7. 型チェック
       - name: Type check
@@ -230,39 +220,18 @@ jobs:
 
 ---
 
-#### 6. agent-browserのインストール
+#### 6. agent-browserの確認
 
 ```yaml
-- name: Install Rust toolchain
-  uses: actions-rust-lang/setup-rust-toolchain@v1
-  with:
-    toolchain: stable
-
-- name: Install agent-browser
-  run: cargo install agent-browser
-  env:
-    CARGO_NET_RETRY: 10
-
 - name: Verify agent-browser installation
-  run: npx agent-browser --help
+  run: pnpm exec agent-browser --help
 ```
 
-**目的**: E2Eテストに必要な agent-browser CLI をインストール
+**目的**: E2Eテストに必要な agent-browser CLI が正しくインストールされているか確認
 
 **注意点**:
-- Rustコンパイラが必要
-- インストールに3-5分かかる可能性
-- `CARGO_NET_RETRY: 10` でネットワークエラーを回避
-
-**キャッシュの検討**:
-```yaml
-# 将来的にagent-browserのキャッシュを追加可能
-- name: Cache agent-browser
-  uses: actions/cache@v4
-  with:
-    path: ~/.cargo/bin/agent-browser
-    key: ${{ runner.os }}-agent-browser-${{ hashFiles('**/Cargo.lock') }}
-```
+- agent-browser は npm パッケージとして devDependencies に含まれている
+- `pnpm install` で自動的にインストールされる
 
 ---
 
@@ -631,12 +600,12 @@ jobs:
 
 ### agent-browserのインストールに失敗
 
-**症状**: `cargo install agent-browser` がタイムアウトまたはエラー
+**症状**: `pnpm install` で agent-browser がインストールされない
 
 **対策**:
-1. `CARGO_NET_RETRY` を増やす
-2. Rustツールチェインのバージョンを固定
-3. agent-browserのバイナリをキャッシュ
+1. `pnpm-lock.yaml` を確認し、agent-browser が devDependencies に含まれているか確認
+2. `pnpm install --frozen-lockfile` でクリーンインストールを実行
+3. npm レジストリへの接続を確認
 
 ### E2Eテストがタイムアウト
 

@@ -281,7 +281,7 @@ describe('Error Handling Integration Tests', () => {
     // Assert
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('agent-browser is not installed');
-    expect(result.stderr).toContain('cargo install agent-browser');
+    expect(result.stderr).toContain('npm install agent-browser');
   });
 
   /**

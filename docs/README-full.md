@@ -12,15 +12,6 @@ Webブラウザ向けのシンプルなE2Eテストフレームワーク。YAML�
 - **豊富なロジック** - サブフロー、条件分岐、ループをサポート
 - **柔軟な出力形式** - JSON、JUnit XML、TAPフォーマットに対応
 
-## 前提条件
-
-agent-browserがインストールされている必要があります。
-
-```bash
-# agent-browserのインストール（事前に必要）
-cargo install agent-browser
-```
-
 ## インストール
 
 ```bash
@@ -629,9 +620,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install agent-browser
-        run: cargo install agent-browser
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -671,9 +659,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: |
-          cargo install agent-browser
-          npm install
+        run: npm install
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
         run: npx enbu --shard ${{ matrix.shard }}/4
 ```
@@ -740,12 +726,12 @@ $ npx enbu
 Error: agent-browser is not installed.
 
 Please install it first:
-  cargo install agent-browser
+  npm install agent-browser
 
-For more information: https://github.com/vercel-labs/agent-browser
+For more information: https://github.com/anthropics/agent-browser
 ```
 
-**解決策**: agent-browserをインストールしてください。
+**解決策**: agent-browserをインストールしてください（`npm install agent-browser`）。
 
 ### 要素が見つからない
 
