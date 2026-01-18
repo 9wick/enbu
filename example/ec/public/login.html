@@ -51,7 +51,7 @@
           <label for="password">パスワード</label>
           <input type="password" id="password" name="password" required placeholder="パスワードを入力">
         </div>
-        <button type="submit" class="btn" id="login-button">ログイン</button>
+        <button type="submit" class="btn" id="login-button">ログインする</button>
       </form>
 
       <div class="test-info">
@@ -101,7 +101,7 @@
       const button = document.getElementById('login-button');
 
       button.disabled = true;
-      button.textContent = 'ログイン中...';
+      button.textContent = 'ログイン処理中...';
 
       try {
         const response = await fetchWithSession('/api/login', {
@@ -115,7 +115,7 @@
         if (!response.ok) {
           showError(data.error || 'ログインに失敗しました');
           button.disabled = false;
-          button.textContent = 'ログイン';
+          button.textContent = 'ログインする';
           return;
         }
 
@@ -134,7 +134,7 @@
       } catch (error) {
         showError('通信エラーが発生しました');
         button.disabled = false;
-        button.textContent = 'ログイン';
+        button.textContent = 'ログインする';
       }
     }
 

@@ -13,19 +13,25 @@ steps:
   - fill:
       selector: パスワード
       value: password123
-  - click: ログイン
+  - click: ログインする
   - assertVisible: ようこそ
   - wait:
       text: 山田太郎
 
-  # 商品をカートに追加
+  # 商品一覧が表示されるまで待機
+  - assertVisible: 商品一覧
+
+  # 商品詳細ページへ移動
+  - click: プレミアムコーヒー豆 500g
+
+  # 商品詳細ページでカートに追加
   - click: カートに追加
 
   # カート追加完了のトースト表示確認
   - assertVisible: カートに追加しました
 
-  # カートページへ移動
-  - click: カート
+  # カートページへ移動（ヘッダーのカートリンク）
+  - click: カート (
 
   # カートページの表示確認
   - assertVisible: ショッピングカート

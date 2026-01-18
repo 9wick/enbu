@@ -23,7 +23,7 @@ steps:
       value: password123
 
   # ログインボタンをクリック（type=submitのボタン）
-  - click: ログイン
+  - click: ログインする
 
   # ログイン成功メッセージの表示確認
   - assertVisible: ようこそ

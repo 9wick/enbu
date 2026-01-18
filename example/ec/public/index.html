@@ -64,7 +64,7 @@
     <div class="search-box">
       <label for="search-input" class="hidden">商品を検索</label>
       <input type="text" id="search-input" placeholder="商品を検索..." aria-label="商品を検索">
-      <button onclick="searchProducts()">検索</button>
+      <button onclick="searchProducts()">検索する</button>
     </div>
 
     <h2>商品一覧</h2>
@@ -137,7 +137,7 @@
         <div class="product-card">
           <img src="${product.image}" alt="${product.name}" class="product-image">
           <div class="product-info">
-            <div class="product-name">${product.name}</div>
+            <a href="product.html?id=${product.id}" class="product-name" style="text-decoration: none; color: inherit; display: block;">${product.name}</a>
             <div class="product-price">¥${product.price.toLocaleString()}</div>
             <div class="product-stock ${product.stock < 10 ? 'low' : ''}">
               在庫: ${product.stock}点

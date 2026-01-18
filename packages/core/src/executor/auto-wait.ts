@@ -78,11 +78,29 @@ export const autoWait = async (
     debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
 
     // セレクタに一致する要素を検索
-    const foundRefId = findMatchingRefId(selector, refs);
-    if (foundRefId) {
-      const resolvedRef = `@${foundRefId}`;
+    const matchResult = findMatchingRefId(selector, refs);
+
+    // 複数マッチした場合はエラーを返す（agent-browserと同じ動作）
+    if (matchResult.type === 'multiple') {
       debugLog(
-        `poll #${pollCount}: element found! refId=${foundRefId}, resolvedRef=${resolvedRef}`,
+        `poll #${pollCount}: multiple elements matched! refIds=${matchResult.refIds.join(', ')}`,
+      );
+      return err({
+        type: 'validation_error',
+        message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
+        command: 'auto-wait',
+        args: [selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      });
+    }
+
+    // 一意にマッチした場合は成功
+    if (matchResult.type === 'found') {
+      const resolvedRef = `@${matchResult.refId}`;
+      debugLog(
+        `poll #${pollCount}: element found! refId=${matchResult.refId}, resolvedRef=${resolvedRef}`,
       );
       return ok({ resolvedRef });
     }
@@ -107,30 +125,81 @@ export const autoWait = async (
 };
 
 /**
+ * セレクタマッチングの結果型
+ *
+ * - found: 一意にマッチした場合、refIdを含む
+ * - not_found: マッチしなかった場合
+ * - multiple: 複数マッチした場合、マッチしたrefIdの配列を含む
+ */
+type MatchResult =
+  | { type: 'found'; refId: string }
+  | { type: 'not_found' }
+  | { type: 'multiple'; refIds: string[] };
+
+/**
+ * @ref形式のセレクタを検索する
+ *
+ * @param selector - @e1形式のセレクタ
+ * @param refs - snapshotから取得した要素参照マップ
+ * @returns マッチ結果
+ */
+const findRefSelector = (selector: string, refs: SnapshotRefs): MatchResult => {
+  const refId = selector.slice(1);
+  return refId in refs ? { type: 'found', refId } : { type: 'not_found' };
+};
+
+/**
+ * 要素がセレクタにマッチするかどうかを判定する
+ *
+ * @param ref - 要素情報
+ * @param selector - 検索するテキストまたはロール
+ * @returns マッチする場合はtrue
+ */
+const isMatchingElement = (ref: { name: string; role: string }, selector: string): boolean => {
+  return ref.name.includes(selector) || ref.role === selector || ref.name === selector;
+};
+
+/**
+ * マッチしたrefIdの配列からMatchResultを生成する
+ *
+ * @param matchedRefIds - マッチしたrefIdの配列
+ * @returns マッチ結果
+ */
+const toMatchResult = (matchedRefIds: string[]): MatchResult => {
+  if (matchedRefIds.length === 0) {
+    return { type: 'not_found' };
+  }
+  if (matchedRefIds.length === 1) {
+    return { type: 'found', refId: matchedRefIds[0] };
+  }
+  return { type: 'multiple', refIds: matchedRefIds };
+};
+
+/**
  * セレクタに一致する要素のrefIdを検索する
  *
  * 以下の2つの形式のセレクタをサポート:
  * 1. @e1のような参照ID形式: refsマップ内にキーとして存在するかチェック
  * 2. テキストまたはロール: refs内の要素のnameまたはroleとマッチするかチェック
  *
+ * agent-browserと同様に、複数マッチした場合はエラーとして扱う。
+ *
  * @param selector - 検索する要素のセレクタ
  * @param refs - snapshotコマンドから取得した要素参照のマップ
- * @returns マッチした要素のrefId（例: "e1"）、見つからない場合はundefined
+ * @returns マッチ結果（found/not_found/multiple）
  */
-const findMatchingRefId = (selector: string, refs: SnapshotRefs): string | undefined => {
+const findMatchingRefId = (selector: string, refs: SnapshotRefs): MatchResult => {
   // @e1 形式の参照IDの場合
   if (selector.startsWith('@')) {
-    const refId = selector.slice(1);
-    return refId in refs ? refId : undefined;
+    return findRefSelector(selector, refs);
   }
 
-  // テキストまたはロールでマッチング
-  for (const [refId, ref] of Object.entries(refs)) {
-    if (ref.name.includes(selector) || ref.role === selector || ref.name === selector) {
-      return refId;
-    }
-  }
-  return undefined;
+  // テキストまたはロールでマッチング（全てのマッチを収集）
+  const matchedRefIds = Object.entries(refs)
+    .filter(([, ref]) => isMatchingElement(ref, selector))
+    .map(([refId]) => refId);
+
+  return toMatchResult(matchedRefIds);
 };
 
 /**

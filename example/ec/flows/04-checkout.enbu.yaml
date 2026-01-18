@@ -13,13 +13,19 @@ steps:
   - fill:
       selector: パスワード
       value: password123
-  - click: ログイン
+  - click: ログインする
   - assertVisible: ようこそ
   - wait:
       text: 山田太郎
+  # 商品一覧が表示されるまで待機
+  - assertVisible: 商品一覧
+  # 商品詳細ページへ移動
+  - click: プレミアムコーヒー豆 500g
+  # 商品詳細ページでカートに追加
   - click: カートに追加
   - assertVisible: カートに追加しました
-  - click: カート
+  # カートページへ移動（ヘッダーのカートリンクをクリック）
+  - click: カート (
 
   # レジに進む
   - click: レジに進む
@@ -39,10 +45,7 @@ steps:
       selector: 電話番号
       value: 090-1234-5678
 
-  # 支払い方法を選択
-  - select:
-      selector: 支払い方法
-      value: credit
+  # 支払い方法はデフォルトでクレジットカードが選択済み
 
   # 注文内容が表示されていることを確認
   - assertVisible: 注文内容
