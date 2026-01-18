@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お支払い - オンラインショップ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; }
+    header a { color: white; text-decoration: none; }
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h2 { margin-bottom: 1.5rem; }
+    .checkout-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; }
+    @media (max-width: 768px) { .checkout-container { grid-template-columns: 1fr; } }
+    .checkout-form { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; }
+    .checkout-form h3 { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #eee; }
+    .form-section { margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus { border-color: #3498db; outline: none; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .order-summary { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; height: fit-content; position: sticky; top: 2rem; }
+    .order-summary h3 { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #eee; }
+    .order-item { display: flex; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f5f5f5; }
+    .order-item:last-of-type { border-bottom: none; }
+    .order-item-name { flex: 1; }
+    .order-item-qty { color: #666; margin: 0 1rem; }
+    .order-item-price { font-weight: bold; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .summary-divider { border-top: 1px solid #eee; margin: 1rem 0; }
+    .summary-total { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; }
+    .summary-total .price { color: #e74c3c; }
+    .btn { width: 100%; padding: 1rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
+    .btn-success { background: #27ae60; color: white; }
+    .btn-success:hover { background: #229954; }
+    .btn-success:disabled { background: #bdc3c7; cursor: not-allowed; }
+    .error-message { color: #e74c3c; padding: 0.75rem; background: #fce4e4; border-radius: 4px; margin-bottom: 1rem; display: none; }
+    .error-message.show { display: block; }
+    .loading { text-align: center; padding: 3rem; }
+    .empty-cart { text-align: center; padding: 3rem; }
+    .empty-cart a { color: #3498db; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="index.html">オンラインショップ</a></h1>
+  </header>
+
+  <main>
+    <h2>お支払い情報入力</h2>
+
+    <div id="checkout-container">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </main>
+
+  <script>
+    let sessionId = localStorage.getItem('sessionId');
+    let cartData = null;
+
+    /** セッションヘッダー付きfetch */
+    function fetchWithSession(url, options = {}) {
+      const headers = { ...options.headers };
+      if (sessionId) {
+        headers['X-Session-Id'] = sessionId;
+      }
+      return fetch(url, { ...options, headers });
+    }
+
+    /** カートを読み込み */
+    async function loadCheckout() {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+      if (!currentUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const response = await fetchWithSession('/api/cart');
+      cartData = await response.json();
+
+      if (cartData.items.length === 0) {
+        document.getElementById('checkout-container').innerHTML = `
+          <div class="empty-cart">
+            <p>カートが空です</p>
+            <p><a href="index.html">商品一覧に戻る</a></p>
+          </div>
+        `;
+        return;
+      }
+
+      renderCheckout(currentUser);
+    }
+
+    /** チェックアウトフォームを描画 */
+    function renderCheckout(user) {
+      const shipping = cartData.total >= 5000 ? 0 : 500;
+      const grandTotal = cartData.total + shipping;
+
+      const itemsHtml = cartData.items.map(item => `
+        <div class="order-item">
+          <span class="order-item-name">${item.product.name}</span>
+          <span class="order-item-qty">×${item.quantity}</span>
+          <span class="order-item-price">¥${item.subtotal.toLocaleString()}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('checkout-container').innerHTML = `
+        <div class="checkout-form">
+          <div class="error-message" id="error-message"></div>
+
+          <form id="checkout-form" onsubmit="handleCheckout(event)">
+            <div class="form-section">
+              <h3>お届け先情報</h3>
+              <div class="form-group">
+                <label for="name">お名前</label>
+                <input type="text" id="name" required value="${user.name}" placeholder="山田太郎">
+              </div>
+              <div class="form-group">
+                <label for="postal">郵便番号</label>
+                <input type="text" id="postal" required placeholder="123-4567" pattern="\\d{3}-?\\d{4}">
+              </div>
+              <div class="form-group">
+                <label for="address">住所</label>
+                <input type="text" id="address" required placeholder="東京都渋谷区...">
+              </div>
+              <div class="form-group">
+                <label for="phone">電話番号</label>
+                <input type="tel" id="phone" required placeholder="090-1234-5678">
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>お支払い方法</h3>
+              <div class="form-group">
+                <label for="payment">支払い方法</label>
+                <select id="payment" required aria-label="お支払い方法を選択">
+                  <option value="">選択してください</option>
+                  <option value="credit" selected>クレジットカード</option>
+                  <option value="bank">銀行振込</option>
+                  <option value="convenience">コンビニ払い</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success" id="submit-btn">注文を確定する</button>
+          </form>
+        </div>
+
+        <div class="order-summary">
+          <h3>注文内容</h3>
+          ${itemsHtml}
+          <div class="summary-divider"></div>
+          <div class="summary-row">
+            <span>小計</span>
+            <span>¥${cartData.total.toLocaleString()}</span>
+          </div>
+          <div class="summary-row">
+            <span>送料</span>
+            <span>${shipping === 0 ? '無料' : '¥' + shipping.toLocaleString()}</span>
+          </div>
+          <div class="summary-row summary-total">
+            <span>合計</span>
+            <span class="price">¥${grandTotal.toLocaleString()}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    /** 注文を確定 */
+    async function handleCheckout(event) {
+      event.preventDefault();
+
+      const button = document.getElementById('submit-btn');
+      button.disabled = true;
+      button.textContent = '処理中...';
+
+      const errorEl = document.getElementById('error-message');
+      errorEl.classList.remove('show');
+
+      try {
+        const response = await fetchWithSession('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shipping: {
+              name: document.getElementById('name').value,
+              postal: document.getElementById('postal').value,
+              address: document.getElementById('address').value,
+              phone: document.getElementById('phone').value,
+            },
+            payment: document.getElementById('payment').value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorEl.textContent = data.error || '注文処理に失敗しました';
+          errorEl.classList.add('show');
+          button.disabled = false;
+          button.textContent = '注文を確定する';
+          return;
+        }
+
+        // 注文完了ページへリダイレクト
+        localStorage.setItem('lastOrder', JSON.stringify(data.order));
+        window.location.href = 'order-complete.html';
+
+      } catch (error) {
+        errorEl.textContent = '通信エラーが発生しました';
+        errorEl.classList.add('show');
+        button.disabled = false;
+        button.textContent = '注文を確定する';
+      }
+    }
+
+    // 初期化
+    loadCheckout();
+  </script>
+</body>
+</html>

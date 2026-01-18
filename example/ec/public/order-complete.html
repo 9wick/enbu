@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ご注文完了 - オンラインショップ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; }
+    header a { color: white; text-decoration: none; }
+    main { max-width: 600px; margin: 3rem auto; padding: 0 1rem; }
+    .complete-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 2rem; text-align: center; }
+    .success-icon { width: 80px; height: 80px; background: #27ae60; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+    .success-icon svg { width: 40px; height: 40px; fill: white; }
+    .complete-card h2 { color: #27ae60; margin-bottom: 1rem; }
+    .complete-card p { color: #666; margin-bottom: 1.5rem; line-height: 1.8; }
+    .order-details { background: #f9f9f9; border-radius: 4px; padding: 1.5rem; text-align: left; margin-bottom: 1.5rem; }
+    .order-details h3 { margin-bottom: 1rem; font-size: 1rem; }
+    .order-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
+    .order-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .order-total { font-weight: bold; font-size: 1.1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 2px solid #ddd; }
+    .order-total .price { color: #e74c3c; }
+    .order-number { background: #e8f5e9; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem; }
+    .order-number span { font-size: 1.5rem; font-weight: bold; color: #27ae60; }
+    .btn { display: inline-block; padding: 1rem 2rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; text-decoration: none; }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-primary:hover { background: #2980b9; }
+    .no-order { padding: 2rem; text-align: center; }
+    .no-order a { color: #3498db; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="index.html">オンラインショップ</a></h1>
+  </header>
+
+  <main>
+    <div class="complete-card" id="complete-card">
+      <div class="no-order">
+        <p>注文情報がありません</p>
+        <p><a href="index.html">商品一覧に戻る</a></p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /** 注文完了情報を表示 */
+    function showOrderComplete() {
+      const orderStr = localStorage.getItem('lastOrder');
+      if (!orderStr) {
+        return;
+      }
+
+      const order = JSON.parse(orderStr);
+      const itemsHtml = order.items.map(item => `
+        <div class="order-row">
+          <span>商品ID: ${item.productId} × ${item.quantity}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('complete-card').innerHTML = `
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h2>ご注文ありがとうございます</h2>
+        <p>ご注文を承りました。<br>確認メールをお送りしましたのでご確認ください。</p>
+
+        <div class="order-number">
+          注文番号: <span>#${order.id.toString().padStart(8, '0')}</span>
+        </div>
+
+        <div class="order-details">
+          <h3>注文内容</h3>
+          ${itemsHtml}
+          <div class="order-row order-total">
+            <span>合計金額</span>
+            <span class="price">¥${order.total.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <a href="index.html" class="btn btn-primary">トップページに戻る</a>
+      `;
+
+      // 注文情報をクリア
+      localStorage.removeItem('lastOrder');
+    }
+
+    // 初期化
+    showOrderComplete();
+  </script>
+</body>
+</html>
