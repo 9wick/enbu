@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オンラインショップ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; }
+    nav { display: flex; gap: 1rem; align-items: center; }
+    nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
+    nav a:hover { background: rgba(255,255,255,0.1); }
+    .cart-link { background: #e74c3c; }
+    .cart-link:hover { background: #c0392b; }
+    .login-link { background: #3498db; }
+    .login-link:hover { background: #2980b9; }
+    main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    .search-box { margin-bottom: 2rem; display: flex; gap: 0.5rem; }
+    .search-box input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; }
+    .search-box button { padding: 0.75rem 1.5rem; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    .search-box button:hover { background: #2980b9; }
+    h2 { margin-bottom: 1.5rem; font-size: 1.5rem; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+    .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .product-card:hover { transform: translateY(-4px); }
+    .product-image { width: 100%; height: 150px; object-fit: contain; background: #f9f9f9; padding: 1rem; }
+    .product-info { padding: 1rem; }
+    .product-name { font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .product-price { color: #e74c3c; font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .product-stock { color: #27ae60; font-size: 0.875rem; margin-bottom: 1rem; }
+    .product-stock.low { color: #e67e22; }
+    .product-actions { display: flex; gap: 0.5rem; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; text-decoration: none; text-align: center; }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-success { background: #27ae60; color: white; }
+    .btn-success:hover { background: #229954; }
+    .user-info { display: flex; align-items: center; gap: 0.5rem; }
+    .user-name { font-weight: bold; }
+    .logout-btn { background: transparent; border: 1px solid white; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: #27ae60; color: white; border-radius: 4px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+    .toast.show { opacity: 1; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>オンラインショップ</h1>
+    <nav>
+      <div id="guest-nav">
+        <a href="login.html" class="login-link">ログイン</a>
+      </div>
+      <div id="user-nav" class="hidden user-info">
+        <span class="user-name" id="user-name"></span>
+        <button class="logout-btn" onclick="logout()">ログアウト</button>
+      </div>
+      <a href="cart.html" class="cart-link">カート (<span id="cart-count">0</span>)</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="search-box">
+      <label for="search-input" class="hidden">商品を検索</label>
+      <input type="text" id="search-input" placeholder="商品を検索..." aria-label="商品を検索">
+      <button onclick="searchProducts()">検索する</button>
+    </div>
+
+    <h2>商品一覧</h2>
+    <div class="product-grid" id="product-grid">
+      <!-- 商品カードがJavaScriptで挿入される -->
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let sessionId = localStorage.getItem('sessionId');
+    let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+    /** セッションヘッダー付きfetch */
+    function fetchWithSession(url, options = {}) {
+      const headers = { ...options.headers };
+      if (sessionId) {
+        headers['X-Session-Id'] = sessionId;
+      }
+      return fetch(url, { ...options, headers });
+    }
+
+    /** トースト表示 */
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    /** ログイン状態更新 */
+    function updateLoginState() {
+      const guestNav = document.getElementById('guest-nav');
+      const userNav = document.getElementById('user-nav');
+      const userName = document.getElementById('user-name');
+
+      if (currentUser) {
+        guestNav.classList.add('hidden');
+        userNav.classList.remove('hidden');
+        userName.textContent = currentUser.name;
+      } else {
+        guestNav.classList.remove('hidden');
+        userNav.classList.add('hidden');
+      }
+    }
+
+    /** ログアウト */
+    async function logout() {
+      await fetchWithSession('/api/logout', { method: 'POST' });
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('currentUser');
+      sessionId = null;
+      currentUser = null;
+      updateLoginState();
+      showToast('ログアウトしました');
+    }
+
+    /** 商品一覧を取得して表示 */
+    async function loadProducts() {
+      const response = await fetchWithSession('/api/products');
+      const products = await response.json();
+      renderProducts(products);
+    }
+
+    /** 商品を描画 */
+    function renderProducts(products) {
+      const grid = document.getElementById('product-grid');
+      grid.innerHTML = products.map(product => `
+        <div class="product-card">
+          <img src="${product.image}" alt="${product.name}" class="product-image">
+          <div class="product-info">
+            <a href="product.html?id=${product.id}" class="product-name" style="text-decoration: none; color: inherit; display: block;">${product.name}</a>
+            <div class="product-price">¥${product.price.toLocaleString()}</div>
+            <div class="product-stock ${product.stock < 10 ? 'low' : ''}">
+              在庫: ${product.stock}点
+            </div>
+            <div class="product-actions">
+              <a href="product.html?id=${product.id}" class="btn btn-primary">詳細を見る</a>
+              <button class="btn btn-success" onclick="addToCart(${product.id})">カートに追加</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /** カートに追加 */
+    async function addToCart(productId) {
+      const response = await fetchWithSession('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: 1 })
+      });
+
+      if (response.ok) {
+        showToast('カートに追加しました');
+        updateCartCount();
+      } else {
+        const error = await response.json();
+        showToast(error.error || 'エラーが発生しました');
+      }
+    }
+
+    /** カート数を更新 */
+    async function updateCartCount() {
+      const response = await fetchWithSession('/api/cart');
+      const cart = await response.json();
+      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      document.getElementById('cart-count').textContent = count;
+    }
+
+    /** 商品検索 */
+    async function searchProducts() {
+      const query = document.getElementById('search-input').value.trim();
+      if (!query) {
+        loadProducts();
+        return;
+      }
+
+      const response = await fetchWithSession(`/api/products/search/${encodeURIComponent(query)}`);
+      const products = await response.json();
+      renderProducts(products);
+    }
+
+    // Enterキーで検索
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchProducts();
+      }
+    });
+
+    // 初期化
+    updateLoginState();
+    loadProducts();
+    updateCartCount();
+  </script>
+</body>
+</html>

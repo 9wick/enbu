@@ -135,11 +135,15 @@ describe('VSCode拡張 統合テスト', () => {
         capturedController = new MockTestController(id, label);
 
         // createRunProfileをオーバーライドしてrunHandlerをキャプチャ
-        const originalCreateRunProfile = capturedController.createRunProfile.bind(capturedController);
+        const originalCreateRunProfile =
+          capturedController.createRunProfile.bind(capturedController);
         capturedController.createRunProfile = (
           profileLabel: string,
           kind: number,
-          runHandler: (request: { include?: MockTestItem[] }, token: MockCancellationToken) => Promise<void>,
+          runHandler: (
+            request: { include?: MockTestItem[] },
+            token: MockCancellationToken,
+          ) => Promise<void>,
           isDefault?: boolean,
         ) => {
           capturedRunHandler = runHandler;
@@ -165,7 +169,10 @@ describe('VSCode拡張 統合テスト', () => {
 
       // === 検証: TestControllerが作成された ===
       expect(capturedController).not.toBeNull();
-      expect(tests.createTestController).toHaveBeenCalledWith('enbuTestController', 'Enbu Flow Tests');
+      expect(tests.createTestController).toHaveBeenCalledWith(
+        'enbuTestController',
+        'Enbu Flow Tests',
+      );
 
       // === 検証: ファイルが検出されてTestItemが作成された ===
       const controller = capturedController!;
@@ -335,11 +342,15 @@ describe('VSCode拡張 統合テスト', () => {
 
       (tests.createTestController as Mock).mockImplementation((id: string, label: string) => {
         capturedController = new MockTestController(id, label);
-        const originalCreateRunProfile = capturedController.createRunProfile.bind(capturedController);
+        const originalCreateRunProfile =
+          capturedController.createRunProfile.bind(capturedController);
         capturedController.createRunProfile = (
           profileLabel: string,
           kind: number,
-          runHandler: (request: { include?: MockTestItem[] }, token: MockCancellationToken) => Promise<void>,
+          runHandler: (
+            request: { include?: MockTestItem[] },
+            token: MockCancellationToken,
+          ) => Promise<void>,
           isDefault?: boolean,
         ) => {
           capturedRunHandler = runHandler;
@@ -452,11 +463,15 @@ describe('VSCode拡張 統合テスト', () => {
 
       (tests.createTestController as Mock).mockImplementation((id: string, label: string) => {
         capturedController = new MockTestController(id, label);
-        const originalCreateRunProfile = capturedController.createRunProfile.bind(capturedController);
+        const originalCreateRunProfile =
+          capturedController.createRunProfile.bind(capturedController);
         capturedController.createRunProfile = (
           profileLabel: string,
           kind: number,
-          runHandler: (request: { include?: MockTestItem[] }, token: MockCancellationToken) => Promise<void>,
+          runHandler: (
+            request: { include?: MockTestItem[] },
+            token: MockCancellationToken,
+          ) => Promise<void>,
           isDefault?: boolean,
         ) => {
           capturedRunHandler = runHandler;

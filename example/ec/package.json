@@ -1,0 +1,26 @@
+{
+  "name": "@example/ec",
+  "version": "1.0.0",
+  "description": "ECサイトE2Eテストサンプル（ログイン、商品一覧、カート、購入フロー）",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "start": "tsx server.ts",
+    "dev": "tsx watch server.ts",
+    "test": "start-server-and-test start http://localhost:3060 test:e2e",
+    "test:e2e": "node ../../apps/cli/dist/main.mjs flows/*.enbu.yaml",
+    "test:headed": "node ../../apps/cli/dist/main.mjs --headed flows/*.enbu.yaml"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "neverthrow": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.19.2",
+    "start-server-and-test": "^2.0.9",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

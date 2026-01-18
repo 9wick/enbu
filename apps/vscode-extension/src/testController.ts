@@ -176,7 +176,6 @@ const updateTestItemSteps = async (
   fileStepItems.set(fileItem, stepItems);
 };
 
-
 /**
  * request.includeからVSCode TestItemを収集する
  *
@@ -187,9 +186,7 @@ const updateTestItemSteps = async (
  * @param include - 実行対象として指定されたTestItem配列
  * @returns 実行対象のファイルTestItem配列
  */
-const collectVscodeItemsFromInclude = (
-  include: readonly vscode.TestItem[],
-): vscode.TestItem[] => {
+const collectVscodeItemsFromInclude = (include: readonly vscode.TestItem[]): vscode.TestItem[] => {
   const items = collectItemsFromInclude(include);
   // 実行時にはすべてvscode.TestItemであることが保証されている
   // idとlabelプロパティの存在で型ガードを行う
@@ -249,10 +246,7 @@ const createTestMessage = (text: string): vscode.TestMessage => new vscode.TestM
  * @returns vscode.Rangeの場合true
  */
 const isVscodeRange = (range: unknown): range is vscode.Range =>
-  range !== null &&
-  typeof range === 'object' &&
-  'start' in range &&
-  'end' in range;
+  range !== null && typeof range === 'object' && 'start' in range && 'end' in range;
 
 /**
  * TestMessageにLocationを設定するヘルパー関数
@@ -332,9 +326,7 @@ const executeFlowRunner = async (
  * @param uri - ファイルURI
  * @returns ワークスペースフォルダ（見つからない場合はundefined）
  */
-const getWorkspaceFolder = (
-  uri: { fsPath: string },
-): { uri: { fsPath: string } } | undefined => {
+const getWorkspaceFolder = (uri: { fsPath: string }): { uri: { fsPath: string } } | undefined => {
   const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(uri.fsPath));
   if (!folder) {
     return undefined;
