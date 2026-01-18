@@ -1,0 +1,36 @@
+# ログインテストフロー
+# ユーザー認証機能を確認する
+
+env:
+  BASE_URL: http://localhost:3060
+
+steps:
+  # ログインページへ移動
+  - open: ${BASE_URL}/login.html
+
+  # ログインフォームの表示確認（テスト用アカウント情報で確認）
+  - assertVisible: テスト用アカウント
+  - assertVisible: メールアドレス
+
+  # メールアドレスを入力
+  - fill:
+      selector: メールアドレス
+      value: test@example.com
+
+  # パスワードを入力
+  - fill:
+      selector: パスワード
+      value: password123
+
+  # ログインボタンをクリック（type=submitのボタン）
+  - click: ログインする
+
+  # ログイン成功メッセージの表示確認
+  - assertVisible: ようこそ
+
+  # 自動リダイレクトを待機
+  - wait:
+      text: 商品一覧
+
+  # ユーザー名が表示されていることを確認（ログイン状態）
+  - assertVisible: 山田太郎

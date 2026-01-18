@@ -235,4 +235,85 @@ describe('autoWait', () => {
       },
     );
   });
+
+  /**
+   * AW-7: 複数の要素にマッチする場合
+   *
+   * 前提条件: snapshot に「詳細を見る」が複数存在する
+   * 検証項目: err({ type: 'validation_error' }) が返される
+   */
+  it('AW-7: 複数の要素にマッチする場合、validation_errorを返す', async () => {
+    // Arrange: snapshotに「詳細を見る」リンクが複数含まれる
+    const multipleRefs = {
+      e1: { name: 'オンラインショップ', role: 'heading' },
+      e2: { name: '詳細を見る', role: 'link' },
+      e3: { name: 'カートに追加', role: 'button' },
+      e4: { name: '詳細を見る', role: 'link' },
+      e5: { name: '詳細を見る', role: 'link' },
+    };
+
+    vi.mocked(executeCommand).mockResolvedValue(
+      ok(JSON.stringify({ success: true, data: { refs: multipleRefs }, error: null })),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValue(
+      ok({ success: true, data: { refs: multipleRefs }, error: null }),
+    );
+    vi.mocked(parseSnapshotRefs).mockReturnValue(ok(multipleRefs));
+
+    // Act: 「詳細を見る」を待機
+    const promise = autoWait('詳細を見る', mockContext);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    // Assert: validation_errorが返される
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('validation_error');
+        if (error.type === 'validation_error') {
+          expect(error.message).toContain('matched 3 elements');
+          expect(error.message).toContain('詳細を見る');
+        }
+      },
+    );
+  });
+
+  /**
+   * AW-8: 一意にマッチする場合は成功
+   *
+   * 前提条件: snapshot に「ログイン」が1つだけ存在する（他の要素も存在）
+   * 検証項目: ok({ resolvedRef: '@e2' }) が返される
+   */
+  it('AW-8: 一意にマッチする場合は成功を返す', async () => {
+    // Arrange: 「ログイン」は1つだけ、他の要素も存在
+    const refs = {
+      e1: { name: 'オンラインショップ', role: 'heading' },
+      e2: { name: 'ログイン', role: 'link' },
+      e3: { name: 'カートに追加', role: 'button' },
+      e4: { name: '詳細を見る', role: 'link' },
+    };
+
+    vi.mocked(executeCommand).mockResolvedValue(
+      ok(JSON.stringify({ success: true, data: { refs }, error: null })),
+    );
+    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: { refs }, error: null }));
+    vi.mocked(parseSnapshotRefs).mockReturnValue(ok(refs));
+
+    // Act: 「ログイン」を待機
+    const promise = autoWait('ログイン', mockContext);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    // Assert: 成功が返され、解決されたrefが含まれる
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (value) => expect(value?.resolvedRef).toBe('@e2'),
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
 });
