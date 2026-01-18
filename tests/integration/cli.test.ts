@@ -29,7 +29,7 @@ describe('CLI Integration Tests', () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.exitCode).toBe(0);
-      expect(result.value.stdout).toContain('agent-browser-flow');
+      expect(result.value.stdout).toContain('enbu');
       expect(result.value.stdout).toContain('USAGE:');
       expect(result.value.stdout).toContain('COMMANDS:');
       expect(result.value.stdout).toContain('OPTIONS:');
@@ -60,14 +60,14 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-3: フローファイル実行
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: CLIが正常に起動し、フローファイルを読み込もうとする
    *
    * 注: 実際のagent-browser実行が必要なため、このテストはスキップします。
    * 完全な動作確認はE2Eテストで行ってください。
    */
   it.skip('I-CLI-3: フローファイル指定でCLIが起動する', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
 
     // Act
     const result = await runCli([flowPath]);
@@ -76,7 +76,7 @@ describe('CLI Integration Tests', () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       // CLIが起動し、フローファイル名が表示されることを確認
-      expect(result.value.stdout).toContain('simple.flow.yaml');
+      expect(result.value.stdout).toContain('simple.enbu.yaml');
       // agent-browserのチェックが行われることを確認
       expect(result.value.stdout).toContain('agent-browser');
     }
@@ -90,7 +90,7 @@ describe('CLI Integration Tests', () => {
    */
   it('I-CLI-4: 存在しないフローファイルでエラーを返す', async () => {
     // Act
-    const result = await runCli(['not-exist.flow.yaml']);
+    const result = await runCli(['not-exist.enbu.yaml']);
 
     // Assert
     expect(result.isOk()).toBe(true);
@@ -99,21 +99,21 @@ describe('CLI Integration Tests', () => {
       expect(result.value.exitCode).not.toBe(0);
       // エラーメッセージが表示されることを確認
       expect(result.value.stderr).toContain('Failed to read file');
-      expect(result.value.stderr).toContain('not-exist.flow.yaml');
+      expect(result.value.stderr).toContain('not-exist.enbu.yaml');
     }
   });
 
   /**
    * I-CLI-5: セッション指定
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --session オプションが引数として受け入れられる
    *
    * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
    * 実際の動作はE2Eテストで検証してください。
    */
   it.skip('I-CLI-5: --session オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
     const sessionName = 'test-session-123';
 
     // Act
@@ -130,14 +130,14 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-6: ヘッドレスモード指定
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --headed オプションが引数として受け入れられる
    *
    * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
    * 実際の動作はE2Eテストで検証してください。
    */
   it.skip('I-CLI-6: --headed オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
 
     // Act
     const result = await runCli([flowPath, '--headed']);
@@ -153,14 +153,14 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-7: スクリーンショット出力
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --screenshot オプションが引数として受け入れられる
    *
    * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
    * 実際の動作はE2Eテストで検証してください。
    */
   it.skip('I-CLI-7: --screenshot オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
 
     // Act
     const result = await runCli([flowPath, '--screenshot']);

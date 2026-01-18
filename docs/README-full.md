@@ -1,4 +1,4 @@
-# agent-browser-flow
+# enbu
 
 Webブラウザ向けのシンプルなE2Eテストフレームワーク。YAMLベースのフロー定義で、[agent-browser](https://github.com/vercel-labs/agent-browser)のパワフルなブラウザ自動化を活用できます。
 
@@ -24,9 +24,9 @@ cargo install agent-browser
 ## インストール
 
 ```bash
-npm install -g agent-browser-flow
+npm install -g enbu
 # または
-npx agent-browser-flow
+npx enbu
 ```
 
 ## クイックスタート
@@ -34,7 +34,7 @@ npx agent-browser-flow
 ### 1. プロジェクトの初期化
 
 ```bash
-npx agent-browser-flow init
+npx enbu init
 ```
 
 これにより `.abflow/` ディレクトリ、サンプルフロー、設定ファイルが作成されます：
@@ -42,14 +42,14 @@ npx agent-browser-flow init
 ```
 .abflow/
 ├── abflow.config.yaml      # 設定ファイル
-├── example.flow.yaml       # サンプルフロー
+├── example.enbu.yaml       # サンプルフロー
 └── shared/
-    └── login.flow.yaml     # 共有サブフロー
+    └── login.enbu.yaml     # 共有サブフロー
 ```
 
 ### 2. フローの作成
 
-`.abflow/checkout.flow.yaml`:
+`.abflow/checkout.enbu.yaml`:
 
 ```yaml
 # ECサイトのチェックアウトフローのテスト
@@ -63,7 +63,7 @@ npx agent-browser-flow init
 
 # ログインサブフローを実行
 - runFlow:
-    file: shared/login.flow.yaml
+    file: shared/login.enbu.yaml
     env:
       EMAIL: ${TEST_EMAIL}
       PASSWORD: ${TEST_PASSWORD}
@@ -77,16 +77,16 @@ npx agent-browser-flow init
 
 ```bash
 # 全フローを実行
-npx agent-browser-flow
+npx enbu
 
 # 特定のフローを実行
-npx agent-browser-flow .abflow/checkout.flow.yaml
+npx enbu .abflow/checkout.enbu.yaml
 
 # 並列実行
-npx agent-browser-flow --parallel 4
+npx enbu --parallel 4
 
 # JUnit形式でレポート出力
-npx agent-browser-flow --reporter junit --output results.xml
+npx enbu --reporter junit --output results.xml
 ```
 
 ## コマンドリファレンス
@@ -272,7 +272,7 @@ npx agent-browser-flow --reporter junit --output results.xml
 
 ### サブフローの定義
 
-`.abflow/shared/login.flow.yaml`:
+`.abflow/shared/login.enbu.yaml`:
 
 ```yaml
 # ログインサブフロー
@@ -292,7 +292,7 @@ npx agent-browser-flow --reporter junit --output results.xml
 
 ```yaml
 - runFlow:
-    file: shared/login.flow.yaml
+    file: shared/login.enbu.yaml
     env:
       EMAIL: user@example.com
       PASSWORD: ${PASSWORD}
@@ -322,7 +322,7 @@ npx agent-browser-flow --reporter junit --output results.xml
 - runFlow:
     when:
       viewport: mobile
-    file: mobile-navigation.flow.yaml
+    file: mobile-navigation.enbu.yaml
 ```
 
 ## ループ（repeat）
@@ -404,7 +404,7 @@ TEST_PASSWORD=secret123
 **2. CLI引数**
 
 ```bash
-npx agent-browser-flow --env PASSWORD=secret123 --env BASE_URL=https://prod.example.com
+npx enbu --env PASSWORD=secret123 --env BASE_URL=https://prod.example.com
 ```
 
 **3. YAML内定義**
@@ -420,7 +420,7 @@ env:
 
 ```bash
 export TEST_PASSWORD=secret123
-npx agent-browser-flow
+npx enbu
 ```
 
 優先順位：CLI引数 > YAML内定義 > .envファイル > システム環境変数
@@ -478,7 +478,7 @@ devices:
 プロジェクトを初期化します。
 
 ```bash
-npx agent-browser-flow init [directory]
+npx enbu init [directory]
 
 オプション:
   --force    既存のファイルを上書き
@@ -489,7 +489,7 @@ npx agent-browser-flow init [directory]
 フローを実行します。
 
 ```bash
-npx agent-browser-flow [options] [flow-files...]
+npx enbu [options] [flow-files...]
 
 オプション:
   --headed              ブラウザを表示して実行
@@ -510,7 +510,7 @@ npx agent-browser-flow [options] [flow-files...]
 環境をチェックします。
 
 ```bash
-npx agent-browser-flow doctor
+npx enbu doctor
 
 出力例:
 ✓ agent-browser v1.2.0 がインストールされています
@@ -524,7 +524,7 @@ npx agent-browser-flow doctor
 ブラウザ操作を記録してフローを生成します。
 
 ```bash
-npx agent-browser-flow record https://example.com -o login.flow.yaml
+npx enbu record https://example.com -o login.enbu.yaml
 ```
 
 ## ディレクトリ構成
@@ -534,10 +534,10 @@ your-project/
 ├── .abflow/
 │   ├── abflow.config.yaml    # 設定ファイル
 │   ├── .env                  # 環境変数（.gitignoreに追加推奨）
-│   ├── login.flow.yaml       # ログインフロー
-│   ├── checkout.flow.yaml    # チェックアウトフロー
+│   ├── login.enbu.yaml       # ログインフロー
+│   ├── checkout.enbu.yaml    # チェックアウトフロー
 │   ├── shared/               # 共有サブフロー
-│   │   └── auth.flow.yaml
+│   │   └── auth.enbu.yaml
 │   └── scripts/              # JavaScriptファイル
 │       └── validate.js
 ├── screenshots/              # スクリーンショット出力先
@@ -559,13 +559,13 @@ your-project/
   },
   "flows": [
     {
-      "name": "login.flow.yaml",
+      "name": "login.enbu.yaml",
       "status": "passed",
       "duration": 8500,
       "steps": [...]
     },
     {
-      "name": "checkout.flow.yaml",
+      "name": "checkout.enbu.yaml",
       "status": "failed",
       "duration": 12300,
       "error": {
@@ -585,9 +585,9 @@ GitHub Actions等のCIツールで直接認識されます。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="agent-browser-flow" tests="5" failures="1" time="45.23">
-  <testsuite name="checkout.flow.yaml" tests="1" failures="1" time="12.3">
-    <testcase name="checkout.flow.yaml" time="12.3">
+<testsuites name="enbu" tests="5" failures="1" time="45.23">
+  <testsuite name="checkout.enbu.yaml" tests="1" failures="1" time="12.3">
+    <testcase name="checkout.enbu.yaml" time="12.3">
       <failure message="Element 'カートに追加' not found">
         Step 4: click: "カートに追加"
         Screenshot: ./screenshots/checkout-failure.png
@@ -602,16 +602,16 @@ GitHub Actions等のCIツールで直接認識されます。
 ```
 TAP version 13
 1..5
-ok 1 - login.flow.yaml (8500ms)
-ok 2 - signup.flow.yaml (9200ms)
-not ok 3 - checkout.flow.yaml (12300ms)
+ok 1 - login.enbu.yaml (8500ms)
+ok 2 - signup.enbu.yaml (9200ms)
+not ok 3 - checkout.enbu.yaml (12300ms)
   ---
   message: Element 'カートに追加' not found
   step: 4
   screenshot: ./screenshots/checkout-failure.png
   ...
-ok 4 - profile.flow.yaml (7800ms)
-ok 5 - settings.flow.yaml (7430ms)
+ok 4 - profile.enbu.yaml (7800ms)
+ok 5 - settings.enbu.yaml (7430ms)
 ```
 
 ## CI/CD統合
@@ -638,7 +638,7 @@ jobs:
           node-version: '20'
 
       - name: Run E2E tests
-        run: npx agent-browser-flow --reporter junit --output results.xml
+        run: npx enbu --reporter junit --output results.xml
         env:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
@@ -675,7 +675,7 @@ jobs:
           cargo install agent-browser
           npm install
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
-        run: npx agent-browser-flow --shard ${{ matrix.shard }}/4
+        run: npx enbu --shard ${{ matrix.shard }}/4
 ```
 
 ## ベストプラクティス
@@ -697,11 +697,11 @@ jobs:
 
 ```yaml
 # 良い例 - 明確な目的
-# login.flow.yaml - ログインのみ
-# checkout.flow.yaml - チェックアウトのみ（loginをrunFlowで呼ぶ）
+# login.enbu.yaml - ログインのみ
+# checkout.enbu.yaml - チェックアウトのみ（loginをrunFlowで呼ぶ）
 
 # 避けるべき例 - 巨大なフロー
-# everything.flow.yaml - ログイン、商品選択、チェックアウト、ログアウト全部入り
+# everything.enbu.yaml - ログイン、商品選択、チェックアウト、ログアウト全部入り
 ```
 
 ### 3. 環境変数でシークレットを管理
@@ -736,7 +736,7 @@ jobs:
 ### agent-browserが見つからない
 
 ```bash
-$ npx agent-browser-flow
+$ npx enbu
 Error: agent-browser is not installed.
 
 Please install it first:

@@ -11,7 +11,7 @@ import { join } from 'node:path';
  *
  * 前提条件:
  * - npx agent-browser が利用可能であること
- * - tests/fixtures/flows/interactions.flow.yaml が存在すること
+ * - tests/fixtures/flows/interactions.enbu.yaml が存在すること
  * - tests/fixtures/html/form-elements.html が存在すること
  */
 describe('E2E: Interaction Tests', () => {
@@ -42,7 +42,7 @@ describe('E2E: Interaction Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/form-elements.html に「ユーザー名」入力フィールドが存在する
-   * - interactions.flow.yaml に type コマンドが含まれる
+   * - interactions.enbu.yaml に type コマンドが含まれる
    *
    * 検証項目:
    * - type コマンドでテキスト入力が成功する
@@ -50,7 +50,7 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-1: type - テキスト入力が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -68,7 +68,7 @@ describe('E2E: Interaction Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/form-elements.html に「年齢」入力フィールドが存在する
-   * - interactions.flow.yaml に fill コマンドが含まれる
+   * - interactions.enbu.yaml に fill コマンドが含まれる
    *
    * 検証項目:
    * - fill コマンドでフォーム入力が成功する
@@ -76,7 +76,7 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-2: fill - フォーム入力が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -94,14 +94,14 @@ describe('E2E: Interaction Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/form-elements.html に「送信」ボタンが存在する
-   * - interactions.flow.yaml に click: 送信 が含まれる
+   * - interactions.enbu.yaml に click: 送信 が含まれる
    *
    * 検証項目:
    * - click コマンドでボタンクリックが成功する
    */
   it('E-INT-3: click - ボタンクリックが成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -118,17 +118,17 @@ describe('E2E: Interaction Tests', () => {
    * E-INT-4: press - キーボード操作
    *
    * 前提条件:
-   * - interactions.flow.yaml に press コマンドが含まれる（実装されている場合）
+   * - interactions.enbu.yaml に press コマンドが含まれる（実装されている場合）
    *
    * 検証項目:
    * - press コマンドでキーボード操作が成功する
    *
-   * 注: 現在のinteractions.flow.yamlにはpressコマンドが含まれていないため、
+   * 注: 現在のinteractions.enbu.yamlにはpressコマンドが含まれていないため、
    * このテストは基本的な操作の成功を確認するに留めます。
    */
   it('E-INT-4: press - キーボード操作が成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -145,7 +145,7 @@ describe('E2E: Interaction Tests', () => {
    * E-INT-5: 複数要素の操作
    *
    * 前提条件:
-   * - tests/fixtures/flows/interactions.flow.yaml が複数の操作を含む
+   * - tests/fixtures/flows/interactions.enbu.yaml が複数の操作を含む
    *   1. open: http://localhost:8082/form-elements.html
    *   2. type: ユーザー名 -> テストユーザー
    *   3. type: メールアドレス -> test@example.com
@@ -161,7 +161,7 @@ describe('E2E: Interaction Tests', () => {
    */
   it('E-INT-5: 複数要素の操作 - 連続した操作が全て成功', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);

@@ -12,7 +12,7 @@ import { join } from 'node:path';
  *
  * 前提条件:
  * - npx agent-browser が利用可能であること
- * - tests/fixtures/flows/simple.flow.yaml が存在すること
+ * - tests/fixtures/flows/simple.enbu.yaml が存在すること
  * - tests/fixtures/html/login-form.html が存在すること
  */
 describe('E2E: Basic Flow Tests', () => {
@@ -42,7 +42,7 @@ describe('E2E: Basic Flow Tests', () => {
    * E-BASIC-1: ページを開く
    *
    * 前提条件:
-   * - tests/fixtures/flows/simple.flow.yaml が存在する
+   * - tests/fixtures/flows/simple.enbu.yaml が存在する
    * - HTTPサーバーが localhost:8080 で起動している
    *
    * 検証項目:
@@ -52,7 +52,7 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-1: ページを正常に開ける', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -72,7 +72,7 @@ describe('E2E: Basic Flow Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/login-form.html にh1要素「ログイン」が存在する
-   * - simple.flow.yaml に assertVisible: ログイン が含まれる
+   * - simple.enbu.yaml に assertVisible: ログイン が含まれる
    * - HTTPサーバーが localhost:8080 で起動している
    *
    * 検証項目:
@@ -81,7 +81,7 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-2: 要素の存在を確認できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -100,7 +100,7 @@ describe('E2E: Basic Flow Tests', () => {
    * E-BASIC-3: 複数ステップの実行
    *
    * 前提条件:
-   * - tests/fixtures/flows/simple.flow.yaml が4ステップを含む
+   * - tests/fixtures/flows/simple.enbu.yaml が4ステップを含む
    *   1. open: http://localhost:8080/login-form.html
    *   2. assertVisible: ログイン
    *   3. assertVisible: メールアドレス
@@ -112,7 +112,7 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-3: 複数ステップを順次実行できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -131,7 +131,7 @@ describe('E2E: Basic Flow Tests', () => {
    * E-BASIC-4: スクリーンショット
    *
    * 前提条件:
-   * - tests/fixtures/flows/simple.flow.yaml が screenshot: login-page を含む
+   * - tests/fixtures/flows/simple.enbu.yaml が screenshot: login-page を含む
    *
    * 検証項目:
    * - --screenshot フラグを使用してフローが実行できる
@@ -143,7 +143,7 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-4: --screenshot フラグでフローを実行できる', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath, '--screenshot']);

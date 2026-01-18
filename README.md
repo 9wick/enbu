@@ -1,4 +1,6 @@
-# agent-browser-flow
+# enbu
+
+> In martial arts, Enbu (演武) is a choreographed demonstration where practitioners perform predefined sequences of techniques. Similarly, Enbu lets you define test sequences in YAML and performs them in the browser — a rehearsal before production.
 
 Webブラウザ向けのシンプルなE2Eテストフレームワーク。YAMLベースのフロー定義で、[agent-browser](https://github.com/vercel-labs/agent-browser)のパワフルなブラウザ自動化を活用できます。
 
@@ -21,9 +23,9 @@ npm install -g agent-browser
 ## インストール
 
 ```bash
-npm install -g agent-browser-flow
+npm install -g enbu
 # または
-npx agent-browser-flow
+npx enbu
 ```
 
 ## クイックスタート
@@ -31,14 +33,14 @@ npx agent-browser-flow
 ### 1. プロジェクトの初期化
 
 ```bash
-npx agent-browser-flow init
+npx enbu init
 ```
 
 これにより `.abflow/` ディレクトリとサンプルフローが作成されます。
 
 ### 2. フローの作成
 
-`.abflow/login.flow.yaml`:
+`.abflow/login.enbu.yaml`:
 
 ```yaml
 # ログインフローのテスト
@@ -59,10 +61,10 @@ steps:
 
 ```bash
 # 全フローを実行
-npx agent-browser-flow
+npx enbu
 
 # 特定のフローを実行
-npx agent-browser-flow .abflow/login.flow.yaml
+npx enbu .abflow/login.enbu.yaml
 ```
 
 ## agent-browser コマンド対応表
@@ -237,7 +239,7 @@ npx agent-browser-flow .abflow/login.flow.yaml
 | `forward` | ❌ | - |
 | `reload` | ❌ | - |
 
-### agent-browser-flow 独自コマンド
+### enbu 独自コマンド
 
 | コマンド | YAML記法 |
 |----------|----------|
@@ -328,12 +330,12 @@ steps:
 #### CLI引数で指定
 
 ```bash
-npx agent-browser-flow --env PASSWORD=secret123
+npx enbu --env PASSWORD=secret123
 ```
 
 #### YAML内で定義
 
-`.abflow/login.flow.yaml`:
+`.abflow/login.enbu.yaml`:
 ```yaml
 env:
   BASE_URL: https://staging.example.com
@@ -344,7 +346,7 @@ steps:
 ## CLI オプション
 
 ```bash
-npx agent-browser-flow [options] [flow-files...]
+npx enbu [options] [flow-files...]
 
 オプション:
   --headed          ブラウザを表示して実行（デフォルト: ヘッドレス）
@@ -361,10 +363,10 @@ npx agent-browser-flow [options] [flow-files...]
 ```
 your-project/
 ├── .abflow/
-│   ├── login.flow.yaml
-│   ├── checkout.flow.yaml
+│   ├── login.enbu.yaml
+│   ├── checkout.enbu.yaml
 │   └── shared/
-│       └── auth.flow.yaml
+│       └── auth.enbu.yaml
 └── package.json
 ```
 
@@ -392,7 +394,7 @@ jobs:
           node-version: '20'
 
       - name: Run E2E tests
-        run: npx agent-browser-flow
+        run: npx enbu
         env:
           PASSWORD: ${{ secrets.TEST_PASSWORD }}
 ```

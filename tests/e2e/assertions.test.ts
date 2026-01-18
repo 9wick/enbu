@@ -11,7 +11,7 @@ import { join } from 'node:path';
  *
  * 前提条件:
  * - npx agent-browser が利用可能であること
- * - tests/fixtures/flows/assertions.flow.yaml が存在すること
+ * - tests/fixtures/flows/assertions.enbu.yaml が存在すること
  * - tests/fixtures/html/assertions.html が存在すること
  */
 describe('E2E: Assertion Tests', () => {
@@ -42,7 +42,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に可視要素「これは表示されています」が存在する
-   * - assertions.flow.yaml に assertVisible: これは表示されています が含まれる
+   * - assertions.enbu.yaml に assertVisible: これは表示されています が含まれる
    *
    * 検証項目:
    * - assertVisible コマンドで可視要素が検出される
@@ -50,7 +50,7 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-1: assertVisible - 可視要素が検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -68,7 +68,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に有効なボタン「有効」が存在する
-   * - assertions.flow.yaml に assertEnabled: 有効 が含まれる
+   * - assertions.enbu.yaml に assertEnabled: 有効 が含まれる
    *
    * 検証項目:
    * - assertEnabled コマンドで有効なボタンが検出される
@@ -76,7 +76,7 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-2: assertEnabled - 有効なボタンが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -94,7 +94,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に無効なボタン「無効」が存在する
-   * - assertions.flow.yaml に assertDisabled: 無効 が含まれる
+   * - assertions.enbu.yaml に assertDisabled: 無効 が含まれる
    *
    * 検証項目:
    * - assertDisabled コマンドで無効なボタンが検出される
@@ -102,7 +102,7 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-3: assertDisabled - 無効なボタンが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -120,7 +120,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html にチェック済みのチェックボックス「チェック済み」が存在する
-   * - assertions.flow.yaml に assertChecked: チェック済み が含まれる
+   * - assertions.enbu.yaml に assertChecked: チェック済み が含まれる
    *
    * 検証項目:
    * - assertChecked コマンドでチェック済みのチェックボックスが検出される
@@ -128,7 +128,7 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-4: assertChecked - チェック済みのチェックボックスが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -146,7 +146,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に未チェックのチェックボックス「未チェック」が存在する
-   * - assertions.flow.yaml に assertUnchecked: 未チェック が含まれる
+   * - assertions.enbu.yaml に assertUnchecked: 未チェック が含まれる
    *
    * 検証項目:
    * - assertUnchecked コマンドで未チェックのチェックボックスが検出される
@@ -154,7 +154,7 @@ describe('E2E: Assertion Tests', () => {
    */
   it('E-ASSERT-5: assertUnchecked - 未チェックのチェックボックスが検出される', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);

@@ -30,15 +30,15 @@ packages/core/src/__tests__/
 ```
 fixtures/
 ├── valid/
-│   ├── simple.flow.yaml           # 基本的なフロー
-│   ├── with-env.flow.yaml         # env セクション付き
-│   ├── all-commands.flow.yaml     # 全コマンドを含む
-│   └── multiple-vars.flow.yaml    # 複数の環境変数
+│   ├── simple.enbu.yaml           # 基本的なフロー
+│   ├── with-env.enbu.yaml         # env セクション付き
+│   ├── all-commands.enbu.yaml     # 全コマンドを含む
+│   └── multiple-vars.enbu.yaml    # 複数の環境変数
 └── invalid/
-    ├── syntax-error.flow.yaml     # YAML構文エラー
-    ├── no-commands.flow.yaml      # コマンド配列なし
-    ├── invalid-command.flow.yaml  # 不正なコマンド
-    └── undefined-var.flow.yaml    # 未定義の環境変数
+    ├── syntax-error.enbu.yaml     # YAML構文エラー
+    ├── no-commands.enbu.yaml      # コマンド配列なし
+    ├── invalid-command.enbu.yaml  # 不正なコマンド
+    └── undefined-var.enbu.yaml    # 未定義の環境変数
 ```
 
 ---
@@ -79,7 +79,7 @@ describe('parseFlowYaml', () => {
   /**
    * YP-1: 基本的なフローのパース
    *
-   * 前提条件: valid/simple.flow.yaml を読み込む
+   * 前提条件: valid/simple.enbu.yaml を読み込む
    * 検証項目:
    * - ok(Flow) が返される
    * - フロー名がファイル名から抽出される
@@ -87,10 +87,10 @@ describe('parseFlowYaml', () => {
    */
   it('YP-1: 基本的なフローを正しくパースできる', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/simple.flow.yaml');
+    const yamlContent = await loadFixture('valid/simple.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'simple.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'simple.enbu.yaml');
 
     // Assert
     result.match(
@@ -109,17 +109,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-2: envセクション付きフロー
    *
-   * 前提条件: valid/with-env.flow.yaml を読み込む
+   * 前提条件: valid/with-env.enbu.yaml を読み込む
    * 検証項目:
    * - env が正しく抽出される
    * - 全ての値が文字列として扱われる
    */
   it('YP-2: envセクションが正しく抽出される', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/with-env.flow.yaml');
+    const yamlContent = await loadFixture('valid/with-env.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'with-env.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'with-env.enbu.yaml');
 
     // Assert
     result.match(
@@ -137,17 +137,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-3: 全コマンドを含むフロー
    *
-   * 前提条件: valid/all-commands.flow.yaml を読み込む
+   * 前提条件: valid/all-commands.enbu.yaml を読み込む
    * 検証項目:
    * - 全てのMVPコマンド型が正しくパースされる
    * - ステップ数が期待値と一致する
    */
   it('YP-3: 全てのコマンド型を正しくパースできる', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/all-commands.flow.yaml');
+    const yamlContent = await loadFixture('valid/all-commands.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'all-commands.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'all-commands.enbu.yaml');
 
     // Assert
     result.match(
@@ -196,7 +196,7 @@ describe('parseFlowYaml', () => {
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'test.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'test.enbu.yaml');
 
     // Assert
     result.match(
@@ -213,17 +213,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-5: YAML構文エラー
    *
-   * 前提条件: invalid/syntax-error.flow.yaml を読み込む
+   * 前提条件: invalid/syntax-error.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'yaml_syntax_error', ... }) が返される
    * - line, column が含まれる
    */
   it('YP-5: YAML構文エラーでyaml_syntax_errorを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/syntax-error.flow.yaml');
+    const yamlContent = await loadFixture('invalid/syntax-error.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'syntax-error.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'syntax-error.enbu.yaml');
 
     // Assert
     result.match(
@@ -240,16 +240,16 @@ describe('parseFlowYaml', () => {
   /**
    * YP-6: コマンド配列なし
    *
-   * 前提条件: invalid/no-commands.flow.yaml を読み込む
+   * 前提条件: invalid/no-commands.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'invalid_flow_structure', ... }) が返される
    */
   it('YP-6: コマンド配列がない場合、invalid_flow_structureを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/no-commands.flow.yaml');
+    const yamlContent = await loadFixture('invalid/no-commands.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'no-commands.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'no-commands.enbu.yaml');
 
     // Assert
     result.match(
@@ -266,17 +266,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-7: 不正なコマンド形式
    *
-   * 前提条件: invalid/invalid-command.flow.yaml を読み込む
+   * 前提条件: invalid/invalid-command.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'invalid_command', ... }) が返される
    * - commandIndex が含まれる
    */
   it('YP-7: 不正なコマンド形式でinvalid_commandを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/invalid-command.flow.yaml');
+    const yamlContent = await loadFixture('invalid/invalid-command.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'invalid-command.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'invalid-command.enbu.yaml');
 
     // Assert
     result.match(
@@ -305,7 +305,7 @@ describe('parseFlowYaml', () => {
     const yamlContent = '[]';
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'empty.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'empty.enbu.yaml');
 
     // Assert
     result.match(
@@ -689,7 +689,7 @@ describe('loadFlows', () => {
 - open: https://example.com
 - click: "ボタン"
 `;
-    await writeFile(join(TEST_DIR, 'test.flow.yaml'), yamlContent);
+    await writeFile(join(TEST_DIR, 'test.enbu.yaml'), yamlContent);
 
     // Act
     const result = await loadFlows(TEST_DIR);
@@ -717,15 +717,15 @@ describe('loadFlows', () => {
   it('FL-2: 複数ファイルを正しく読み込める', async () => {
     // Arrange
     await writeFile(
-      join(TEST_DIR, 'flow1.flow.yaml'),
+      join(TEST_DIR, 'flow1.enbu.yaml'),
       '- open: https://example1.com'
     );
     await writeFile(
-      join(TEST_DIR, 'flow2.flow.yaml'),
+      join(TEST_DIR, 'flow2.enbu.yaml'),
       '- open: https://example2.com'
     );
     await writeFile(
-      join(TEST_DIR, 'flow3.flow.yaml'),
+      join(TEST_DIR, 'flow3.enbu.yaml'),
       '- open: https://example3.com'
     );
 
@@ -756,9 +756,9 @@ describe('loadFlows', () => {
    */
   it('FL-3: ファイル名順にソートされる', async () => {
     // Arrange
-    await writeFile(join(TEST_DIR, 'c.flow.yaml'), '- open: c');
-    await writeFile(join(TEST_DIR, 'a.flow.yaml'), '- open: a');
-    await writeFile(join(TEST_DIR, 'b.flow.yaml'), '- open: b');
+    await writeFile(join(TEST_DIR, 'c.enbu.yaml'), '- open: c');
+    await writeFile(join(TEST_DIR, 'a.enbu.yaml'), '- open: a');
+    await writeFile(join(TEST_DIR, 'b.enbu.yaml'), '- open: b');
 
     // Act
     const result = await loadFlows(TEST_DIR);
@@ -787,7 +787,7 @@ describe('loadFlows', () => {
     const yamlContent = '- open: ${BASE_URL}';
     const envContent = 'BASE_URL=https://from-dotenv.com';
 
-    await writeFile(join(TEST_DIR, 'test.flow.yaml'), yamlContent);
+    await writeFile(join(TEST_DIR, 'test.enbu.yaml'), yamlContent);
     await writeFile(join(TEST_DIR, '.env'), envContent);
 
     // Act
@@ -841,7 +841,7 @@ describe('loadFlows', () => {
   /**
    * FL-6: 空のディレクトリ
    *
-   * 前提条件: *.flow.yamlファイルが存在しない
+   * 前提条件: *.enbu.yamlファイルが存在しない
    * 検証項目:
    * - ok([]) が返される
    */
@@ -872,8 +872,8 @@ describe('loadFlows', () => {
    */
   it('FL-7: パースエラーのあるファイルで最初のエラーを返す', async () => {
     // Arrange
-    await writeFile(join(TEST_DIR, 'valid.flow.yaml'), '- open: https://example.com');
-    await writeFile(join(TEST_DIR, 'invalid.flow.yaml'), 'invalid: yaml: syntax: {{{');
+    await writeFile(join(TEST_DIR, 'valid.enbu.yaml'), '- open: https://example.com');
+    await writeFile(join(TEST_DIR, 'invalid.enbu.yaml'), 'invalid: yaml: syntax: {{{');
 
     // Act
     const result = await loadFlows(TEST_DIR);

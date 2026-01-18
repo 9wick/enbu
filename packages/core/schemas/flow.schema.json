@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://agent-browser-flow.dev/schemas/flow.schema.json",
+  "$id": "https://enbu.dev/schemas/flow.schema.json",
   "title": "Agent Browser Flow",
   "description": "YAMLフローファイルのスキーマ定義",
   "type": "object",

@@ -226,10 +226,10 @@ export class OutputFormatter {
  */
 export const showHelp = (): void => {
   const helpText = `
-agent-browser-flow - CLI for agent-browser workflow automation
+enbu - CLI for agent-browser workflow automation
 
 USAGE:
-  npx agent-browser-flow [command] [options] [flow-files...]
+  npx enbu [command] [options] [flow-files...]
 
 COMMANDS:
   init              Initialize a new project
@@ -247,13 +247,13 @@ OPTIONS:
   --session <name>  Set agent-browser session name
 
 EXAMPLES:
-  npx agent-browser-flow init
-  npx agent-browser-flow
-  npx agent-browser-flow login.flow.yaml
-  npx agent-browser-flow --headed --env USER=test login.flow.yaml
-  npx agent-browser-flow --bail login.flow.yaml checkout.flow.yaml
+  npx enbu init
+  npx enbu
+  npx enbu login.flow.yaml
+  npx enbu --headed --env USER=test login.flow.yaml
+  npx enbu --bail login.flow.yaml checkout.flow.yaml
 
-For more information, visit: https://github.com/9wick/agent-browser-flow
+For more information, visit: https://github.com/9wick/enbu
 `;
 
   process.stdout.write(helpText);

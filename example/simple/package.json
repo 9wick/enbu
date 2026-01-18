@@ -9,8 +9,8 @@
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
     "test": "start-server-and-test start http://localhost:3000 test:e2e",
-    "test:e2e": "node ../../apps/cli/dist/main.mjs flows/test.flow.yaml",
-    "test:headed": "node ../../apps/cli/dist/main.mjs --headed flows/test.flow.yaml"
+    "test:e2e": "node ../../apps/cli/dist/main.mjs flows/test.enbu.yaml",
+    "test:headed": "node ../../apps/cli/dist/main.mjs --headed flows/test.enbu.yaml"
   },
   "dependencies": {
     "express": "^4.21.2",

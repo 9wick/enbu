@@ -164,7 +164,7 @@ describe('runFlowCommand', () => {
     // Act
     const result = await runFlowCommand(
       {
-        files: ['login.flow.yaml'],
+        files: ['login.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -237,7 +237,7 @@ describe('runFlowCommand', () => {
     // Act
     const result = await runFlowCommand(
       {
-        files: ['login.flow.yaml'],
+        files: ['login.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -339,7 +339,7 @@ describe('runFlowCommand', () => {
     // Act
     const result = await runFlowCommand(
       {
-        files: ['flow1.flow.yaml', 'flow2.flow.yaml'],
+        files: ['flow1.enbu.yaml', 'flow2.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -412,7 +412,7 @@ describe('runFlowCommand', () => {
     // Act
     const result = await runFlowCommand(
       {
-        files: ['flow1.flow.yaml', 'flow2.flow.yaml'],
+        files: ['flow1.enbu.yaml', 'flow2.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -480,7 +480,7 @@ describe('runFlowCommand', () => {
     // Act
     await runFlowCommand(
       {
-        files: ['login.flow.yaml'],
+        files: ['login.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -550,7 +550,7 @@ describe('runFlowCommand', () => {
     // Act
     await runFlowCommand(
       {
-        files: ['login.flow.yaml'],
+        files: ['login.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,
@@ -617,7 +617,7 @@ describe('runFlowCommand', () => {
     // Act
     await runFlowCommand(
       {
-        files: ['login.flow.yaml'],
+        files: ['login.enbu.yaml'],
         headed: false,
         env: {},
         timeout: 30000,

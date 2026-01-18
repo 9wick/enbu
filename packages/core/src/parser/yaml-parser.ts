@@ -264,7 +264,7 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  *   - click: "ログイン"
  * `;
  *
- * const result = parseFlowYaml(yamlContent, 'login.flow.yaml');
+ * const result = parseFlowYaml(yamlContent, 'login.enbu.yaml');
  * result.match(
  *   (flow) => console.log(flow.steps),
  *   (error) => console.error(error)
@@ -287,7 +287,7 @@ export const parseFlowYaml = (yamlContent: string, fileName: string): Result<Flo
         // 5. steps配列の検証
         return validateCommands(steps).map((validatedCommands) => {
           // 6. フロー名をファイル名から生成（拡張子を除去）
-          const name = fileName.replace(/\.flow\.yaml$/, '');
+          const name = fileName.replace(/\.enbu\.yaml$/, '');
 
           return {
             name,

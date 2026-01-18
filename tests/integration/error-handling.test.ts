@@ -32,7 +32,7 @@ describe('Error Handling Integration Tests', () => {
    */
   it.skip('I-ERR-1: agent-browser未インストール時に適切なエラーメッセージを表示', async () => {
     // Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.isOk()).toBe(true);
@@ -46,12 +46,12 @@ describe('Error Handling Integration Tests', () => {
   /**
    * I-ERR-2: YAMLパースエラー
    *
-   * 前提条件: tests/fixtures/flows/invalid.flow.yaml が構文エラーを含む
+   * 前提条件: tests/fixtures/flows/invalid.enbu.yaml が構文エラーを含む
    * 検証項目: 構文エラーの行番号と内容を表示
    */
   it('I-ERR-2: YAML構文エラーで行番号を表示', async () => {
     // Act
-    const result = await runCli(['tests/fixtures/flows/invalid.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/invalid.enbu.yaml']);
 
     // Assert
     expect(result.isOk()).toBe(true);
@@ -67,12 +67,12 @@ describe('Error Handling Integration Tests', () => {
   /**
    * I-ERR-3: 不明なアクション
    *
-   * 前提条件: tests/fixtures/flows/unknown-action.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/unknown-action.enbu.yaml が存在
    * 検証項目: サポートされていないアクションのエラー
    */
   it('I-ERR-3: 不明なアクションで適切なエラーを表示', async () => {
     // Act
-    const result = await runCli(['tests/fixtures/flows/unknown-action.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/unknown-action.enbu.yaml']);
 
     // Assert
     expect(result.isOk()).toBe(true);

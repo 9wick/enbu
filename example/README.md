@@ -1,6 +1,6 @@
 # Example Projects
 
-このディレクトリには、agent-browser-flowの全18コマンドを実際に動作するサンプルとして実装したexampleプロジェクトが含まれています。
+このディレクトリには、enbuの全18コマンドを実際に動作するサンプルとして実装したexampleプロジェクトが含まれています。
 
 ## カテゴリ構成
 
@@ -74,8 +74,8 @@ done
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test:e2e": "agent-browser-flow flows/test.flow.yaml",
-    "test:headed": "agent-browser-flow --headed flows/test.flow.yaml"
+    "test:e2e": "enbu flows/test.enbu.yaml",
+    "test:headed": "enbu --headed flows/test.enbu.yaml"
   }
 }
 ```
@@ -90,7 +90,7 @@ example/{category}/
 ├── server.ts             # Expressサーバー
 ├── tsconfig.json         # TypeScript設定
 ├── flows/
-│   └── test.flow.yaml    # e2eテストフロー
+│   └── test.enbu.yaml    # e2eテストフロー
 └── public/
     ├── index.html        # メインページ
     └── *.html            # 追加ページ（必要に応じて）
@@ -166,6 +166,6 @@ npx agent-browser install
 
 ## 参考情報
 
-- [agent-browser-flow Documentation](../../README.md)
+- [enbu Documentation](../../README.md)
 - [Flow File Schema](../../packages/core/schemas/flow.schema.json)
 - [Command Type Definitions](../../packages/core/src/types/commands.ts)

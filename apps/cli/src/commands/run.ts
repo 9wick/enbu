@@ -94,7 +94,7 @@ const resolveFlowFiles = async (files: string[]): Promise<Result<string[], CliEr
   }
 
   // 指定がない場合、.abflow/ 配下を検索
-  const pattern = resolve(process.cwd(), '.abflow', '*.flow.yaml');
+  const pattern = resolve(process.cwd(), '.abflow', '*.enbu.yaml');
   return fromPromise(
     glob(pattern),
     (error): CliError => ({
@@ -129,7 +129,7 @@ const loadFlowFromFile = async (filePath: string): Promise<Result<Flow, CliError
   const yamlContent = readResult.value;
 
   // ファイル名を抽出（拡張子付き）
-  const fileName = filePath.split('/').pop() ?? 'unknown.flow.yaml';
+  const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
 
   // YAMLをパース
   const parseResult = parseFlowYaml(yamlContent, fileName);
@@ -307,9 +307,9 @@ const displayFlowResult = (
   formatter.newline();
 
   if (result.status === 'passed') {
-    formatter.success(`PASSED: ${flow.name}.flow.yaml`, duration);
+    formatter.success(`PASSED: ${flow.name}.enbu.yaml`, duration);
   } else {
-    formatter.failure(`FAILED: ${flow.name}.flow.yaml`, duration);
+    formatter.failure(`FAILED: ${flow.name}.enbu.yaml`, duration);
     if (result.error) {
       formatter.indent(`Step ${result.error.stepIndex + 1} failed: ${result.error.message}`, 1);
       if (result.error.screenshot) {
@@ -344,7 +344,7 @@ const executeAllFlows = async (
   const startTime = Date.now();
 
   for (const flow of flows) {
-    formatter.info(`Running: ${flow.name}.flow.yaml`);
+    formatter.info(`Running: ${flow.name}.enbu.yaml`);
     formatter.debug(`Executing flow: ${flow.name} (${flow.steps.length} steps)`);
 
     const flowStartTime = Date.now();
@@ -380,7 +380,7 @@ const executeAllFlows = async (
         failed++;
         const duration = Date.now() - flowStartTime;
         formatter.newline();
-        formatter.failure(`FAILED: ${flow.name}.flow.yaml`, duration);
+        formatter.failure(`FAILED: ${flow.name}.enbu.yaml`, duration);
         formatter.indent(error.message, 1);
         formatter.newline();
         // executeFlowWithProgressがerrを返した場合、初期化エラーなどで
@@ -442,7 +442,7 @@ export const runFlowCommand = async (
 
   if (flowFiles.length === 0) {
     formatter.error('Error: No flow files found');
-    formatter.error('Try: npx agent-browser-flow init');
+    formatter.error('Try: npx enbu init');
     return err({
       type: 'execution_error' as const,
       message: 'No flow files found',

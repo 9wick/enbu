@@ -47,7 +47,7 @@ apps/cli/src/__tests__/
 | A-2 | `init` コマンド | `{ command: 'init', ... }` |
 | A-3 | `init --force` | `{ command: 'init', force: true, ... }` |
 | A-4 | runコマンド（デフォルト、引数なし） | `{ command: 'run', files: [], ... }` |
-| A-5 | runコマンド（ファイル指定） | `{ command: 'run', files: ['login.flow.yaml'], ... }` |
+| A-5 | runコマンド（ファイル指定） | `{ command: 'run', files: ['login.enbu.yaml'], ... }` |
 | A-6 | `--headed` オプション | `{ headed: true, ... }` |
 | A-7 | `--env KEY=VALUE` オプション | `{ env: { KEY: 'VALUE' }, ... }` |
 | A-8 | `--env` 複数指定 | `{ env: { USER: 'test', PASSWORD: 'secret' }, ... }` |
@@ -180,12 +180,12 @@ describe('parseArgs', () => {
   /**
    * A-5: runコマンド（ファイル指定）
    *
-   * 前提条件: argv = ['login.flow.yaml']
-   * 検証項目: { command: 'run', files: ['login.flow.yaml'] } が返される
+   * 前提条件: argv = ['login.enbu.yaml']
+   * 検証項目: { command: 'run', files: ['login.enbu.yaml'] } が返される
    */
   it('A-5: フローファイルを指定できる', () => {
     // Arrange
-    const argv = ['login.flow.yaml'];
+    const argv = ['login.enbu.yaml'];
 
     // Act
     const result = parseArgs(argv);
@@ -196,7 +196,7 @@ describe('parseArgs', () => {
       (parsed) => {
         expect(parsed.command).toBe('run');
         if (parsed.command === 'run') {
-          expect(parsed.files).toEqual(['login.flow.yaml']);
+          expect(parsed.files).toEqual(['login.enbu.yaml']);
         }
       },
       () => {
@@ -208,12 +208,12 @@ describe('parseArgs', () => {
   /**
    * A-6: --headedオプション
    *
-   * 前提条件: argv = ['--headed', 'login.flow.yaml']
+   * 前提条件: argv = ['--headed', 'login.enbu.yaml']
    * 検証項目: { headed: true } が返される
    */
   it('A-6: --headedオプションをパースできる', () => {
     // Arrange
-    const argv = ['--headed', 'login.flow.yaml'];
+    const argv = ['--headed', 'login.enbu.yaml'];
 
     // Act
     const result = parseArgs(argv);
@@ -952,7 +952,7 @@ describe('runFlowCommand', () => {
 
     // Act
     const result = await runFlowCommand({
-      files: ['login.flow.yaml'],
+      files: ['login.enbu.yaml'],
       headed: false,
       env: {},
       timeout: 30000,
@@ -1007,7 +1007,7 @@ describe('runFlowCommand', () => {
 
     // Act
     const result = await runFlowCommand({
-      files: ['login.flow.yaml'],
+      files: ['login.enbu.yaml'],
       headed: false,
       env: {},
       timeout: 30000,
@@ -1068,7 +1068,7 @@ describe('runFlowCommand', () => {
 
     // Act
     const result = await runFlowCommand({
-      files: ['flow1.flow.yaml', 'flow2.flow.yaml'],
+      files: ['flow1.enbu.yaml', 'flow2.enbu.yaml'],
       headed: false,
       env: {},
       timeout: 30000,
@@ -1124,7 +1124,7 @@ describe('runFlowCommand', () => {
 
     // Act
     const result = await runFlowCommand({
-      files: ['flow1.flow.yaml', 'flow2.flow.yaml'],
+      files: ['flow1.enbu.yaml', 'flow2.enbu.yaml'],
       headed: false,
       env: {},
       timeout: 30000,
@@ -1211,9 +1211,9 @@ Phase 4 完了時に以下を全て満たすこと:
 
 ### CLI実行要件
 
-- [ ] `npx agent-browser-flow --help` でヘルプが表示される
-- [ ] `npx agent-browser-flow init` でプロジェクトが初期化される
-- [ ] `npx agent-browser-flow <file>` でフローが実行される
+- [ ] `npx enbu --help` でヘルプが表示される
+- [ ] `npx enbu init` でプロジェクトが初期化される
+- [ ] `npx enbu <file>` でフローが実行される
 - [ ] 終了コードが正しく設定される（成功: 0, フロー失敗: 1, エラー: 2）
 
 ### コーディング規約

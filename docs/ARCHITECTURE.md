@@ -1,17 +1,17 @@
 # Architecture Document
 
-agent-browser-flowの開発者向けアーキテクチャドキュメントです。
+enbuの開発者向けアーキテクチャドキュメントです。
 
 ## 概要
 
-agent-browser-flowは、YAMLベースのフロー定義をパースし、agent-browser CLIを呼び出してブラウザを自動化するNode.js製のラッパーツールです。
+enbuは、YAMLベースのフロー定義をパースし、agent-browser CLIを呼び出してブラウザを自動化するNode.js製のラッパーツールです。
 
 ## Package構成
 
 ```
 apps/
 └── cli/                              # プレゼン層（ユーザーインターフェース）
-    └── @apps/cli                     # npm公開名: agent-browser-flow
+    └── @apps/cli                     # npm公開名: enbu
 
 packages/
 ├── config/                           # 共通設定（tsconfig等）
@@ -60,7 +60,7 @@ packages/
 ├─────────────────────────────────────────────────────────────────┤
 │  Flow Loader                                                     │
 │  - .abflow/ディレクトリのスキャン                                  │
-│  - *.flow.yamlファイルの検出                                      │
+│  - *.enbu.yamlファイルの検出                                      │
 │  - ファイル名でソート（実行順序決定）                                │
 ├─────────────────────────────────────────────────────────────────┤
 │  YAML Parser                                                     │
@@ -420,13 +420,13 @@ TypeScript型:
 ### セッション管理
 
 agent-browserは`--session <name>`オプションで複数のブラウザインスタンスを独立して管理する。
-agent-browser-flowは各フローに一意のセッション名を割り当て、フロー間の独立性を保証する。
+enbuは各フローに一意のセッション名を割り当て、フロー間の独立性を保証する。
 
 ### ヘッドレス/有頭モード
 
 - **デフォルト**: ヘッドレスモード（ブラウザウィンドウは表示されない）
 - **`--headed`オプション**: 有頭モード（ブラウザウィンドウを表示）
-  - agent-browser-flowの`--headed`オプションは、agent-browserに`--headed`として渡される
+  - enbuの`--headed`オプションは、agent-browserに`--headed`として渡される
 
 ```typescript
 /** agent-browser呼び出しの抽象化 */
@@ -705,7 +705,7 @@ import { execSync } from 'child_process';
 describe('Basic Flow Execution', () => {
   it('should execute a simple navigation flow', () => {
     const result = execSync(
-      'npx agent-browser-flow tests/fixtures/simple.flow.yaml',
+      'npx enbu tests/fixtures/simple.enbu.yaml',
       { encoding: 'utf-8' }
     );
 

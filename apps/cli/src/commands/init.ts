@@ -9,7 +9,7 @@ import { fileExists, createDirectory, writeFileContent, readFileContent } from '
 const ABFLOW_DIR = '.abflow';
 
 /** サンプルフローファイルの内容 */
-const SAMPLE_FLOW_YAML = `# agent-browser-flowのサンプルフロー
+const SAMPLE_FLOW_YAML = `# enbuのサンプルフロー
 steps:
   - open: https://example.com
   - click: "More information..."
@@ -21,7 +21,7 @@ steps:
  *
  * プロジェクトの初期化を行い、以下の処理を実行する:
  * 1. .abflow/ ディレクトリを作成
- * 2. サンプルフローファイル example.flow.yaml を生成
+ * 2. サンプルフローファイル example.enbu.yaml を生成
  * 3. .gitignore への追記を対話的に提案
  *
  * forceフラグがtrueの場合、既存ファイルを上書きする。
@@ -38,7 +38,7 @@ export const runInitCommand = async (args: {
 }): Promise<Result<void, CliError>> => {
   const formatter = new OutputFormatter(args.verbose);
 
-  formatter.info('Initializing agent-browser-flow project...');
+  formatter.info('Initializing enbu project...');
 
   // .abflow/ ディレクトリとサンプルファイルを作成
   const setupResult = await setupAbflowDirectory(args.force, formatter);
@@ -51,7 +51,7 @@ export const runInitCommand = async (args: {
 
   formatter.newline();
   formatter.info('Initialization complete!');
-  formatter.info(`Try: npx agent-browser-flow ${ABFLOW_DIR}/example.flow.yaml`);
+  formatter.info(`Try: npx enbu ${ABFLOW_DIR}/example.enbu.yaml`);
 
   return ok(undefined);
 };
@@ -84,18 +84,18 @@ const setupAbflowDirectory = async (
     formatter.success(`Created ${ABFLOW_DIR}/ directory`);
   }
 
-  // example.flow.yaml を生成
-  const exampleFlowPath = resolve(abflowPath, 'example.flow.yaml');
+  // example.enbu.yaml を生成
+  const exampleFlowPath = resolve(abflowPath, 'example.enbu.yaml');
   const exampleFlowExists = await fileExists(exampleFlowPath);
 
   if (exampleFlowExists && !force) {
-    formatter.success(`File already exists: ${ABFLOW_DIR}/example.flow.yaml`);
+    formatter.success(`File already exists: ${ABFLOW_DIR}/example.enbu.yaml`);
   } else {
     const writeResult = await writeFileContent(exampleFlowPath, SAMPLE_FLOW_YAML);
     if (writeResult.isErr()) {
       return writeResult;
     }
-    formatter.success(`Created ${ABFLOW_DIR}/example.flow.yaml`);
+    formatter.success(`Created ${ABFLOW_DIR}/example.enbu.yaml`);
   }
 
   return ok(undefined);

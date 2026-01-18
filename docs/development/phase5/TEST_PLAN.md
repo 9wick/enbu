@@ -63,11 +63,11 @@ CLIの基本機能を検証します。
 |----|-------------|---------|---------|
 | I-CLI-1 | ヘルプ表示 | - | `--help` で使用方法が表示される |
 | I-CLI-2 | バージョン表示 | - | `--version` でバージョンが表示される |
-| I-CLI-3 | フローファイル実行 | simple.flow.yaml | 正常に実行され、exitCode 0 |
+| I-CLI-3 | フローファイル実行 | simple.enbu.yaml | 正常に実行され、exitCode 0 |
 | I-CLI-4 | 存在しないフローファイル | - | エラーメッセージが表示され、exitCode 1 |
-| I-CLI-5 | セッション指定 | simple.flow.yaml | `--session` オプションが正しく渡される |
-| I-CLI-6 | ヘッドレスモード指定 | simple.flow.yaml | `--headed` オプションが正しく渡される |
-| I-CLI-7 | スクリーンショット出力 | simple.flow.yaml | `--screenshot-dir` で画像が保存される |
+| I-CLI-5 | セッション指定 | simple.enbu.yaml | `--session` オプションが正しく渡される |
+| I-CLI-6 | ヘッドレスモード指定 | simple.enbu.yaml | `--headed` オプションが正しく渡される |
+| I-CLI-7 | スクリーンショット出力 | simple.enbu.yaml | `--screenshot-dir` で画像が保存される |
 
 **実装例**:
 
@@ -101,7 +101,7 @@ describe('CLI Integration Tests', () => {
     // Assert
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Usage:');
-    expect(result.stdout).toContain('agent-browser-flow');
+    expect(result.stdout).toContain('enbu');
   });
 
   /**
@@ -122,12 +122,12 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-3: フローファイル実行
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: 正常に実行され、exitCode 0
    */
   it('I-CLI-3: フローファイルを正常に実行できる', async () => {
     // Arrange
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
 
     // Act
     const result = await runCli([flowPath]);
@@ -145,7 +145,7 @@ describe('CLI Integration Tests', () => {
    */
   it('I-CLI-4: 存在しないフローファイルでエラーを返す', async () => {
     // Arrange & Act
-    const result = await runCli(['not-exist.flow.yaml']);
+    const result = await runCli(['not-exist.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -155,12 +155,12 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-5: セッション指定
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --session オプションが正しく渡される
    */
   it('I-CLI-5: --session オプションが正しく渡される', async () => {
     // Arrange
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
     const sessionName = 'test-session-123';
 
     // Act
@@ -179,12 +179,12 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-6: ヘッドレスモード指定
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --headed オプションが正しく渡される
    */
   it('I-CLI-6: --headed オプションが正しく渡される', async () => {
     // Arrange
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
 
     // Act
     const result = await runCli([flowPath, '--headed']);
@@ -202,12 +202,12 @@ describe('CLI Integration Tests', () => {
   /**
    * I-CLI-7: スクリーンショット出力
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: --screenshot-dir で画像が保存される
    */
   it('I-CLI-7: スクリーンショットが指定ディレクトリに保存される', async () => {
     // Arrange
-    const flowPath = 'tests/fixtures/flows/simple.flow.yaml';
+    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
     const screenshotDir = '/tmp/test-screenshots';
 
     // Act
@@ -252,9 +252,9 @@ const runCli = async (args: string[]): Promise<{ exitCode: number; stdout: strin
 |----|-------------|---------|---------|
 | I-ERR-1 | agent-browser未インストール | agent-browser なし | 適切なエラーメッセージとインストール案内 |
 | I-ERR-2 | YAMLパースエラー | 不正なYAMLファイル | 構文エラーの行番号と内容を表示 |
-| I-ERR-3 | 不明なアクション | unknown-action.flow.yaml | サポートされていないアクションのエラー |
-| I-ERR-4 | タイムアウト | timeout.flow.yaml | タイムアウトエラーと再試行の案内 |
-| I-ERR-5 | アサーション失敗 | assertion-fail.flow.yaml | 期待値と実際の値を表示 |
+| I-ERR-3 | 不明なアクション | unknown-action.enbu.yaml | サポートされていないアクションのエラー |
+| I-ERR-4 | タイムアウト | timeout.enbu.yaml | タイムアウトエラーと再試行の案内 |
+| I-ERR-5 | アサーション失敗 | assertion-fail.enbu.yaml | 期待値と実際の値を表示 |
 
 **実装例**:
 
@@ -276,7 +276,7 @@ describe('Error Handling Integration Tests', () => {
     );
 
     // Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -287,12 +287,12 @@ describe('Error Handling Integration Tests', () => {
   /**
    * I-ERR-2: YAMLパースエラー
    *
-   * 前提条件: tests/fixtures/flows/invalid.flow.yaml が構文エラーを含む
+   * 前提条件: tests/fixtures/flows/invalid.enbu.yaml が構文エラーを含む
    * 検証項目: 構文エラーの行番号と内容を表示
    */
   it('I-ERR-2: YAML構文エラーで行番号を表示', async () => {
     // Arrange & Act
-    const result = await runCli(['tests/fixtures/flows/invalid.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/invalid.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -303,12 +303,12 @@ describe('Error Handling Integration Tests', () => {
   /**
    * I-ERR-3: 不明なアクション
    *
-   * 前提条件: tests/fixtures/flows/unknown-action.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/unknown-action.enbu.yaml が存在
    * 検証項目: サポートされていないアクションのエラー
    */
   it('I-ERR-3: 不明なアクションで適切なエラーを表示', async () => {
     // Arrange & Act
-    const result = await runCli(['tests/fixtures/flows/unknown-action.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/unknown-action.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -334,7 +334,7 @@ describe('Error Handling Integration Tests', () => {
     );
 
     // Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -346,7 +346,7 @@ describe('Error Handling Integration Tests', () => {
   /**
    * I-ERR-5: アサーション失敗
    *
-   * 前提条件: tests/fixtures/flows/assertion-fail.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/assertion-fail.enbu.yaml が存在
    * 検証項目: 期待値と実際の値を表示
    */
   it('I-ERR-5: アサーション失敗時に期待値と実際の値を表示', async () => {
@@ -363,7 +363,7 @@ describe('Error Handling Integration Tests', () => {
     );
 
     // Act
-    const result = await runCli(['tests/fixtures/flows/assertion-fail.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/assertion-fail.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(1);
@@ -462,10 +462,10 @@ export const startTestServer = async (
 
 | ID | テストケース | フローファイル | 検証項目 |
 |----|-------------|---------------|---------|
-| E-BASIC-1 | ページを開く | simple.flow.yaml | open コマンドが成功 |
-| E-BASIC-2 | 要素の存在確認 | simple.flow.yaml | assertVisible でh1が見つかる |
-| E-BASIC-3 | 複数ステップの実行 | simple.flow.yaml | 全ステップが順次実行される |
-| E-BASIC-4 | スクリーンショット | simple.flow.yaml | 画像ファイルが生成される |
+| E-BASIC-1 | ページを開く | simple.enbu.yaml | open コマンドが成功 |
+| E-BASIC-2 | 要素の存在確認 | simple.enbu.yaml | assertVisible でh1が見つかる |
+| E-BASIC-3 | 複数ステップの実行 | simple.enbu.yaml | 全ステップが順次実行される |
+| E-BASIC-4 | スクリーンショット | simple.enbu.yaml | 画像ファイルが生成される |
 
 **実装例**:
 
@@ -491,12 +491,12 @@ describe('E2E: Basic Flow Tests', () => {
   /**
    * E-BASIC-1: ページを開く
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が存在
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
    * 検証項目: open コマンドが成功
    */
   it('E-BASIC-1: ページを正常に開ける', async () => {
     // Arrange & Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(0);
@@ -511,7 +511,7 @@ describe('E2E: Basic Flow Tests', () => {
    */
   it('E-BASIC-2: 要素の存在を確認できる', async () => {
     // Arrange & Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(0);
@@ -522,12 +522,12 @@ describe('E2E: Basic Flow Tests', () => {
   /**
    * E-BASIC-3: 複数ステップの実行
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が3ステップを含む
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が3ステップを含む
    * 検証項目: 全ステップが順次実行される
    */
   it('E-BASIC-3: 複数ステップを順次実行できる', async () => {
     // Arrange & Act
-    const result = await runCli(['tests/fixtures/flows/simple.flow.yaml']);
+    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
 
     // Assert
     expect(result.exitCode).toBe(0);
@@ -538,7 +538,7 @@ describe('E2E: Basic Flow Tests', () => {
   /**
    * E-BASIC-4: スクリーンショット
    *
-   * 前提条件: tests/fixtures/flows/simple.flow.yaml が screenshot を含む
+   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が screenshot を含む
    * 検証項目: 画像ファイルが生成される
    */
   it('E-BASIC-4: スクリーンショットが生成される', async () => {
@@ -547,7 +547,7 @@ describe('E2E: Basic Flow Tests', () => {
 
     // Act
     const result = await runCli([
-      'tests/fixtures/flows/simple.flow.yaml',
+      'tests/fixtures/flows/simple.enbu.yaml',
       '--screenshot-dir',
       screenshotDir,
     ]);
@@ -568,11 +568,11 @@ describe('E2E: Basic Flow Tests', () => {
 
 | ID | テストケース | フローファイル | 検証項目 |
 |----|-------------|---------------|---------|
-| E-ASSERT-1 | assertVisible | assertions.flow.yaml | 可視要素が検出される |
-| E-ASSERT-2 | assertEnabled | assertions.flow.yaml | 有効なボタンが検出される |
-| E-ASSERT-3 | assertDisabled | assertions.flow.yaml | 無効なボタンが検出される |
-| E-ASSERT-4 | assertChecked | assertions.flow.yaml | チェック済みのチェックボックス |
-| E-ASSERT-5 | assertUnchecked | assertions.flow.yaml | 未チェックのチェックボックス |
+| E-ASSERT-1 | assertVisible | assertions.enbu.yaml | 可視要素が検出される |
+| E-ASSERT-2 | assertEnabled | assertions.enbu.yaml | 有効なボタンが検出される |
+| E-ASSERT-3 | assertDisabled | assertions.enbu.yaml | 無効なボタンが検出される |
+| E-ASSERT-4 | assertChecked | assertions.enbu.yaml | チェック済みのチェックボックス |
+| E-ASSERT-5 | assertUnchecked | assertions.enbu.yaml | 未チェックのチェックボックス |
 
 #### tests/e2e/interactions.test.ts
 
@@ -582,11 +582,11 @@ describe('E2E: Basic Flow Tests', () => {
 
 | ID | テストケース | フローファイル | 検証項目 |
 |----|-------------|---------------|---------|
-| E-INT-1 | type | interactions.flow.yaml | テキスト入力が成功 |
-| E-INT-2 | fill | interactions.flow.yaml | フォーム入力が成功 |
-| E-INT-3 | click | interactions.flow.yaml | ボタンクリックが成功 |
-| E-INT-4 | press | interactions.flow.yaml | キーボード操作が成功 |
-| E-INT-5 | 複数要素の操作 | interactions.flow.yaml | 連続した操作が全て成功 |
+| E-INT-1 | type | interactions.enbu.yaml | テキスト入力が成功 |
+| E-INT-2 | fill | interactions.enbu.yaml | フォーム入力が成功 |
+| E-INT-3 | click | interactions.enbu.yaml | ボタンクリックが成功 |
+| E-INT-4 | press | interactions.enbu.yaml | キーボード操作が成功 |
+| E-INT-5 | 複数要素の操作 | interactions.enbu.yaml | 連続した操作が全て成功 |
 
 #### tests/e2e/error-cases.test.ts
 
@@ -596,10 +596,10 @@ describe('E2E: Basic Flow Tests', () => {
 
 | ID | テストケース | フローファイル | 検証項目 |
 |----|-------------|---------------|---------|
-| E-ERR-1 | 存在しない要素 | error-case.flow.yaml | 適切なエラーメッセージ |
-| E-ERR-2 | 無効な操作 | error-case.flow.yaml | 無効な操作のエラー |
-| E-ERR-3 | タイムアウト | error-case.flow.yaml | タイムアウトエラー |
-| E-ERR-4 | アサーション失敗 | error-case.flow.yaml | 期待値との差分表示 |
+| E-ERR-1 | 存在しない要素 | error-case.enbu.yaml | 適切なエラーメッセージ |
+| E-ERR-2 | 無効な操作 | error-case.enbu.yaml | 無効な操作のエラー |
+| E-ERR-3 | タイムアウト | error-case.enbu.yaml | タイムアウトエラー |
+| E-ERR-4 | アサーション失敗 | error-case.enbu.yaml | 期待値との差分表示 |
 
 ---
 
@@ -651,7 +651,7 @@ graph TD
 ### フィクスチャファイルの命名規則
 
 - **HTMLファイル**: `{用途}.html`（例: `login-form.html`）
-- **フローファイル**: `{シナリオ}.flow.yaml`（例: `simple.flow.yaml`）
+- **フローファイル**: `{シナリオ}.enbu.yaml`（例: `simple.enbu.yaml`）
 
 ### フィクスチャの保守
 

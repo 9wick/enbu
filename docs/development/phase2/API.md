@@ -471,7 +471,7 @@ import { Result } from 'neverthrow';
  * - click: "ログイン"
  * `;
  *
- * const result = parseFlowYaml(yamlContent, 'login.flow.yaml');
+ * const result = parseFlowYaml(yamlContent, 'login.enbu.yaml');
  * result.match(
  *   (flow) => console.log(flow.steps),
  *   (error) => console.error(error)
@@ -605,14 +605,14 @@ export function loadFlows(
 **動作仕様**:
 
 1. `dotEnvPath` が指定されている場合、dotenvで読み込み
-2. `dirPath` 配下の `*.flow.yaml` ファイルを全て検索
+2. `dirPath` 配下の `*.enbu.yaml` ファイルを全て検索
 3. 各ファイルを読み込み、`parseFlowYaml` でパース
 4. 全てのフローに対して `resolveEnvVariables` を実行
 5. 全て成功 → `ok([flow1, flow2, ...])`
 6. いずれかが失敗 → `err(ParseError)`（最初のエラーを返す）
 
 **ファイル検索ルール**:
-- `*.flow.yaml` パターンにマッチするファイルのみ
+- `*.enbu.yaml` パターンにマッチするファイルのみ
 - サブディレクトリは検索しない（シャロー検索）
 - ファイル名順にソート
 
@@ -667,10 +667,10 @@ import dotenv from 'dotenv';
 const dotEnv = dotenv.config().parsed ?? {};
 
 // YAMLファイル読み込み
-const yamlContent = await readFile('./.abflow/login.flow.yaml', 'utf-8');
+const yamlContent = await readFile('./.abflow/login.enbu.yaml', 'utf-8');
 
 // パース
-const parseResult = parseFlowYaml(yamlContent, 'login.flow.yaml');
+const parseResult = parseFlowYaml(yamlContent, 'login.enbu.yaml');
 
 // 環境変数解決
 const resolvedResult = parseResult.andThen((flow) =>

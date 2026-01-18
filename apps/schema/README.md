@@ -1,11 +1,11 @@
-# @agent-browser-flow/schema
+# @enbu/schema
 
-JSON Schema for agent-browser-flow YAML files.
+JSON Schema for enbu YAML files.
 
 ## Installation
 
 ```bash
-npm install @agent-browser-flow/schema
+npm install @enbu/schema
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ Add to `.vscode/settings.json`:
 ```json
 {
   "yaml.schemas": {
-    "node_modules/@agent-browser-flow/schema/dist/flow.schema.json": "**/*.flow.yaml"
+    "node_modules/@enbu/schema/dist/flow.schema.json": "**/*.enbu.yaml"
   }
 }
 ```
@@ -25,7 +25,7 @@ Add to `.vscode/settings.json`:
 ### Direct reference in YAML
 
 ```yaml
-# yaml-language-server: $schema=node_modules/@agent-browser-flow/schema/dist/flow.schema.json
+# yaml-language-server: $schema=node_modules/@enbu/schema/dist/flow.schema.json
 steps:
   - open: https://example.com
   - assertVisible: Welcome
@@ -36,5 +36,5 @@ steps:
 You can also reference the schema directly:
 
 ```
-https://agent-browser-flow.dev/schemas/flow.schema.json
+https://enbu.dev/schemas/flow.schema.json
 ```

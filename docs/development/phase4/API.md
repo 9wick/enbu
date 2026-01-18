@@ -9,15 +9,15 @@
 ### 基本構文
 
 ```bash
-npx agent-browser-flow [command] [options] [flow-files...]
+npx enbu [command] [options] [flow-files...]
 ```
 
 ### コマンド
 
 | コマンド | 説明 | 例 |
 |---------|------|-----|
-| `init` | プロジェクト初期化 | `npx agent-browser-flow init` |
-| (なし) | フロー実行（デフォルト） | `npx agent-browser-flow` |
+| `init` | プロジェクト初期化 | `npx enbu init` |
+| (なし) | フロー実行（デフォルト） | `npx enbu` |
 
 ---
 
@@ -39,7 +39,7 @@ npx agent-browser-flow [command] [options] [flow-files...]
 ### 構文
 
 ```bash
-npx agent-browser-flow init [options]
+npx enbu init [options]
 ```
 
 ### オプション
@@ -51,16 +51,16 @@ npx agent-browser-flow init [options]
 ### 動作
 
 1. `.abflow/` ディレクトリを作成（既に存在する場合はスキップ、`--force`時は上書き）
-2. サンプルフローファイル `.abflow/example.flow.yaml` を生成
+2. サンプルフローファイル `.abflow/example.enbu.yaml` を生成
 3. `.gitignore` への追記を提案（対話的確認）
 
 ### 生成されるサンプルフロー
 
-`.abflow/example.flow.yaml`:
+`.abflow/example.enbu.yaml`:
 
 ```yaml
 name: Example Flow
-description: agent-browser-flowのサンプルフロー
+description: enbuのサンプルフロー
 steps:
   - action: open
     url: https://example.com
@@ -71,15 +71,15 @@ steps:
 ### 出力例
 
 ```
-Initializing agent-browser-flow project...
+Initializing enbu project...
   ✓ Created .abflow/ directory
-  ✓ Created .abflow/example.flow.yaml
+  ✓ Created .abflow/example.enbu.yaml
 
 Would you like to add .abflow/ to .gitignore? (y/N): y
   ✓ Updated .gitignore
 
 Initialization complete!
-Try: npx agent-browser-flow .abflow/example.flow.yaml
+Try: npx enbu .abflow/example.enbu.yaml
 ```
 
 ### 終了コード
@@ -97,14 +97,14 @@ Try: npx agent-browser-flow .abflow/example.flow.yaml
 ### 構文
 
 ```bash
-npx agent-browser-flow [options] [flow-files...]
+npx enbu [options] [flow-files...]
 ```
 
 ### 引数
 
 | 引数 | 説明 | 例 |
 |-----|------|-----|
-| `flow-files...` | フローファイルのパス（複数可）。指定がない場合は `.abflow/` 配下の全 `.flow.yaml` ファイルを実行 | `login.flow.yaml` `checkout.flow.yaml` |
+| `flow-files...` | フローファイルのパス（複数可）。指定がない場合は `.abflow/` 配下の全 `.enbu.yaml` ファイルを実行 | `login.enbu.yaml` `checkout.enbu.yaml` |
 
 ### オプション
 
@@ -122,7 +122,7 @@ npx agent-browser-flow [options] [flow-files...]
 `--env` オプションで設定した環境変数は、フローファイル内で `${ENV_VAR_NAME}` の形式で参照できます。
 
 ```bash
-npx agent-browser-flow login.flow.yaml --env USERNAME=test@example.com --env PASSWORD=secret123
+npx enbu login.enbu.yaml --env USERNAME=test@example.com --env PASSWORD=secret123
 ```
 
 フローファイル内:
@@ -155,21 +155,21 @@ Checking agent-browser...
 Loading flows...
   ✓ Loaded 2 flow(s)
 
-Running: login.flow.yaml
+Running: login.enbu.yaml
   ✓ open https://example.com (1.2s)
   ✓ click "ログイン" (0.3s)
   ✓ type "メールアドレス" (0.2s)
   ✓ type "パスワード" (0.2s)
   ✓ click "ログインする" (0.4s)
 
-✓ PASSED: login.flow.yaml (2.3s)
+✓ PASSED: login.enbu.yaml (2.3s)
 
-Running: checkout.flow.yaml
+Running: checkout.enbu.yaml
   ✓ open https://shop.example.com (1.1s)
   ✓ click "カートに追加" (0.3s)
   ✓ click "購入手続き" (0.5s)
 
-✓ PASSED: checkout.flow.yaml (1.9s)
+✓ PASSED: checkout.enbu.yaml (1.9s)
 
 ────────────────────────────────────────
 Summary: 2/2 flows passed (4.2s)
@@ -184,13 +184,13 @@ Checking agent-browser...
 Loading flows...
   ✓ Loaded 1 flow(s)
 
-Running: login.flow.yaml
+Running: login.enbu.yaml
   ✓ open https://example.com (1.2s)
   ✓ click "ログイン" (0.3s)
   ✗ type "メールアドレス" (0.5s)
     Error: Element not found: "メールアドレス"
 
-✗ FAILED: login.flow.yaml (2.0s)
+✗ FAILED: login.enbu.yaml (2.0s)
   Step 3 failed: Element not found: "メールアドレス"
 
 ────────────────────────────────────────
@@ -226,21 +226,21 @@ Exit code: 2
 `--verbose` または `-v` を指定すると、詳細なログが出力されます。
 
 ```bash
-npx agent-browser-flow -v login.flow.yaml
+npx enbu -v login.enbu.yaml
 ```
 
 出力例:
 
 ```
-[DEBUG] Args: { command: 'run', files: ['login.flow.yaml'], headed: false, verbose: true }
+[DEBUG] Args: { command: 'run', files: ['login.enbu.yaml'], headed: false, verbose: true }
 [DEBUG] Checking agent-browser installation...
 Checking agent-browser...
   ✓ agent-browser is installed
-[DEBUG] Loading flows from: login.flow.yaml
+[DEBUG] Loading flows from: login.enbu.yaml
 Loading flows...
   ✓ Loaded 1 flow(s)
 [DEBUG] Executing flow: login (3 steps)
-Running: login.flow.yaml
+Running: login.enbu.yaml
 [DEBUG] Step 1: open https://example.com
   ✓ open https://example.com (1.2s)
 [DEBUG] Step 2: click "ログイン"
@@ -260,7 +260,7 @@ Running: login.flow.yaml
 ### 例
 
 ```bash
-npx agent-browser-flow --headed login.flow.yaml --env USER=test checkout.flow.yaml
+npx enbu --headed login.enbu.yaml --env USER=test checkout.enbu.yaml
 ```
 
 パース結果:
@@ -268,7 +268,7 @@ npx agent-browser-flow --headed login.flow.yaml --env USER=test checkout.flow.ya
 ```typescript
 {
   command: 'run',
-  files: ['login.flow.yaml', 'checkout.flow.yaml'],
+  files: ['login.enbu.yaml', 'checkout.enbu.yaml'],
   options: {
     headed: true,
     env: { USER: 'test' },
@@ -307,7 +307,7 @@ Error: <error-type>
 実行中のステップはスピナーで表示します（実装は `process.stdout.write` で制御）。
 
 ```
-Running: login.flow.yaml
+Running: login.enbu.yaml
   ⠋ open https://example.com
 ```
 
@@ -429,36 +429,36 @@ export function runFlowCommand(args: {
 
 ```bash
 # 初期化
-npx agent-browser-flow init
+npx enbu init
 
 # 全フロー実行
-npx agent-browser-flow
+npx enbu
 
 # 特定のフロー実行
-npx agent-browser-flow login.flow.yaml
+npx enbu login.enbu.yaml
 
 # 複数フロー実行
-npx agent-browser-flow login.flow.yaml checkout.flow.yaml
+npx enbu login.enbu.yaml checkout.enbu.yaml
 
 # ヘッドレスモードを無効化
-npx agent-browser-flow --headed login.flow.yaml
+npx enbu --headed login.enbu.yaml
 
 # 環境変数を設定
-npx agent-browser-flow --env USERNAME=test --env PASSWORD=secret login.flow.yaml
+npx enbu --env USERNAME=test --env PASSWORD=secret login.enbu.yaml
 
 # 最初の失敗で中断
-npx agent-browser-flow --bail login.flow.yaml checkout.flow.yaml
+npx enbu --bail login.enbu.yaml checkout.enbu.yaml
 
 # 詳細ログ
-npx agent-browser-flow -v login.flow.yaml
+npx enbu -v login.enbu.yaml
 ```
 
 ### CI/CD環境での使用
 
 ```bash
 # 全フロー実行、失敗時に即終了
-npx agent-browser-flow --bail
+npx enbu --bail
 
 # 終了コードでCI判定
-npx agent-browser-flow && echo "All tests passed" || echo "Tests failed"
+npx enbu && echo "All tests passed" || echo "Tests failed"
 ```

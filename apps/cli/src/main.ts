@@ -76,7 +76,7 @@ const main = async (): Promise<void> => {
     (error) => {
       // 引数のパースに失敗した場合
       process.stderr.write(`Error: ${error.message}\n`);
-      process.stderr.write('Try: npx agent-browser-flow --help\n');
+      process.stderr.write('Try: npx enbu --help\n');
       exitWithCode(EXIT_CODE.EXECUTION_ERROR);
     },
   );

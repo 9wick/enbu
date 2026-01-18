@@ -19,7 +19,7 @@ describe('parseFlowYaml', () => {
   /**
    * YP-1: 基本的なフローのパース
    *
-   * 前提条件: valid/simple.flow.yaml を読み込む
+   * 前提条件: valid/simple.enbu.yaml を読み込む
    * 検証項目:
    * - ok(Flow) が返される
    * - フロー名がファイル名から抽出される
@@ -27,10 +27,10 @@ describe('parseFlowYaml', () => {
    */
   it('YP-1: 基本的なフローを正しくパースできる', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/simple.flow.yaml');
+    const yamlContent = await loadFixture('valid/simple.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'simple.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'simple.enbu.yaml');
 
     // Assert
     result.match(
@@ -49,17 +49,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-2: envセクション付きフロー
    *
-   * 前提条件: valid/with-env.flow.yaml を読み込む
+   * 前提条件: valid/with-env.enbu.yaml を読み込む
    * 検証項目:
    * - env が正しく抽出される
    * - 全ての値が文字列として扱われる
    */
   it('YP-2: envセクションが正しく抽出される', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/with-env.flow.yaml');
+    const yamlContent = await loadFixture('valid/with-env.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'with-env.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'with-env.enbu.yaml');
 
     // Assert
     result.match(
@@ -77,17 +77,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-3: 全コマンドを含むフロー
    *
-   * 前提条件: valid/all-commands.flow.yaml を読み込む
+   * 前提条件: valid/all-commands.enbu.yaml を読み込む
    * 検証項目:
    * - 全てのMVPコマンド型が正しくパースされる
    * - ステップ数が期待値と一致する
    */
   it('YP-3: 全てのコマンド型を正しくパースできる', async () => {
     // Arrange
-    const yamlContent = await loadFixture('valid/all-commands.flow.yaml');
+    const yamlContent = await loadFixture('valid/all-commands.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'all-commands.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'all-commands.enbu.yaml');
 
     // Assert
     result.match(
@@ -138,7 +138,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'test.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'test.enbu.yaml');
 
     // Assert
     result.match(
@@ -155,7 +155,7 @@ steps:
   /**
    * YP-5: YAML構文エラー
    *
-   * 前提条件: invalid/syntax-error.flow.yaml を読み込む
+   * 前提条件: invalid/syntax-error.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'yaml_syntax_error', ... }) が返される
    * - message が含まれる
@@ -165,10 +165,10 @@ steps:
    */
   it('YP-5: YAML構文エラーでyaml_syntax_errorを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/syntax-error.flow.yaml');
+    const yamlContent = await loadFixture('invalid/syntax-error.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'syntax-error.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'syntax-error.enbu.yaml');
 
     // Assert
     result.match(
@@ -185,16 +185,16 @@ steps:
   /**
    * YP-6: コマンド配列なし
    *
-   * 前提条件: invalid/no-commands.flow.yaml を読み込む
+   * 前提条件: invalid/no-commands.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'invalid_flow_structure', ... }) が返される
    */
   it('YP-6: コマンド配列がない場合、invalid_flow_structureを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/no-commands.flow.yaml');
+    const yamlContent = await loadFixture('invalid/no-commands.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'no-commands.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'no-commands.enbu.yaml');
 
     // Assert
     result.match(
@@ -210,17 +210,17 @@ steps:
   /**
    * YP-7: 不正なコマンド形式
    *
-   * 前提条件: invalid/invalid-command.flow.yaml を読み込む
+   * 前提条件: invalid/invalid-command.enbu.yaml を読み込む
    * 検証項目:
    * - err({ type: 'invalid_command', ... }) が返される
    * - commandIndex が含まれる
    */
   it('YP-7: 不正なコマンド形式でinvalid_commandを返す', async () => {
     // Arrange
-    const yamlContent = await loadFixture('invalid/invalid-command.flow.yaml');
+    const yamlContent = await loadFixture('invalid/invalid-command.enbu.yaml');
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'invalid-command.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'invalid-command.enbu.yaml');
 
     // Assert
     result.match(
@@ -249,7 +249,7 @@ steps:
     const yamlContent = 'steps: []';
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'empty.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'empty.enbu.yaml');
 
     // Assert
     result.match(
@@ -280,7 +280,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked.enbu.yaml');
 
     // Assert
     result.match(
@@ -317,7 +317,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked-true.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked-true.enbu.yaml');
 
     // Assert
     result.match(
@@ -353,7 +353,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked-omit.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked-omit.enbu.yaml');
 
     // Assert
     result.match(
@@ -389,7 +389,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked-invalid.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked-invalid.enbu.yaml');
 
     // Assert
     result.match(
@@ -419,7 +419,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked-number.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked-number.enbu.yaml');
 
     // Assert
     result.match(
@@ -449,7 +449,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'assert-checked-null.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'assert-checked-null.enbu.yaml');
 
     // Assert
     result.match(
@@ -478,7 +478,7 @@ steps:
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'old-format.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'old-format.enbu.yaml');
 
     // Assert
     result.match(
@@ -506,7 +506,7 @@ steps: "not an array"
 `;
 
     // Act
-    const result = parseFlowYaml(yamlContent, 'invalid-steps.flow.yaml');
+    const result = parseFlowYaml(yamlContent, 'invalid-steps.enbu.yaml');
 
     // Assert
     result.match(

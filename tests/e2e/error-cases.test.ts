@@ -11,7 +11,7 @@ import { join } from 'node:path';
  *
  * 前提条件:
  * - npx agent-browser が利用可能であること
- * - tests/fixtures/flows/error-case.flow.yaml が存在すること
+ * - tests/fixtures/flows/error-case.enbu.yaml が存在すること
  * - tests/fixtures/html/assertions.html が存在すること
  */
 describe('E2E: Error Cases Tests', () => {
@@ -42,7 +42,7 @@ describe('E2E: Error Cases Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に「存在しない要素」というテキストは存在しない
-   * - error-case.flow.yaml に assertVisible: 存在しない要素 が含まれる
+   * - error-case.enbu.yaml に assertVisible: 存在しない要素 が含まれる
    *
    * 検証項目:
    * - assertVisible が失敗する（終了コード非0）
@@ -51,7 +51,7 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-1: 存在しない要素 - 適切なエラーメッセージ', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -83,7 +83,7 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-2: 無効な操作 - 無効な操作のエラー', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -114,7 +114,7 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-3: タイムアウト - タイムアウトエラー', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);
@@ -135,7 +135,7 @@ describe('E2E: Error Cases Tests', () => {
    *
    * 前提条件:
    * - アサーションが失敗する条件が設定されている
-   * - error-case.flow.yaml に失敗するアサーションが含まれる
+   * - error-case.enbu.yaml に失敗するアサーションが含まれる
    *
    * 検証項目:
    * - アサーションが失敗する（終了コード非0）
@@ -144,7 +144,7 @@ describe('E2E: Error Cases Tests', () => {
    */
   it('E-ERR-4: アサーション失敗 - 期待値との差分表示', async () => {
     // Arrange
-    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.flow.yaml');
+    const flowPath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
 
     // Act
     const result = await runCli([flowPath]);

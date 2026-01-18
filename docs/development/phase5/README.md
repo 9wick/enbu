@@ -31,11 +31,11 @@ tests/
 │   │   ├── form-elements.html   # フォーム要素用
 │   │   └── assertions.html      # アサーション用
 │   └── flows/
-│       ├── simple.flow.yaml     # 基本的なフロー
-│       ├── login.flow.yaml      # ログインフロー
-│       ├── assertions.flow.yaml # アサーションテスト用
-│       ├── interactions.flow.yaml # 操作テスト用
-│       └── error-case.flow.yaml # エラーケース用
+│       ├── simple.enbu.yaml     # 基本的なフロー
+│       ├── login.enbu.yaml      # ログインフロー
+│       ├── assertions.enbu.yaml # アサーションテスト用
+│       ├── interactions.enbu.yaml # 操作テスト用
+│       └── error-case.enbu.yaml # エラーケース用
 └── utils/
     ├── file-server.ts           # テスト用HTTPサーバー
     └── test-helpers.ts          # テストヘルパー関数

@@ -418,7 +418,7 @@ export const parseFlowYaml = (
     }
 
     // 5. フロー名をファイル名から生成（拡張子を除去）
-    const name = fileName.replace(/\.flow\.yaml$/, '');
+    const name = fileName.replace(/\.enbu\.yaml$/, '');
 
     return ok({
       name,
@@ -858,7 +858,7 @@ const getCommandName = (command: Command): string => {
 ### 実装方針
 
 1. dotenvで.envファイルを読み込み
-2. ディレクトリから`*.flow.yaml`ファイルを検索
+2. ディレクトリから`*.enbu.yaml`ファイルを検索
 3. 各ファイルをパースして環境変数を解決
 4. エラーが発生した場合は最初のエラーを返す
 
@@ -889,7 +889,7 @@ export const loadFlows = async (
   // 1. .envファイルを読み込み
   const dotEnv = dotenv.config({ path: dotEnvPath }).parsed ?? {};
 
-  // 2. ディレクトリから*.flow.yamlファイルを検索
+  // 2. ディレクトリから*.enbu.yamlファイルを検索
   const findResult = await findFlowFiles(dirPath);
   if (findResult.isErr()) {
     return findResult;
@@ -914,7 +914,7 @@ export const loadFlows = async (
 };
 
 /**
- * ディレクトリから*.flow.yamlファイルを検索する
+ * ディレクトリから*.enbu.yamlファイルを検索する
  */
 const findFlowFiles = async (
   dirPath: string
@@ -923,9 +923,9 @@ const findFlowFiles = async (
     // ディレクトリ内のファイルを取得
     const entries = await readdir(dirPath, { withFileTypes: true });
 
-    // *.flow.yamlにマッチするファイルをフィルター
+    // *.enbu.yamlにマッチするファイルをフィルター
     const flowFiles = entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.flow.yaml'))
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.enbu.yaml'))
       .map((entry) => join(dirPath, entry.name))
       .sort(); // ファイル名順にソート
 
@@ -962,7 +962,7 @@ const loadSingleFlow = async (
   }
 
   // 2. ファイル名を抽出
-  const fileName = filePath.split('/').pop() ?? 'unknown.flow.yaml';
+  const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
 
   // 3. YAMLをパース
   const parseResult = parseFlowYaml(yamlContent, fileName);

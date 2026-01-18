@@ -442,7 +442,7 @@ jobs:
 
             ## Installation
             ```bash
-            npm install agent-browser-flow
+            npm install enbu
             ```
 
             ## Changes

@@ -440,10 +440,10 @@ export class OutputFormatter {
  */
 export const showHelp = (): void => {
   const helpText = `
-agent-browser-flow - CLI for agent-browser workflow automation
+enbu - CLI for agent-browser workflow automation
 
 USAGE:
-  npx agent-browser-flow [command] [options] [flow-files...]
+  npx enbu [command] [options] [flow-files...]
 
 COMMANDS:
   init              Initialize a new project
@@ -460,13 +460,13 @@ OPTIONS:
   --session <name>  Set agent-browser session name
 
 EXAMPLES:
-  npx agent-browser-flow init
-  npx agent-browser-flow
-  npx agent-browser-flow login.flow.yaml
-  npx agent-browser-flow --headed --env USER=test login.flow.yaml
-  npx agent-browser-flow --bail login.flow.yaml checkout.flow.yaml
+  npx enbu init
+  npx enbu
+  npx enbu login.enbu.yaml
+  npx enbu --headed --env USER=test login.enbu.yaml
+  npx enbu --bail login.enbu.yaml checkout.enbu.yaml
 
-For more information, visit: https://github.com/9wick/agent-browser-flow
+For more information, visit: https://github.com/9wick/enbu
 `;
 
   process.stdout.write(helpText);
@@ -603,7 +603,7 @@ initコマンドの実装。
 ### 実装方針
 
 1. `.abflow/` ディレクトリを作成
-2. サンプルフローファイル `.abflow/example.flow.yaml` を生成
+2. サンプルフローファイル `.abflow/example.enbu.yaml` を生成
 3. `.gitignore` への追記を提案（対話的確認）
 
 ### コード構造
@@ -626,7 +626,7 @@ const ABFLOW_DIR = '.abflow';
 
 /** サンプルフローファイルの内容 */
 const SAMPLE_FLOW_YAML = `name: Example Flow
-description: agent-browser-flowのサンプルフロー
+description: enbuのサンプルフロー
 steps:
   - action: open
     url: https://example.com
@@ -646,7 +646,7 @@ export const runInitCommand = async (args: {
 }): Promise<Result<void, CliError>> => {
   const formatter = new OutputFormatter(args.verbose);
 
-  formatter.info('Initializing agent-browser-flow project...');
+  formatter.info('Initializing enbu project...');
 
   // .abflow/ ディレクトリを作成
   const abflowPath = resolve(process.cwd(), ABFLOW_DIR);
@@ -662,18 +662,18 @@ export const runInitCommand = async (args: {
     formatter.success(`Created ${ABFLOW_DIR}/ directory`);
   }
 
-  // example.flow.yaml を生成
-  const exampleFlowPath = resolve(abflowPath, 'example.flow.yaml');
+  // example.enbu.yaml を生成
+  const exampleFlowPath = resolve(abflowPath, 'example.enbu.yaml');
   const exampleFlowExists = await fileExists(exampleFlowPath);
 
   if (exampleFlowExists && !args.force) {
-    formatter.success(`File already exists: ${ABFLOW_DIR}/example.flow.yaml`);
+    formatter.success(`File already exists: ${ABFLOW_DIR}/example.enbu.yaml`);
   } else {
     const writeResult = await writeFileContent(exampleFlowPath, SAMPLE_FLOW_YAML);
     if (writeResult.isErr()) {
       return writeResult;
     }
-    formatter.success(`Created ${ABFLOW_DIR}/example.flow.yaml`);
+    formatter.success(`Created ${ABFLOW_DIR}/example.enbu.yaml`);
   }
 
   // .gitignore への追記を提案
@@ -697,7 +697,7 @@ export const runInitCommand = async (args: {
 
   formatter.newline();
   formatter.info('Initialization complete!');
-  formatter.info(`Try: npx agent-browser-flow ${ABFLOW_DIR}/example.flow.yaml`);
+  formatter.info(`Try: npx enbu ${ABFLOW_DIR}/example.enbu.yaml`);
 
   return ok(undefined);
 };
@@ -831,7 +831,7 @@ export const runFlowCommand = async (args: {
 
   if (flowFiles.length === 0) {
     formatter.error('Error: No flow files found');
-    formatter.error('Try: npx agent-browser-flow init');
+    formatter.error('Try: npx enbu init');
     return err({
       type: 'execution_error',
       message: 'No flow files found',
@@ -862,7 +862,7 @@ export const runFlowCommand = async (args: {
   let failed = 0;
 
   for (const flow of flows) {
-    formatter.info(`Running: ${flow.name}.flow.yaml`);
+    formatter.info(`Running: ${flow.name}.enbu.yaml`);
     formatter.debug(`Executing flow: ${flow.name} (${flow.steps.length} steps)`);
 
     const startTime = Date.now();
@@ -877,11 +877,11 @@ export const runFlowCommand = async (args: {
         if (result.success) {
           passed++;
           formatter.newline();
-          formatter.success(`PASSED: ${flow.name}.flow.yaml`, duration);
+          formatter.success(`PASSED: ${flow.name}.enbu.yaml`, duration);
         } else {
           failed++;
           formatter.newline();
-          formatter.failure(`FAILED: ${flow.name}.flow.yaml`, duration);
+          formatter.failure(`FAILED: ${flow.name}.enbu.yaml`, duration);
           if (result.error) {
             formatter.indent(`Step ${result.failedStepIndex! + 1} failed: ${result.error}`, 1);
           }
@@ -890,7 +890,7 @@ export const runFlowCommand = async (args: {
       (error) => {
         failed++;
         formatter.newline();
-        formatter.failure(`FAILED: ${flow.name}.flow.yaml`, duration);
+        formatter.failure(`FAILED: ${flow.name}.enbu.yaml`, duration);
         formatter.indent(error.message, 1);
       }
     );
@@ -921,7 +921,7 @@ export const runFlowCommand = async (args: {
 /**
  * フローファイルを解決
  *
- * 指定がない場合は .abflow/ 配下の全 .flow.yaml ファイルを検索
+ * 指定がない場合は .abflow/ 配下の全 .enbu.yaml ファイルを検索
  */
 const resolveFlowFiles = async (files: string[]): Promise<Result<string[], CliError>> => {
   if (files.length > 0) {
@@ -931,7 +931,7 @@ const resolveFlowFiles = async (files: string[]): Promise<Result<string[], CliEr
 
   // 指定がない場合、.abflow/ 配下を検索
   try {
-    const pattern = resolve(process.cwd(), '.abflow', '*.flow.yaml');
+    const pattern = resolve(process.cwd(), '.abflow', '*.enbu.yaml');
     const matched = await glob(pattern);
     return ok(matched);
   } catch (error) {
@@ -1099,7 +1099,7 @@ const main = async (): Promise<void> => {
   if (argsResult.isErr()) {
     const error = argsResult.error;
     process.stderr.write(`Error: ${error.message}\n`);
-    process.stderr.write('Try: npx agent-browser-flow --help\n');
+    process.stderr.write('Try: npx enbu --help\n');
     exitWithCode(EXIT_CODE.EXECUTION_ERROR);
   }
 

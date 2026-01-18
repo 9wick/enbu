@@ -14,7 +14,7 @@ import { parseFlowYaml } from '../parser/yaml-parser';
 import { resolveEnvVariables } from '../parser/env-resolver';
 
 /**
- * ディレクトリから*.flow.yamlファイルを検索する
+ * ディレクトリから*.enbu.yamlファイルを検索する
  *
  * @param dirPath - 検索するディレクトリのパス
  * @returns 成功時: ファイルパスの配列（ソート済み）、失敗時: ParseError
@@ -24,9 +24,9 @@ const findFlowFiles = async (dirPath: string): Promise<Result<readonly string[],
     // ディレクトリ内のファイルを取得
     const entries = await readdir(dirPath, { withFileTypes: true });
 
-    // *.flow.yamlにマッチするファイルをフィルター
+    // *.enbu.yamlにマッチするファイルをフィルター
     const flowFiles = entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.flow.yaml'))
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.enbu.yaml'))
       .map((entry) => join(dirPath, entry.name))
       .sort(); // ファイル名順にソート
 
@@ -164,7 +164,7 @@ const loadAllFlows = (
  * @returns 成功時: Flowオブジェクトの配列、失敗時: ParseError
  *
  * @remarks
- * - `*.flow.yaml` パターンにマッチするファイルのみ対象
+ * - `*.enbu.yaml` パターンにマッチするファイルのみ対象
  * - サブディレクトリは検索しない（シャロー検索）
  * - ファイル名順にソート
  * - 最初のエラーで処理を停止
@@ -199,7 +199,7 @@ export const loadFlows = async (
   // 1. .envファイルを読み込み
   const dotEnvResult = await loadDotEnv(dotEnvPath);
 
-  // 2. ディレクトリから*.flow.yamlファイルを検索
+  // 2. ディレクトリから*.enbu.yamlファイルを検索
   const findResult = await findFlowFiles(dirPath);
 
   // 3. 全てのフローファイルを読み込み（エラーの場合は即座にエラーResultを返す）

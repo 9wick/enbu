@@ -14,13 +14,13 @@ tests/fixtures/
 │   ├── form-elements.html        # フォーム要素用
 │   └── assertions.html           # アサーション用
 └── flows/                        # YAMLフローファイル
-    ├── simple.flow.yaml          # 基本的なフロー
-    ├── login.flow.yaml           # ログインフロー
-    ├── assertions.flow.yaml      # アサーションテスト用
-    ├── interactions.flow.yaml    # 操作テスト用
-    ├── error-case.flow.yaml      # エラーケース用
-    ├── invalid.flow.yaml         # YAML構文エラー用
-    └── unknown-action.flow.yaml  # 不明なアクション用
+    ├── simple.enbu.yaml          # 基本的なフロー
+    ├── login.enbu.yaml           # ログインフロー
+    ├── assertions.enbu.yaml      # アサーションテスト用
+    ├── interactions.enbu.yaml    # 操作テスト用
+    ├── error-case.enbu.yaml      # エラーケース用
+    ├── invalid.enbu.yaml         # YAML構文エラー用
+    └── unknown-action.enbu.yaml  # 不明なアクション用
 ```
 
 ---
@@ -473,7 +473,7 @@ tests/fixtures/
 
 ## YAMLフローフィクスチャ
 
-### tests/fixtures/flows/simple.flow.yaml
+### tests/fixtures/flows/simple.enbu.yaml
 
 基本的なフロー。E2Eテストの基盤として使用。
 
@@ -506,7 +506,7 @@ tests/fixtures/
 
 ---
 
-### tests/fixtures/flows/login.flow.yaml
+### tests/fixtures/flows/login.enbu.yaml
 
 ログインフォームの操作フロー。
 
@@ -548,7 +548,7 @@ tests/fixtures/
 
 ---
 
-### tests/fixtures/flows/assertions.flow.yaml
+### tests/fixtures/flows/assertions.enbu.yaml
 
 各種アサーションのテストフロー。
 
@@ -582,7 +582,7 @@ tests/fixtures/
 
 ---
 
-### tests/fixtures/flows/interactions.flow.yaml
+### tests/fixtures/flows/interactions.enbu.yaml
 
 各種操作のテストフロー。
 
@@ -630,7 +630,7 @@ tests/fixtures/
 
 ---
 
-### tests/fixtures/flows/error-case.flow.yaml
+### tests/fixtures/flows/error-case.enbu.yaml
 
 エラーケースのテストフロー。
 
@@ -656,7 +656,7 @@ tests/fixtures/
 
 ---
 
-### tests/fixtures/flows/invalid.flow.yaml
+### tests/fixtures/flows/invalid.enbu.yaml
 
 YAML構文エラーのテストフロー。
 
@@ -680,7 +680,7 @@ YAML構文エラーのテストフロー。
 
 ---
 
-### tests/fixtures/flows/unknown-action.flow.yaml
+### tests/fixtures/flows/unknown-action.enbu.yaml
 
 不明なアクションのテストフロー。
 
@@ -713,8 +713,8 @@ YAML構文エラーのテストフロー。
 
 - **HTMLファイル**: 小文字、ハイフン区切り、`.html` 拡張子
   - 例: `login-form.html`, `form-elements.html`
-- **フローファイル**: 小文字、ハイフン区切り、`.flow.yaml` 拡張子
-  - 例: `simple.flow.yaml`, `error-case.flow.yaml`
+- **フローファイル**: 小文字、ハイフン区切り、`.enbu.yaml` 拡張子
+  - 例: `simple.enbu.yaml`, `error-case.enbu.yaml`
 
 ### 追加時の手順
 
@@ -798,14 +798,14 @@ Phase 5 のフィクスチャ完了時に以下を全て満たすこと:
 
 ### YAMLフローフィクスチャ
 
-- [ ] `simple.flow.yaml` が仕様通りに実装されている
-- [ ] `login.flow.yaml` が仕様通りに実装されている
-- [ ] `assertions.flow.yaml` が仕様通りに実装されている
-- [ ] `interactions.flow.yaml` が仕様通りに実装されている
-- [ ] `error-case.flow.yaml` が仕様通りに実装されている
-- [ ] `invalid.flow.yaml` が仕様通りに実装されている
-- [ ] `unknown-action.flow.yaml` が仕様通りに実装されている
-- [ ] 全てのフローファイルがYAML構文として有効（`invalid.flow.yaml`を除く）
+- [ ] `simple.enbu.yaml` が仕様通りに実装されている
+- [ ] `login.enbu.yaml` が仕様通りに実装されている
+- [ ] `assertions.enbu.yaml` が仕様通りに実装されている
+- [ ] `interactions.enbu.yaml` が仕様通りに実装されている
+- [ ] `error-case.enbu.yaml` が仕様通りに実装されている
+- [ ] `invalid.enbu.yaml` が仕様通りに実装されている
+- [ ] `unknown-action.enbu.yaml` が仕様通りに実装されている
+- [ ] 全てのフローファイルがYAML構文として有効（`invalid.enbu.yaml`を除く）
 
 ### テストサーバー
 
