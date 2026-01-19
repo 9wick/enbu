@@ -41,11 +41,7 @@ describe('autoWait', () => {
   it('AW-1: 要素が最初のsnapshotで見つかる場合、すぐに成功を返す', async () => {
     // Arrange: snapshotが "ログイン" 要素を含む
     vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({
-        success: true,
-        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
-        error: null,
-      }),
+      ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
 
     // Act: ログイン要素を待機
@@ -72,13 +68,9 @@ describe('autoWait', () => {
   it('AW-2: ポーリングで要素が見つかる場合、成功を返す', async () => {
     // Arrange: 1回目は空、2回目でログイン要素が出現
     vi.mocked(browserSnapshot)
-      .mockResolvedValueOnce(ok({ success: true, data: { snapshot: '', refs: {} }, error: null }))
+      .mockResolvedValueOnce(ok({ snapshot: '', refs: {} }))
       .mockResolvedValueOnce(
-        ok({
-          success: true,
-          data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
-          error: null,
-        }),
+        ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
       );
 
     // Act: ログイン要素を待機
@@ -98,9 +90,7 @@ describe('autoWait', () => {
    */
   it('AW-3: タイムアウトまで要素が見つからない場合、timeoutエラーを返す', async () => {
     // Arrange: 常に空のsnapshotを返す
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ success: true, data: { snapshot: '', refs: {} }, error: null }),
-    );
+    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs: {} }));
 
     // Act: 存在しない要素を待機
     const promise = autoWait('NotExist', mockContext);
@@ -151,11 +141,7 @@ describe('autoWait', () => {
   it('AW-5: 参照ID形式のセレクタで要素が見つかる', async () => {
     // Arrange: snapshotが e1 参照を含む
     vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({
-        success: true,
-        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
-        error: null,
-      }),
+      ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
 
     // Act: @e1 参照IDで待機
@@ -206,9 +192,9 @@ describe('autoWait', () => {
    * AW-7: 複数の要素にマッチする場合
    *
    * 前提条件: snapshot に「詳細を見る」が複数存在する
-   * 検証項目: err({ type: 'validation_error' }) が返される
+   * 検証項目: err({ type: 'command_execution_failed' }) が返される
    */
-  it('AW-7: 複数の要素にマッチする場合、validation_errorを返す', async () => {
+  it('AW-7: 複数の要素にマッチする場合、command_execution_failedを返す', async () => {
     // Arrange: snapshotに「詳細を見る」リンクが複数含まれる
     const multipleRefs = {
       e1: { name: 'オンラインショップ', role: 'heading' },
@@ -218,24 +204,22 @@ describe('autoWait', () => {
       e5: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ success: true, data: { snapshot: '', refs: multipleRefs }, error: null }),
-    );
+    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs: multipleRefs }));
 
     // Act: 「詳細を見る」を待機
     const promise = autoWait('詳細を見る', mockContext);
     await vi.runAllTimersAsync();
     const result = await promise;
 
-    // Assert: validation_errorが返される
+    // Assert: command_execution_failedが返される
     expect(result.isErr()).toBe(true);
     result.match(
       () => {
         throw new Error('Expected err result');
       },
       (error) => {
-        expect(error.type).toBe('validation_error');
-        if (error.type === 'validation_error') {
+        expect(error.type).toBe('command_execution_failed');
+        if (error.type === 'command_execution_failed') {
           expect(error.message).toContain('matched 3 elements');
           expect(error.message).toContain('詳細を見る');
         }
@@ -258,9 +242,7 @@ describe('autoWait', () => {
       e4: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ success: true, data: { snapshot: '', refs }, error: null }),
-    );
+    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs }));
 
     // Act: 「ログイン」を待機
     const promise = autoWait('ログイン', mockContext);

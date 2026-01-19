@@ -6,10 +6,10 @@
 
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, Url } from '../types';
-import type { OpenOutput } from '../schemas';
-import { OpenOutputSchema } from '../schemas';
+import type { OpenData } from '../schemas';
+import { OpenDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
-import { validateOutput } from '../validator';
+import { validateAndExtractData } from '../validator';
 
 /**
  * 指定したURLをブラウザで開く
@@ -18,13 +18,13 @@ import { validateOutput } from '../validator';
  *
  * @param url - 開くURL
  * @param options - 実行オプション
- * @returns 成功時: OpenOutput、失敗時: AgentBrowserError
+ * @returns 成功時: OpenData、失敗時: AgentBrowserError
  */
 export const browserOpen = async (
   url: Url,
   options: ExecuteOptions = {},
-): Promise<Result<OpenOutput, AgentBrowserError>> => {
+): Promise<Result<OpenData, AgentBrowserError>> => {
   return (await executeCommand('open', [url, '--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, OpenOutputSchema, 'open'),
+    validateAndExtractData(stdout, OpenDataSchema, 'open'),
   );
 };

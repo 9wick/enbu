@@ -25,6 +25,25 @@ import {
 } from '@packages/core';
 
 /**
+ * メッセージフィールドをそのまま使用するエラー型かどうかを判定する
+ *
+ * @param error - AgentBrowserError
+ * @returns メッセージフィールドをそのまま使用する場合はtrue
+ */
+const hasSimpleMessage = (
+  error: AgentBrowserError,
+): error is Extract<
+  AgentBrowserError,
+  { type: 'not_installed' | 'parse_error' | 'brand_validation_error' }
+> => {
+  return (
+    error.type === 'not_installed' ||
+    error.type === 'parse_error' ||
+    error.type === 'brand_validation_error'
+  );
+};
+
+/**
  * AgentBrowserErrorからエラーメッセージを生成する
  *
  * エラー型ごとに適切なエラーメッセージを抽出・生成する。
@@ -33,24 +52,22 @@ import {
  * @returns エラーメッセージ文字列
  */
 const formatAgentBrowserErrorMessage = (error: AgentBrowserError): string => {
-  // message プロパティをそのまま使用するエラー型
-  if (
-    error.type === 'not_installed' ||
-    error.type === 'parse_error' ||
-    error.type === 'brand_validation_error'
-  ) {
+  if (hasSimpleMessage(error)) {
     return error.message;
   }
-  // タイムアウトエラー
   if (error.type === 'timeout') {
     return `Timeout: ${error.command} (${error.timeoutMs}ms)`;
   }
-  // パースエラー
   if (error.type === 'agent_browser_output_parse_error') {
     return `Parse error: ${error.message}`;
   }
-  // コマンドエラー（errorMessage または stderr を使用）
-  return error.errorMessage ?? error.stderr;
+  if (error.type === 'command_failed') {
+    return error.rawError ?? error.stderr;
+  }
+  if (error.type === 'command_execution_failed') {
+    return error.rawError;
+  }
+  return 'Unknown error';
 };
 
 /**
@@ -104,7 +121,7 @@ const checkAgentBrowserInstallation = async (
       const errorMessage =
         error.type === 'not_installed'
           ? error.message
-          : `${error.type}: ${error.type === 'command_failed' ? (error.errorMessage ?? error.stderr) : ''}`;
+          : `${error.type}: ${error.type === 'command_failed' ? (error.rawError ?? error.stderr) : ''}`;
 
       return err({
         type: 'execution_error' as const,

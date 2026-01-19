@@ -33,7 +33,7 @@ describe('handleAssertVisible', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // waitForElement用のデフォルトモック
-    vi.mocked(browserWaitForText).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForText).mockResolvedValue(ok({}));
   });
 
   const mockContext: ExecutionContext = {
@@ -61,9 +61,7 @@ describe('handleAssertVisible', () => {
       selector: 'ログイン',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      ok({ success: true, data: { visible: true }, error: null }),
-    );
+    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: true }));
 
     // Act
     const result = await handleAssertVisible(command, mockContext);
@@ -85,9 +83,7 @@ describe('handleAssertVisible', () => {
       selector: 'ログイン',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      ok({ success: true, data: { visible: false }, error: null }),
-    );
+    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: false }));
 
     // Act
     const result = await handleAssertVisible(command, mockContext);
@@ -128,7 +124,7 @@ describe('handleAssertVisible', () => {
         args: [],
         exitCode: 1,
         stderr: '',
-        errorMessage: 'Element not found',
+        rawError: 'Element not found',
       }),
     );
 
@@ -193,9 +189,7 @@ describe('handleAssertNotVisible', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // waitForPageStable用のデフォルトモック
-    vi.mocked(browserWaitForNetworkIdle).mockResolvedValue(
-      ok({ success: true, data: {}, error: null }),
-    );
+    vi.mocked(browserWaitForNetworkIdle).mockResolvedValue(ok({}));
   });
 
   const mockContext: ExecutionContext = {
@@ -223,9 +217,7 @@ describe('handleAssertNotVisible', () => {
       selector: 'エラーメッセージ',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      ok({ success: true, data: { visible: false }, error: null }),
-    );
+    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: false }));
 
     // Act
     const result = await handleAssertNotVisible(command, mockContext);
@@ -247,9 +239,7 @@ describe('handleAssertNotVisible', () => {
       selector: 'エラーメッセージ',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      ok({ success: true, data: { visible: true }, error: null }),
-    );
+    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: true }));
 
     // Act
     const result = await handleAssertNotVisible(command, mockContext);
@@ -290,7 +280,7 @@ describe('handleAssertNotVisible', () => {
         args: [],
         exitCode: 1,
         stderr: '',
-        errorMessage: 'Element not found',
+        rawError: 'Element not found',
       }),
     );
 
@@ -381,9 +371,7 @@ describe('handleAssertChecked', () => {
       selector: '利用規約に同意',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(
-      ok({ success: true, data: { checked: true }, error: null }),
-    );
+    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: true }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -406,9 +394,7 @@ describe('handleAssertChecked', () => {
       checked: false,
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(
-      ok({ success: true, data: { checked: false }, error: null }),
-    );
+    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: false }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -430,9 +416,7 @@ describe('handleAssertChecked', () => {
       selector: '利用規約に同意',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(
-      ok({ success: true, data: { checked: false }, error: null }),
-    );
+    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: false }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -473,7 +457,7 @@ describe('handleAssertChecked', () => {
         args: [],
         exitCode: 1,
         stderr: '',
-        errorMessage: 'Element not found',
+        rawError: 'Element not found',
       }),
     );
 

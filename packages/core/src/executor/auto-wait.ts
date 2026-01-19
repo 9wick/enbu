@@ -29,7 +29,7 @@ export type AutoWaitResult = {
  * スナップショット取得結果を処理し、refsを取得する
  *
  * スナップショット取得が成功し、データが存在する場合はrefsを返す。
- * 失敗またはデータが存在しない場合はエラーを返す。
+ * 失敗の場合はエラーをそのまま返す。
  *
  * @param snapshotResult - browserSnapshot関数の実行結果
  * @returns 成功時: SnapshotRefs、失敗時: AgentBrowserError
@@ -37,28 +37,14 @@ export type AutoWaitResult = {
 const processSnapshotResult = (
   snapshotResult: Awaited<ReturnType<typeof browserSnapshot>>,
 ): Result<SnapshotRefs, AgentBrowserError> => {
-  return snapshotResult.andThen((snapshotOutput) => {
-    if (!snapshotOutput.success || !snapshotOutput.data) {
-      const error: AgentBrowserError = {
-        type: 'command_failed',
-        message: snapshotOutput.error || 'Snapshot failed',
-        command: 'snapshot',
-        args: [],
-        exitCode: 1,
-        stderr: '',
-        errorMessage: snapshotOutput.error,
-      };
-      return err(error);
-    }
-    return ok(snapshotOutput.data.refs);
-  });
+  return snapshotResult.map((snapshotOutput) => snapshotOutput.refs);
 };
 
 /**
  * マッチング結果を処理し、適切なResultを返す
  *
  * - found: 成功として解決されたrefを返す
- * - multiple: validation_errorを返す
+ * - multiple: command_execution_failedを返す
  * - not_found: undefinedを返す（継続してポーリングする）
  *
  * @param matchResult - findMatchingRefIdの実行結果
@@ -74,13 +60,10 @@ const handleMatchResult = (
   }
   if (matchResult.type === 'multiple') {
     return err({
-      type: 'validation_error',
+      type: 'command_execution_failed',
       message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
       command: 'auto-wait',
-      args: [selector],
-      exitCode: 1,
-      stderr: '',
-      errorMessage: null,
+      rawError: `Multiple matches: ${matchResult.refIds.join(', ')}`,
     });
   }
   return undefined;

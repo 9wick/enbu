@@ -163,13 +163,10 @@ const expandString = (
   if (undefinedVars.length > 0) {
     const varList = undefinedVars.map((v) => `\${${v}}`).join(', ');
     return err({
-      type: 'validation_error' as const,
+      type: 'command_execution_failed' as const,
       message: `環境変数 ${varList} が定義されていません`,
-      command: '',
-      args: [],
-      exitCode: 0,
-      stderr: '',
-      errorMessage: null,
+      command: 'env-expand',
+      rawError: `Undefined variables: ${varList}`,
     });
   }
 

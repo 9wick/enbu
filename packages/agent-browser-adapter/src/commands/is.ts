@@ -6,24 +6,24 @@
 
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, Selector } from '../types';
-import type { IsCheckedOutput, IsEnabledOutput, IsVisibleOutput } from '../schemas';
-import { IsCheckedOutputSchema, IsEnabledOutputSchema, IsVisibleOutputSchema } from '../schemas';
+import type { IsCheckedData, IsEnabledData, IsVisibleData } from '../schemas';
+import { IsCheckedDataSchema, IsEnabledDataSchema, IsVisibleDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
-import { validateOutput } from '../validator';
+import { validateAndExtractData } from '../validator';
 
 /**
  * 指定したセレクタの要素が表示されているかチェックする
  *
  * @param selector - チェック対象のセレクタ
  * @param options - 実行オプション
- * @returns 成功時: IsVisibleOutput、失敗時: AgentBrowserError
+ * @returns 成功時: IsVisibleData、失敗時: AgentBrowserError
  */
 export const browserIsVisible = async (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsVisibleOutput, AgentBrowserError>> => {
+): Promise<Result<IsVisibleData, AgentBrowserError>> => {
   return (await executeCommand('is', ['visible', selector, '--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, IsVisibleOutputSchema, 'is visible'),
+    validateAndExtractData(stdout, IsVisibleDataSchema, 'is visible'),
   );
 };
 
@@ -32,14 +32,14 @@ export const browserIsVisible = async (
  *
  * @param selector - チェック対象のセレクタ
  * @param options - 実行オプション
- * @returns 成功時: IsEnabledOutput、失敗時: AgentBrowserError
+ * @returns 成功時: IsEnabledData、失敗時: AgentBrowserError
  */
 export const browserIsEnabled = async (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsEnabledOutput, AgentBrowserError>> => {
+): Promise<Result<IsEnabledData, AgentBrowserError>> => {
   return (await executeCommand('is', ['enabled', selector, '--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, IsEnabledOutputSchema, 'is enabled'),
+    validateAndExtractData(stdout, IsEnabledDataSchema, 'is enabled'),
   );
 };
 
@@ -48,13 +48,13 @@ export const browserIsEnabled = async (
  *
  * @param selector - チェック対象のセレクタ
  * @param options - 実行オプション
- * @returns 成功時: IsCheckedOutput、失敗時: AgentBrowserError
+ * @returns 成功時: IsCheckedData、失敗時: AgentBrowserError
  */
 export const browserIsChecked = async (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsCheckedOutput, AgentBrowserError>> => {
+): Promise<Result<IsCheckedData, AgentBrowserError>> => {
   return (await executeCommand('is', ['checked', selector, '--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, IsCheckedOutputSchema, 'is checked'),
+    validateAndExtractData(stdout, IsCheckedDataSchema, 'is checked'),
   );
 };

@@ -65,7 +65,7 @@ describe('closeSession', () => {
       args: [],
       exitCode: 1,
       stderr: '',
-      errorMessage: 'Session not found',
+      rawError: 'Session not found',
     };
     mockExecuteCommand.mockResolvedValue(err(expectedError) as Result<string, AgentBrowserError>);
 
@@ -85,7 +85,7 @@ describe('closeSession', () => {
           expect(error.command).toBe('close');
           expect(error.args).toEqual([]);
           expect(error.exitCode).toBe(1);
-          expect(error.errorMessage).toBe('Session not found');
+          expect(error.rawError).toBe('Session not found');
         }
       },
     );

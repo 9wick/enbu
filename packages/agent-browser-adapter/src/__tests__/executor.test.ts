@@ -120,7 +120,7 @@ describe('executeCommand', () => {
           expect(error.command).toBe('click');
           expect(error.args).toEqual(['NotExist', '--json']);
           expect(error.exitCode).toBe(1);
-          expect(error.errorMessage).toBe('Element not found');
+          expect(error.rawError).toBe('Element not found');
         }
       },
     );

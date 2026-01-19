@@ -1,7 +1,7 @@
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command } from '../../types';
-import type { CommandHandler, ExecutionContext, CommandResult } from '../result';
+import type { CommandHandler, ExecutionContext, CommandResult, ExecutorError } from '../result';
 import { handleOpen } from './navigation';
 import { handleClick, handleType, handleFill, handlePress } from './interaction';
 import { handleHover, handleSelect } from './hover-select';
@@ -91,7 +91,7 @@ const routeScrollWaitCommand = (
 const routeAssertionCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+): Promise<Result<CommandResult, ExecutorError>> | null => {
   switch (command.command) {
     case 'assertVisible':
       return handleAssertVisible(command, context);

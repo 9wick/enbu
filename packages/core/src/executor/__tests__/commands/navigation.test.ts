@@ -42,9 +42,7 @@ describe('handleOpen', () => {
       url: 'https://example.com',
     };
 
-    vi.mocked(browserOpen).mockResolvedValue(
-      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
-    );
+    vi.mocked(browserOpen).mockResolvedValue(ok({ url: 'https://example.com' }));
 
     // Act
     const result = await handleOpen(command, mockContext);
@@ -82,7 +80,7 @@ describe('handleOpen', () => {
         args: [],
         exitCode: 1,
         stderr: '',
-        errorMessage: 'Invalid URL',
+        rawError: 'Invalid URL',
       }),
     );
 

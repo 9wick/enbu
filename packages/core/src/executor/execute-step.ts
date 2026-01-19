@@ -9,7 +9,7 @@
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command } from '../types';
-import type { StepResult, ExecutionContext } from './result';
+import type { StepResult, ExecutionContext, ExecutorError } from './result';
 import { autoWait, type AutoWaitResult } from './auto-wait';
 import { getCommandHandler } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
@@ -17,19 +17,45 @@ import { captureErrorScreenshot } from './error-screenshot';
 /**
  * メッセージフィールドを持つエラーかどうかを判定する
  *
- * @param error - AgentBrowserError
+ * @param error - ExecutorError
  * @returns メッセージフィールドを持つ場合はtrue
  */
 const hasMessageField = (
-  error: AgentBrowserError,
-): error is Extract<AgentBrowserError, { message: string }> => {
+  error: ExecutorError,
+): error is Extract<ExecutorError, { message: string }> => {
   return (
     error.type === 'not_installed' ||
     error.type === 'command_failed' ||
     error.type === 'parse_error' ||
     error.type === 'assertion_failed' ||
-    error.type === 'validation_error'
+    error.type === 'command_execution_failed' ||
+    error.type === 'agent_browser_output_parse_error' ||
+    error.type === 'brand_validation_error'
   );
+};
+
+/**
+ * アサーションエラーのフォールバックメッセージを生成する
+ *
+ * @param error - アサーションエラー
+ * @returns フォールバックメッセージ
+ */
+const getAssertionFallback = (
+  error: Extract<ExecutorError, { type: 'assertion_failed' }>,
+): string => {
+  return error.message || `Assertion failed for command: ${error.command}`;
+};
+
+/**
+ * コマンド失敗エラーのフォールバックメッセージを生成する
+ *
+ * @param error - コマンド失敗エラー
+ * @returns フォールバックメッセージ
+ */
+const getCommandErrorFallback = (
+  error: Extract<ExecutorError, { type: 'command_failed' }>,
+): string => {
+  return error.rawError || error.stderr || `Command failed: ${error.command}`;
 };
 
 /**
@@ -38,39 +64,39 @@ const hasMessageField = (
  * @param error - コマンド実行エラー
  * @returns フォールバックメッセージ
  */
-const getCommandFailedFallback = (
-  error: Extract<
-    AgentBrowserError,
-    { errorMessage: string | null; stderr: string; command: string }
-  >,
-): string => {
-  return error.errorMessage || error.stderr || `Command failed: ${error.command}`;
+const getCommandFailedFallback = (error: ExecutorError): string => {
+  if (error.type === 'assertion_failed') {
+    return getAssertionFallback(error);
+  }
+  if (error.type === 'command_failed') {
+    return getCommandErrorFallback(error);
+  }
+  if ('message' in error) {
+    return error.message || 'Unknown error';
+  }
+  return 'Unknown error';
 };
 
 /**
- * AgentBrowserErrorからメッセージを取得する
+ * ExecutorErrorからメッセージを取得する
  *
  * エラーの種類によってメッセージの形式が異なるため、
  * 統一的なメッセージを生成する。
- * messageフィールドが空文字列の場合は、errorMessageまたはstderrから
+ * messageフィールドが空文字列の場合は、rawErrorまたはstderrから
  * フォールバックメッセージを生成する。
  *
- * @param error - AgentBrowserError
+ * @param error - ExecutorError
  * @returns エラーメッセージ
  */
-const getErrorMessage = (error: AgentBrowserError): string => {
+const getErrorMessage = (error: ExecutorError): string => {
   if (hasMessageField(error)) {
     // messageが空文字列でない場合はそのまま返す
     if (error.message) {
       return error.message;
     }
 
-    // messageが空文字列の場合、errorMessageまたはstderrからフォールバック
-    if (
-      error.type === 'command_failed' ||
-      error.type === 'assertion_failed' ||
-      error.type === 'validation_error'
-    ) {
+    // messageが空文字列の場合、rawErrorまたはstderrからフォールバック
+    if (error.type === 'command_failed' || error.type === 'assertion_failed') {
       return getCommandFailedFallback(error);
     }
 
@@ -229,7 +255,7 @@ export const executeStep = async (
       duration,
       error: {
         message: error instanceof Error ? error.message : 'Unknown error',
-        type: 'validation_error',
+        type: 'parse_error',
         screenshot,
       },
     };

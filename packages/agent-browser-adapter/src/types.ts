@@ -226,53 +226,49 @@ export const asJsExpression = (value: string): Result<JsExpression, BrandValidat
 /**
  * agent-browserのエラー型
  *
- * 全てのagent-browser関連操作で発生しうるエラーを含む
+ * 全てのagent-browser関連操作で発生しうるエラーを含む。
+ * typeフィールドを見れば、どこで・何が起きたかが分かる。
  */
 export type AgentBrowserError =
   | {
+      /** agent-browserがインストールされていない、または起動できない */
       type: 'not_installed';
       message: string;
     }
   | {
+      /** プロセスが非0終了コードで終了した（exitCode !== 0） */
       type: 'command_failed';
       message: string;
       command: string;
       args: readonly string[];
       exitCode: number;
       stderr: string;
-      errorMessage: string | null;
+      /** CLIのJSON出力から取得したエラーメッセージ（パース可能な場合） */
+      rawError: string | null;
     }
   | {
+      /** agent-browserがsuccess:falseを返した（exitCode === 0だが操作失敗） */
+      type: 'command_execution_failed';
+      message: string;
+      command: string;
+      /** CLIが返したerrorフィールドの値 */
+      rawError: string;
+    }
+  | {
+      /** コマンドがタイムアウトした */
       type: 'timeout';
       command: string;
       args: readonly string[];
       timeoutMs: number;
     }
   | {
+      /** JSON出力のパースに失敗した */
       type: 'parse_error';
       message: string;
       rawOutput: string;
     }
   | {
-      type: 'assertion_failed';
-      message: string;
-      command: string;
-      args: readonly string[];
-      exitCode: number;
-      stderr: string;
-      errorMessage: string | null;
-    }
-  | {
-      type: 'validation_error';
-      message: string;
-      command: string;
-      args: readonly string[];
-      exitCode: number;
-      stderr: string;
-      errorMessage: string | null;
-    }
-  | {
-      /** agent-browserの出力JSONのパース・検証に失敗した場合のエラー */
+      /** agent-browserの出力JSONがスキーマに合わない */
       type: 'agent_browser_output_parse_error';
       message: string;
       command: string;

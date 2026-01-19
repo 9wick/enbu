@@ -90,17 +90,12 @@ export {
 
 // 出力型
 export type {
-  OpenOutput,
-  SimpleActionOutput,
-  ScreenshotOutput,
-  SnapshotOutput,
-  EvalOutput,
-  IsVisibleOutput,
-  IsEnabledOutput,
-  IsCheckedOutput,
-  CloseOutput,
-  PressOutput,
-  SelectOutput,
-  ScrollOutput,
-  WaitOutput,
+  OpenData,
+  EmptyData,
+  ScreenshotData,
+  SnapshotData,
+  EvalData,
+  IsVisibleData,
+  IsEnabledData,
+  IsCheckedData,
 } from './schemas';

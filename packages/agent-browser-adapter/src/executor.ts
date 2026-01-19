@@ -92,18 +92,18 @@ export const executeCommand = (
         resolveOnce(ok(stdout));
       } else {
         // JSON出力からエラーメッセージを抽出試行
-        const errorMessage = extractErrorMessage(stdout);
-        debugLog(`command failed, errorMessage=${errorMessage}, stderr=${stderr}`);
+        const rawError = extractErrorMessage(stdout);
+        debugLog(`command failed, rawError=${rawError}, stderr=${stderr}`);
 
         resolveOnce(
           err({
             type: 'command_failed',
-            message: errorMessage || `Command failed: ${command} ${args.join(' ')}`,
+            message: rawError || `Command failed: ${command} ${args.join(' ')}`,
             command,
             args,
             exitCode: exitCode ?? 1,
             stderr,
-            errorMessage,
+            rawError,
           }),
         );
       }

@@ -75,7 +75,7 @@ describe('expandEnvVars', () => {
    * ENV-3: 存在しない変数はエラー
    *
    * 前提条件: ${UNDEFINED} を含むフロー
-   * 検証項目: 存在しない環境変数はvalidation_errorになる
+   * 検証項目: 存在しない環境変数はcommand_execution_failedになる
    */
   it('ENV-3: 存在しない環境変数はエラーになる', () => {
     // Arrange
@@ -98,8 +98,8 @@ describe('expandEnvVars', () => {
         throw new Error('Expected err result');
       },
       (error) => {
-        expect(error.type).toBe('validation_error');
-        if (error.type === 'validation_error') {
+        expect(error.type).toBe('command_execution_failed');
+        if (error.type === 'command_execution_failed') {
           expect(error.message).toContain('環境変数');
           expect(error.message).toContain('${UNDEFINED}');
         }

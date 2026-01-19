@@ -2,151 +2,107 @@
  * agent-browser CLI出力のvalibotスキーマ定義
  *
  * 外部CLI（agent-browser）の出力を厳密に検証するためのスキーマ。
- * 各コマンドの出力形式に対応したスキーマを定義する。
+ * 各コマンドのdataフィールドの型を定義する。
+ *
+ * 注意: {success, data, error}の共通構造はvalidator.ts内で処理され、
+ * 外部には data の型のみがエクスポートされる。
  */
 
 import * as v from 'valibot';
 
 // ==========================================
-// 共通スキーマ
+// コマンド別データスキーマ（検証用・内部）
 // ==========================================
 
 /**
- * agent-browserの--json出力の共通構造を生成するファクトリ関数
- *
- * 全てのコマンドは { success, data, error } の形式で出力する
+ * open コマンドのデータスキーマ
  */
-const createAgentBrowserOutputSchema = <
-  T extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
->(
-  dataSchema: T,
-) =>
-  v.object({
-    success: v.boolean(),
-    data: v.nullable(dataSchema),
-    error: v.nullable(v.string()),
-  });
-
-// ==========================================
-// コマンド別出力スキーマ
-// ==========================================
-
-/**
- * open コマンドの出力データスキーマ
- *
- * 成功時: { url: string }
- */
-export const OpenOutputDataSchema = v.object({
+export const OpenDataSchema = v.object({
   url: v.string(),
 });
-export const OpenOutputSchema = createAgentBrowserOutputSchema(OpenOutputDataSchema);
-export type OpenOutput = v.InferOutput<typeof OpenOutputSchema>;
 
 /**
- * 単純操作コマンドの出力データスキーマ
+ * 単純操作コマンドのデータスキーマ（空オブジェクト）
  *
- * click, type, fill, hover, focus, scrollintoview など
- * 成功時: {} (空オブジェクト)
+ * click, type, fill, hover, focus, scrollintoview, press, select, scroll, wait, close
  */
 export const EmptyDataSchema = v.object({});
-export const SimpleActionOutputSchema = createAgentBrowserOutputSchema(EmptyDataSchema);
-export type SimpleActionOutput = v.InferOutput<typeof SimpleActionOutputSchema>;
 
 /**
- * press コマンドの出力
+ * screenshot コマンドのデータスキーマ
  */
-export const PressOutputSchema = SimpleActionOutputSchema;
-export type PressOutput = v.InferOutput<typeof PressOutputSchema>;
-
-/**
- * select コマンドの出力
- */
-export const SelectOutputSchema = SimpleActionOutputSchema;
-export type SelectOutput = v.InferOutput<typeof SelectOutputSchema>;
-
-/**
- * scroll コマンドの出力
- */
-export const ScrollOutputSchema = SimpleActionOutputSchema;
-export type ScrollOutput = v.InferOutput<typeof ScrollOutputSchema>;
-
-/**
- * wait コマンドの出力
- */
-export const WaitOutputSchema = SimpleActionOutputSchema;
-export type WaitOutput = v.InferOutput<typeof WaitOutputSchema>;
-
-/**
- * screenshot コマンドの出力データスキーマ
- *
- * 成功時: { path: string }
- */
-export const ScreenshotOutputDataSchema = v.object({
+export const ScreenshotDataSchema = v.object({
   path: v.string(),
 });
-export const ScreenshotOutputSchema = createAgentBrowserOutputSchema(ScreenshotOutputDataSchema);
-export type ScreenshotOutput = v.InferOutput<typeof ScreenshotOutputSchema>;
 
 /**
  * snapshot コマンドの参照要素スキーマ
  */
-export const SnapshotRefSchema = v.object({
+const SnapshotRefSchema = v.object({
   name: v.string(),
   role: v.string(),
 });
 
 /**
- * snapshot コマンドの出力データスキーマ
- *
- * 成功時: { snapshot: string, refs: Record<string, { name, role }> }
+ * snapshot コマンドのデータスキーマ
  */
-export const SnapshotOutputDataSchema = v.object({
+export const SnapshotDataSchema = v.object({
   snapshot: v.string(),
   refs: v.record(v.string(), SnapshotRefSchema),
 });
-export const SnapshotOutputSchema = createAgentBrowserOutputSchema(SnapshotOutputDataSchema);
-export type SnapshotOutput = v.InferOutput<typeof SnapshotOutputSchema>;
 
 /**
- * eval コマンドの出力データスキーマ
- *
- * 成功時: { result: unknown } - evalの結果は任意の値
+ * eval コマンドのデータスキーマ
  */
-export const EvalOutputDataSchema = v.object({
+export const EvalDataSchema = v.object({
   result: v.unknown(),
 });
-export const EvalOutputSchema = createAgentBrowserOutputSchema(EvalOutputDataSchema);
-export type EvalOutput = v.InferOutput<typeof EvalOutputSchema>;
 
 /**
- * is visible コマンドの出力データスキーマ
+ * is visible コマンドのデータスキーマ
  */
-export const IsVisibleOutputDataSchema = v.object({
+export const IsVisibleDataSchema = v.object({
   visible: v.boolean(),
 });
-export const IsVisibleOutputSchema = createAgentBrowserOutputSchema(IsVisibleOutputDataSchema);
-export type IsVisibleOutput = v.InferOutput<typeof IsVisibleOutputSchema>;
 
 /**
- * is enabled コマンドの出力データスキーマ
+ * is enabled コマンドのデータスキーマ
  */
-export const IsEnabledOutputDataSchema = v.object({
+export const IsEnabledDataSchema = v.object({
   enabled: v.boolean(),
 });
-export const IsEnabledOutputSchema = createAgentBrowserOutputSchema(IsEnabledOutputDataSchema);
-export type IsEnabledOutput = v.InferOutput<typeof IsEnabledOutputSchema>;
 
 /**
- * is checked コマンドの出力データスキーマ
+ * is checked コマンドのデータスキーマ
  */
-export const IsCheckedOutputDataSchema = v.object({
+export const IsCheckedDataSchema = v.object({
   checked: v.boolean(),
 });
-export const IsCheckedOutputSchema = createAgentBrowserOutputSchema(IsCheckedOutputDataSchema);
-export type IsCheckedOutput = v.InferOutput<typeof IsCheckedOutputSchema>;
 
-/**
- * close コマンドの出力
- */
-export const CloseOutputSchema = SimpleActionOutputSchema;
-export type CloseOutput = v.InferOutput<typeof CloseOutputSchema>;
+// ==========================================
+// エクスポート用データ型（外部公開）
+// ==========================================
+
+/** open コマンドの戻り値データ型 */
+export type OpenData = v.InferOutput<typeof OpenDataSchema>;
+
+/** 単純操作コマンドの戻り値データ型（空オブジェクト） */
+export type EmptyData = v.InferOutput<typeof EmptyDataSchema>;
+
+/** screenshot コマンドの戻り値データ型 */
+export type ScreenshotData = v.InferOutput<typeof ScreenshotDataSchema>;
+
+/** snapshot コマンドの戻り値データ型 */
+export type SnapshotData = v.InferOutput<typeof SnapshotDataSchema>;
+
+/** eval コマンドの戻り値データ型 */
+export type EvalData = v.InferOutput<typeof EvalDataSchema>;
+
+/** is visible コマンドの戻り値データ型 */
+export type IsVisibleData = v.InferOutput<typeof IsVisibleDataSchema>;
+
+/** is enabled コマンドの戻り値データ型 */
+export type IsEnabledData = v.InferOutput<typeof IsEnabledDataSchema>;
+
+/** is checked コマンドの戻り値データ型 */
+export type IsCheckedData = v.InferOutput<typeof IsCheckedDataSchema>;

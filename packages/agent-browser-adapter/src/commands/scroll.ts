@@ -6,10 +6,10 @@
 
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, ScrollDirection, Selector } from '../types';
-import type { SimpleActionOutput } from '../schemas';
-import { SimpleActionOutputSchema } from '../schemas';
+import type { EmptyData } from '../schemas';
+import { EmptyDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
-import { validateOutput } from '../validator';
+import { validateAndExtractData } from '../validator';
 
 /**
  * ページを指定した方向と量でスクロールする
@@ -17,16 +17,16 @@ import { validateOutput } from '../validator';
  * @param direction - スクロール方向
  * @param amount - スクロール量（ピクセル）
  * @param options - 実行オプション
- * @returns 成功時: SimpleActionOutput、失敗時: AgentBrowserError
+ * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserScroll = async (
   direction: ScrollDirection,
   amount: number,
   options: ExecuteOptions = {},
-): Promise<Result<SimpleActionOutput, AgentBrowserError>> => {
+): Promise<Result<EmptyData, AgentBrowserError>> => {
   return (
     await executeCommand('scroll', [direction, amount.toString(), '--json'], options)
-  ).andThen((stdout) => validateOutput(stdout, SimpleActionOutputSchema, 'scroll'));
+  ).andThen((stdout) => validateAndExtractData(stdout, EmptyDataSchema, 'scroll'));
 };
 
 /**
@@ -34,13 +34,13 @@ export const browserScroll = async (
  *
  * @param selector - スクロール先のセレクタ
  * @param options - 実行オプション
- * @returns 成功時: SimpleActionOutput、失敗時: AgentBrowserError
+ * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserScrollIntoView = async (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<SimpleActionOutput, AgentBrowserError>> => {
+): Promise<Result<EmptyData, AgentBrowserError>> => {
   return (await executeCommand('scrollintoview', [selector, '--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, SimpleActionOutputSchema, 'scrollintoview'),
+    validateAndExtractData(stdout, EmptyDataSchema, 'scrollintoview'),
   );
 };

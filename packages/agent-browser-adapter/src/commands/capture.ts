@@ -6,27 +6,27 @@
 
 import type { Result } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, FilePath, ScreenshotOptions } from '../types';
-import type { ScreenshotOutput, SnapshotOutput } from '../schemas';
-import { ScreenshotOutputSchema, SnapshotOutputSchema } from '../schemas';
+import type { ScreenshotData, SnapshotData } from '../schemas';
+import { ScreenshotDataSchema, SnapshotDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
-import { validateOutput } from '../validator';
+import { validateAndExtractData } from '../validator';
 
 /**
  * ページのスクリーンショットを撮影する
  *
  * @param path - 保存先のファイルパス
  * @param options - 実行オプション（fullPageオプション含む）
- * @returns 成功時: ScreenshotOutput、失敗時: AgentBrowserError
+ * @returns 成功時: ScreenshotData、失敗時: AgentBrowserError
  */
 export const browserScreenshot = async (
   path: FilePath,
   options: ScreenshotOptions = {},
-): Promise<Result<ScreenshotOutput, AgentBrowserError>> => {
+): Promise<Result<ScreenshotData, AgentBrowserError>> => {
   const { fullPage, ...executeOptions } = options;
   const args = fullPage ? [path, '--full', '--json'] : [path, '--json'];
 
   return (await executeCommand('screenshot', args, executeOptions)).andThen((stdout) =>
-    validateOutput(stdout, ScreenshotOutputSchema, 'screenshot'),
+    validateAndExtractData(stdout, ScreenshotDataSchema, 'screenshot'),
   );
 };
 
@@ -34,12 +34,12 @@ export const browserScreenshot = async (
  * ページの構造をスナップショットとして取得する
  *
  * @param options - 実行オプション
- * @returns 成功時: SnapshotOutput、失敗時: AgentBrowserError
+ * @returns 成功時: SnapshotData、失敗時: AgentBrowserError
  */
 export const browserSnapshot = async (
   options: ExecuteOptions = {},
-): Promise<Result<SnapshotOutput, AgentBrowserError>> => {
+): Promise<Result<SnapshotData, AgentBrowserError>> => {
   return (await executeCommand('snapshot', ['--json'], options)).andThen((stdout) =>
-    validateOutput(stdout, SnapshotOutputSchema, 'snapshot'),
+    validateAndExtractData(stdout, SnapshotDataSchema, 'snapshot'),
   );
 };

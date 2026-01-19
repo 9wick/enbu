@@ -30,9 +30,7 @@ describe('executeFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // エラー時スクリーンショット用のデフォルトモック
-    vi.mocked(browserScreenshot).mockResolvedValue(
-      ok({ success: true, data: { path: '/tmp/screenshot.png' }, error: null }),
-    );
+    vi.mocked(browserScreenshot).mockResolvedValue(ok({ path: '/tmp/screenshot.png' }));
   });
 
   /**
@@ -60,21 +58,15 @@ describe('executeFlow', () => {
     };
 
     // open コマンドのモック
-    vi.mocked(browserOpen).mockResolvedValueOnce(
-      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
-    );
+    vi.mocked(browserOpen).mockResolvedValueOnce(ok({ url: 'https://example.com' }));
 
     // 自動待機用の snapshot のモック
     vi.mocked(browserSnapshot).mockResolvedValueOnce(
-      ok({
-        success: true,
-        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
-        error: null,
-      }),
+      ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
 
     // click コマンドのモック
-    vi.mocked(browserClick).mockResolvedValueOnce(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserClick).mockResolvedValueOnce(ok({}));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -123,21 +115,15 @@ describe('executeFlow', () => {
     };
 
     // open コマンドのモック
-    vi.mocked(browserOpen).mockResolvedValue(
-      ok({ success: true, data: { url: 'https://example.com/login' }, error: null }),
-    );
+    vi.mocked(browserOpen).mockResolvedValue(ok({ url: 'https://example.com/login' }));
 
     // 自動待機のモック
     vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({
-        success: true,
-        data: { snapshot: '', refs: { e1: { name: 'email', role: 'textbox' } } },
-        error: null,
-      }),
+      ok({ snapshot: '', refs: { e1: { name: 'email', role: 'textbox' } } }),
     );
 
     // fill コマンドのモック
-    vi.mocked(browserFill).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserFill).mockResolvedValue(ok({}));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -162,7 +148,7 @@ describe('executeFlow', () => {
    * FE-4: 存在しない環境変数はエラー
    *
    * 前提条件: ${UNDEFINED_VAR} を含むフロー
-   * 検証項目: validation_errorが返される
+   * 検証項目: command_execution_failedが返される
    */
   it('FE-4: 存在しない環境変数はエラーになる', async () => {
     // Arrange
@@ -188,8 +174,8 @@ describe('executeFlow', () => {
         throw new Error('Expected err result');
       },
       (error) => {
-        expect(error.type).toBe('validation_error');
-        if (error.type === 'validation_error') {
+        expect(error.type).toBe('command_execution_failed');
+        if (error.type === 'command_execution_failed') {
           expect(error.message).toContain('環境変数');
           expect(error.message).toContain('${UNDEFINED_VAR}');
         }
@@ -291,10 +277,8 @@ describe('executeFlow', () => {
       sessionName: 'test-session',
     };
 
-    vi.mocked(browserOpen).mockResolvedValue(
-      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
-    );
-    vi.mocked(browserWaitForMs).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserOpen).mockResolvedValue(ok({ url: 'https://example.com' }));
+    vi.mocked(browserWaitForMs).mockResolvedValue(ok({}));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -337,9 +321,7 @@ describe('executeFlow', () => {
     };
 
     // 自動待機がタイムアウト（常に空のrefsを返す）
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ success: true, data: { snapshot: '', refs: {} }, error: null }),
-    );
+    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs: {} }));
 
     // タイマーを使用して時間経過をシミュレート
     vi.useFakeTimers();
@@ -379,9 +361,7 @@ describe('executeFlow', () => {
       sessionName: 'test-session-success',
     };
 
-    vi.mocked(browserOpen).mockResolvedValueOnce(
-      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
-    );
+    vi.mocked(browserOpen).mockResolvedValueOnce(ok({ url: 'https://example.com' }));
 
     // Act
     const result = await executeFlow(flow, options);

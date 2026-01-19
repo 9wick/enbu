@@ -6,16 +6,57 @@ import type { Result } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command, Flow } from '../types';
 
+// ==========================================
+// Core層のエラー型定義
+// ==========================================
+
+/**
+ * アサーション失敗エラー
+ *
+ * assertVisible, assertNotVisible, assertEnabled, assertChecked などの
+ * アサーションコマンドで条件が満たされなかった場合に発生する。
+ */
+export type AssertionFailedError = {
+  /** エラー種別: アサーション失敗 */
+  type: 'assertion_failed';
+  /** エラーメッセージ（アサーション内容を説明） */
+  message: string;
+  /** アサーションコマンド名 */
+  command: string;
+  /** 検証したセレクタ */
+  selector: string;
+  /** 期待値 */
+  expected: unknown;
+  /** 実際の値 */
+  actual: unknown;
+};
+
+/**
+ * Core層で発生するエラー
+ *
+ * AgentBrowserErrorとは別に、コマンド実行ロジックで発生するエラー。
+ */
+export type CoreError = AssertionFailedError;
+
+/**
+ * コマンド実行で発生しうるすべてのエラー
+ *
+ * adapter層のエラーとcore層のエラーを含む。
+ */
+export type ExecutorError = AgentBrowserError | CoreError;
+
 /**
  * 実行エラーの種別
+ *
+ * StepResultのerror.typeで使用される。
  */
 export type ExecutionErrorType =
   | 'not_installed' // agent-browserがインストールされていない
-  | 'command_failed' // コマンド実行が失敗
+  | 'command_failed' // プロセスが非0終了
+  | 'command_execution_failed' // success:falseが返された
   | 'timeout' // タイムアウト
   | 'parse_error' // レスポンスのパースに失敗
   | 'assertion_failed' // アサーションが失敗
-  | 'validation_error' // バリデーションエラー
   | 'agent_browser_output_parse_error' // agent-browserの出力JSONのパース・検証に失敗
   | 'brand_validation_error'; // Brand型の検証に失敗（空文字列など）
 
@@ -176,4 +217,4 @@ export type CommandResult = {
 export type CommandHandler<T extends Command> = (
   command: T,
   context: ExecutionContext,
-) => Promise<Result<CommandResult, AgentBrowserError>>;
+) => Promise<Result<CommandResult, ExecutorError>>;

@@ -89,7 +89,7 @@ describe('handleClick', () => {
         args: [],
         exitCode: 1,
         stderr: '',
-        errorMessage: 'Element not found',
+        rawError: 'Element not found',
       }),
     );
 
