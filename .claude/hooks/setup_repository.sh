@@ -15,5 +15,9 @@ fi
 
 log "Remote session detected, setup repository..."
 
-pnpm install
-pnpm agent-browser install --with-deps
+pnpm install --frozen-lockfile
+
+
+# pnpm agent-browser install でやりたいが、ver違いがinstallされて実行時エラーになるのでplaywrightでinstallする
+#pnpm agent-browser install
+pnpm exec playwright install --with-deps chromium
