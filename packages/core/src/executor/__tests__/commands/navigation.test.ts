@@ -7,7 +7,7 @@ import type { ExecutionContext } from '../../result';
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
   browserOpen: vi.fn(),
-  asUrl: vi.fn((v) => v),
+  asUrl: vi.fn((v) => ok(v)),
 }));
 
 import { browserOpen } from '@packages/agent-browser-adapter';

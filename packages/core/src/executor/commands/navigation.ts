@@ -1,3 +1,4 @@
+import { err } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import { browserOpen, asUrl } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
@@ -20,12 +21,15 @@ export const handleOpen = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  return (await browserOpen(asUrl(command.url), context.executeOptions)).map((output) => {
-    const duration = Date.now() - startTime;
+  // URL検証
+  const urlResult = asUrl(command.url);
+  if (urlResult.isErr()) {
+    return err(urlResult.error);
+  }
 
-    return {
-      stdout: JSON.stringify(output),
-      duration,
-    };
-  });
+  // ブラウザ操作実行
+  return (await browserOpen(urlResult.value, context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

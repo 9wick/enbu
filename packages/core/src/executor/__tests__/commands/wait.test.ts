@@ -12,9 +12,9 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserWaitForLoad: vi.fn(),
   browserWaitForUrl: vi.fn(),
   browserWaitForFunction: vi.fn(),
-  asSelector: vi.fn((v) => v),
-  asJsExpression: vi.fn((v) => v),
-  asUrl: vi.fn((v) => v),
+  asSelector: vi.fn((v) => ok(v)),
+  asJsExpression: vi.fn((v) => ok(v)),
+  asUrl: vi.fn((v) => ok(v)),
 }));
 
 import {

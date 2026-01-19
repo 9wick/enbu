@@ -26,6 +26,95 @@ export type AutoWaitResult = {
 };
 
 /**
+ * スナップショット取得結果を処理し、refsを取得する
+ *
+ * スナップショット取得が成功し、データが存在する場合はrefsを返す。
+ * 失敗またはデータが存在しない場合はエラーを返す。
+ *
+ * @param snapshotResult - browserSnapshot関数の実行結果
+ * @returns 成功時: SnapshotRefs、失敗時: AgentBrowserError
+ */
+const processSnapshotResult = (
+  snapshotResult: Awaited<ReturnType<typeof browserSnapshot>>,
+): Result<SnapshotRefs, AgentBrowserError> => {
+  return snapshotResult.andThen((snapshotOutput) => {
+    if (!snapshotOutput.success || !snapshotOutput.data) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: snapshotOutput.error || 'Snapshot failed',
+        command: 'snapshot',
+        args: [],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: snapshotOutput.error,
+      };
+      return err(error);
+    }
+    return ok(snapshotOutput.data.refs);
+  });
+};
+
+/**
+ * マッチング結果を処理し、適切なResultを返す
+ *
+ * - found: 成功として解決されたrefを返す
+ * - multiple: validation_errorを返す
+ * - not_found: undefinedを返す（継続してポーリングする）
+ *
+ * @param matchResult - findMatchingRefIdの実行結果
+ * @param selector - 検索に使用したセレクタ（エラーメッセージ用）
+ * @returns 成功時: AutoWaitResult、失敗時: AgentBrowserError、継続時: undefined
+ */
+const handleMatchResult = (
+  matchResult: MatchResult,
+  selector: string,
+): Result<AutoWaitResult, AgentBrowserError> | undefined => {
+  if (matchResult.type === 'found') {
+    return ok({ resolvedRef: `@${matchResult.refId}` });
+  }
+  if (matchResult.type === 'multiple') {
+    return err({
+      type: 'validation_error',
+      message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
+      command: 'auto-wait',
+      args: [selector],
+      exitCode: 1,
+      stderr: '',
+      errorMessage: null,
+    });
+  }
+  return undefined;
+};
+
+/**
+ * タイムアウトをチェックする
+ *
+ * 経過時間がタイムアウト時間を超えている場合はtimeoutエラーを返す。
+ * 超えていない場合はundefinedを返す（継続してポーリングする）。
+ *
+ * @param startTime - 処理開始時刻（ミリ秒）
+ * @param timeoutMs - タイムアウト時間（ミリ秒）
+ * @param selector - 検索に使用したセレクタ（エラーメッセージ用）
+ * @returns タイムアウト時: AgentBrowserError、継続時: undefined
+ */
+const checkTimeout = (
+  startTime: number,
+  timeoutMs: number,
+  selector: string,
+): Result<never, AgentBrowserError> | undefined => {
+  const elapsed = Date.now() - startTime;
+  if (elapsed >= timeoutMs) {
+    return err({
+      type: 'timeout',
+      command: 'auto-wait',
+      args: [selector],
+      timeoutMs,
+    });
+  }
+  return undefined;
+};
+
+/**
  * 要素の出現を待機する
  *
  * セレクタに一致する要素がブラウザ内に出現するまで、指定された間隔でポーリングを行う。
@@ -62,69 +151,37 @@ export const autoWait = async (
     const snapshotResult = await browserSnapshot(executeOptions);
     debugLog(`poll #${pollCount}: snapshot done, isOk=${snapshotResult.isOk()}`);
 
-    // snapshotのパース失敗は致命的エラー
-    if (snapshotResult.isErr()) {
-      debugLog(`poll #${pollCount}: error`, snapshotResult.error);
-      return err(snapshotResult.error);
+    // snapshotのパース失敗またはデータ取得失敗は致命的エラー
+    const refsResult = processSnapshotResult(snapshotResult);
+    if (refsResult.isErr()) {
+      debugLog(`poll #${pollCount}: error`, refsResult.error);
+      return err(refsResult.error);
     }
 
-    // 出力データからrefsを取得
-    const snapshotOutput = snapshotResult.value;
-    if (!snapshotOutput.success || !snapshotOutput.data) {
-      debugLog(`poll #${pollCount}: snapshot failed or no data`);
-      return err({
-        type: 'command_failed',
-        message: snapshotOutput.error || 'Snapshot failed',
-        command: 'snapshot',
-        args: [],
-        exitCode: 1,
-        stderr: '',
-        errorMessage: snapshotOutput.error,
-      });
-    }
-
-    const refs = snapshotOutput.data.refs;
+    const refs = refsResult.value;
     debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
 
     // セレクタに一致する要素を検索
     const matchResult = findMatchingRefId(selector, refs);
 
-    // 複数マッチした場合はエラーを返す（agent-browserと同じ動作）
-    if (matchResult.type === 'multiple') {
-      debugLog(
-        `poll #${pollCount}: multiple elements matched! refIds=${matchResult.refIds.join(', ')}`,
-      );
-      return err({
-        type: 'validation_error',
-        message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
-        command: 'auto-wait',
-        args: [selector],
-        exitCode: 1,
-        stderr: '',
-        errorMessage: null,
-      });
-    }
-
-    // 一意にマッチした場合は成功
-    if (matchResult.type === 'found') {
-      const resolvedRef = `@${matchResult.refId}`;
-      debugLog(
-        `poll #${pollCount}: element found! refId=${matchResult.refId}, resolvedRef=${resolvedRef}`,
-      );
-      return ok({ resolvedRef });
+    // マッチング結果を処理
+    const handledResult = handleMatchResult(matchResult, selector);
+    if (handledResult !== undefined) {
+      if (handledResult.isOk()) {
+        const resolvedRef = handledResult.value.resolvedRef;
+        debugLog(`poll #${pollCount}: element found! resolvedRef=${resolvedRef}`);
+      } else {
+        debugLog(`poll #${pollCount}: multiple elements matched!`);
+      }
+      return handledResult;
     }
 
     // タイムアウトチェック
-    const elapsed = Date.now() - startTime;
-    debugLog(`poll #${pollCount}: not found, elapsed=${elapsed}ms`);
-    if (elapsed >= autoWaitTimeoutMs) {
+    debugLog(`poll #${pollCount}: not found, elapsed=${Date.now() - startTime}ms`);
+    const timeoutResult = checkTimeout(startTime, autoWaitTimeoutMs, selector);
+    if (timeoutResult !== undefined) {
       debugLog(`poll #${pollCount}: TIMEOUT`);
-      return err({
-        type: 'timeout',
-        command: 'auto-wait',
-        args: [selector],
-        timeoutMs: autoWaitTimeoutMs,
-      });
+      return timeoutResult;
     }
 
     // 次のポーリングまで待機

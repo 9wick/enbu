@@ -1,4 +1,5 @@
 import type { Result } from 'neverthrow';
+import { err } from 'neverthrow';
 import { browserHover, browserSelect, asSelector } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
 import type { HoverCommand, SelectCommand } from '../../types';
@@ -7,8 +8,13 @@ import type { ExecutionContext, CommandResult } from '../result';
 /**
  * セレクタを解決する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ *
+ * @returns セレクタのResult型。空文字列の場合はエラー。
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): Selector => {
+const resolveSelector = (
+  originalSelector: string,
+  context: ExecutionContext,
+): Result<Selector, AgentBrowserError> => {
   return asSelector(context.resolvedRef ?? originalSelector);
 };
 
@@ -27,9 +33,15 @@ export const handleHover = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await browserHover(selector, context.executeOptions)).map((output) => ({
+  // セレクタ検証
+  const selectorResult = resolveSelector(command.selector, context);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserHover(selectorResult.value, context.executeOptions)).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));
@@ -50,10 +62,18 @@ export const handleSelect = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await browserSelect(selector, command.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  // セレクタ検証
+  const selectorResult = resolveSelector(command.selector, context);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserSelect(selectorResult.value, command.value, context.executeOptions)).map(
+    (output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }),
+  );
 };

@@ -1,4 +1,5 @@
 import type { Result } from 'neverthrow';
+import { err } from 'neverthrow';
 import { browserScreenshot, browserSnapshot, asFilePath } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { ScreenshotCommand, SnapshotCommand } from '../../types';
@@ -20,8 +21,15 @@ export const handleScreenshot = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
+  // ファイルパス検証
+  const filePathResult = asFilePath(command.path);
+  if (filePathResult.isErr()) {
+    return err(filePathResult.error);
+  }
+
+  // ブラウザ操作実行
   return (
-    await browserScreenshot(asFilePath(command.path), {
+    await browserScreenshot(filePathResult.value, {
       ...context.executeOptions,
       fullPage: command.fullPage,
     })

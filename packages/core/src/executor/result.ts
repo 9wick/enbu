@@ -16,7 +16,8 @@ export type ExecutionErrorType =
   | 'parse_error' // レスポンスのパースに失敗
   | 'assertion_failed' // アサーションが失敗
   | 'validation_error' // バリデーションエラー
-  | 'agent_browser_output_parse_error'; // agent-browserの出力JSONのパース・検証に失敗
+  | 'agent_browser_output_parse_error' // agent-browserの出力JSONのパース・検証に失敗
+  | 'brand_validation_error'; // Brand型の検証に失敗（空文字列など）
 
 /**
  * ステップ進捗コールバックに渡される情報

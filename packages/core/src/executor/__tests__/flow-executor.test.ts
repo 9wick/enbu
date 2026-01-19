@@ -12,9 +12,9 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserSnapshot: vi.fn(),
   browserWaitForMs: vi.fn(),
   browserScreenshot: vi.fn(),
-  asUrl: vi.fn((v) => v),
-  asSelector: vi.fn((v) => v),
-  asFilePath: vi.fn((v) => v),
+  asUrl: vi.fn((v) => ok(v)),
+  asSelector: vi.fn((v) => ok(v)),
+  asFilePath: vi.fn((v) => ok(v)),
 }));
 
 import {

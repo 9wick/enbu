@@ -1,4 +1,5 @@
 import type { Result } from 'neverthrow';
+import { err } from 'neverthrow';
 import {
   browserClick,
   browserType,
@@ -14,8 +15,13 @@ import type { ExecutionContext, CommandResult } from '../result';
 /**
  * セレクタを解決する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ *
+ * @returns セレクタのResult型。空文字列の場合はエラー。
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): Selector => {
+const resolveSelector = (
+  originalSelector: string,
+  context: ExecutionContext,
+): Result<Selector, AgentBrowserError> => {
   return asSelector(context.resolvedRef ?? originalSelector);
 };
 
@@ -33,9 +39,15 @@ export const handleClick = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await browserClick(selector, context.executeOptions)).map((output) => ({
+  // セレクタ検証
+  const selectorResult = resolveSelector(command.selector, context);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserClick(selectorResult.value, context.executeOptions)).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));
@@ -55,12 +67,20 @@ export const handleType = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await browserType(selector, command.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  // セレクタ検証
+  const selectorResult = resolveSelector(command.selector, context);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserType(selectorResult.value, command.value, context.executeOptions)).map(
+    (output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }),
+  );
 };
 
 /**
@@ -78,12 +98,20 @@ export const handleFill = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await browserFill(selector, command.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  // セレクタ検証
+  const selectorResult = resolveSelector(command.selector, context);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserFill(selectorResult.value, command.value, context.executeOptions)).map(
+    (output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }),
+  );
 };
 
 /**
@@ -102,7 +130,14 @@ export const handlePress = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  return (await browserPress(asKeyboardKey(command.key), context.executeOptions)).map((output) => ({
+  // キー検証
+  const keyResult = asKeyboardKey(command.key);
+  if (keyResult.isErr()) {
+    return err(keyResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserPress(keyResult.value, context.executeOptions)).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));

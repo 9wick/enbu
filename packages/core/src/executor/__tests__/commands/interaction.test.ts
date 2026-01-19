@@ -10,8 +10,8 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserType: vi.fn(),
   browserFill: vi.fn(),
   browserPress: vi.fn(),
-  asSelector: vi.fn((v) => v),
-  asKeyboardKey: vi.fn((v) => v),
+  asSelector: vi.fn((v) => ok(v)),
+  asKeyboardKey: vi.fn((v) => ok(v)),
 }));
 
 import {

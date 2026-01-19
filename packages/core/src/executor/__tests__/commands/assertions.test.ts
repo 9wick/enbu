@@ -19,7 +19,7 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserWaitForSelector: vi.fn(),
   browserWaitForText: vi.fn(),
   browserWaitForNetworkIdle: vi.fn(),
-  asSelector: vi.fn((v) => v),
+  asSelector: vi.fn((v) => ok(v)),
 }));
 
 import {

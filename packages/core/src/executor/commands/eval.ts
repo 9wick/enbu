@@ -1,4 +1,5 @@
 import type { Result } from 'neverthrow';
+import { err } from 'neverthrow';
 import { browserEval, asJsExpression } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { EvalCommand } from '../../types';
@@ -20,10 +21,15 @@ export const handleEval = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  return (await browserEval(asJsExpression(command.script), context.executeOptions)).map(
-    (output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }),
-  );
+  // JavaScript式検証
+  const scriptResult = asJsExpression(command.script);
+  if (scriptResult.isErr()) {
+    return err(scriptResult.error);
+  }
+
+  // ブラウザ操作実行
+  return (await browserEval(scriptResult.value, context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runFlowCommand } from '../../commands/run';
 import { OutputFormatter } from '../../output/formatter';
-import { checkAgentBrowser, closeSession } from '@packages/agent-browser-adapter';
+import { checkAgentBrowser, browserClose } from '@packages/agent-browser-adapter';
 import { executeFlow, parseFlowYaml } from '@packages/core';
 import { ok, err } from 'neverthrow';
 import type { Flow, FlowResult } from '@packages/core';
@@ -42,7 +42,7 @@ describe('runFlowCommand', () => {
 
     // デフォルトのモック動作
     vi.mocked(checkAgentBrowser).mockResolvedValue(ok('agent-browser is installed') as never);
-    vi.mocked(closeSession).mockResolvedValue(ok(undefined) as never);
+    vi.mocked(browserClose).mockResolvedValue(ok(undefined) as never);
   });
 
   /**
@@ -526,12 +526,11 @@ describe('runFlowCommand', () => {
     );
 
     // Assert
-    // closeSessionが呼び出されたことを確認
+    // browserCloseが呼び出されたことを確認
     // sessionNameは動的に生成されるため、パターンマッチで確認
-    // 形式: enbu-<name最大12文字>-<36進数タイムスタンプ>
-    expect(vi.mocked(closeSession)).toHaveBeenCalledTimes(1);
-    const sessionName = vi.mocked(closeSession).mock.calls[0][0];
-    expect(sessionName).toMatch(/^enbu-ログイン-[a-z0-9]+$/);
+    expect(vi.mocked(browserClose)).toHaveBeenCalledTimes(1);
+    const sessionName = vi.mocked(browserClose).mock.calls[0][0];
+    expect(sessionName).toMatch(/^abf-ログイン-\d+$/)
   });
 
   /**
@@ -597,8 +596,8 @@ describe('runFlowCommand', () => {
     );
 
     // Assert
-    // closeSessionが呼ばれないことを確認
-    expect(vi.mocked(closeSession)).not.toHaveBeenCalled();
+    // browserCloseが呼ばれないことを確認
+    expect(vi.mocked(browserClose)).not.toHaveBeenCalled();
 
     // デバッグ案内が表示されることを確認
     expect(vi.mocked(formatter.info)).toHaveBeenCalledWith(
@@ -665,8 +664,8 @@ describe('runFlowCommand', () => {
     );
 
     // Assert
-    // closeSessionが呼ばれないことを確認
-    expect(vi.mocked(closeSession)).not.toHaveBeenCalled();
+    // browserCloseが呼ばれないことを確認
+    expect(vi.mocked(browserClose)).not.toHaveBeenCalled();
 
     // executeFlowがerrを返した場合、セッションが作成されていない可能性があるため
     // デバッグ案内は表示されないことを確認

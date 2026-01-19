@@ -1,4 +1,5 @@
 import type { Result } from 'neverthrow';
+import { err } from 'neverthrow';
 import {
   browserScroll,
   browserScrollIntoView,
@@ -66,18 +67,24 @@ export const handleScrollIntoView = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
   // autoWaitで解決されたrefがあればそれを使用、なければテキストセレクタの変換を適用
-  const selector = context.resolvedRef ?? resolveTextSelector(command.selector);
+  const selectorString = context.resolvedRef ?? resolveTextSelector(command.selector);
+
+  // セレクタ検証
+  const selectorResult = asSelector(selectorString);
+  if (selectorResult.isErr()) {
+    return err(selectorResult.error);
+  }
 
   // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
   // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
-  if (isRefSelector(selector)) {
-    return (await browserFocus(asSelector(selector), context.executeOptions)).map((output) => ({
+  if (isRefSelector(selectorString)) {
+    return (await browserFocus(selectorResult.value, context.executeOptions)).map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
     }));
   }
 
-  return (await browserScrollIntoView(asSelector(selector), context.executeOptions)).map(
+  return (await browserScrollIntoView(selectorResult.value, context.executeOptions)).map(
     (output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,

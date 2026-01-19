@@ -13,7 +13,7 @@ import type { CliError, FlowExecutionResult } from '../types';
 import type { OutputFormatter } from '../output/formatter';
 import {
   checkAgentBrowser,
-  closeSession,
+  browserClose,
   type AgentBrowserError,
 } from '@packages/agent-browser-adapter';
 import {
@@ -23,6 +23,35 @@ import {
   type FlowResult,
   type StepProgress,
 } from '@packages/core';
+
+/**
+ * AgentBrowserErrorからエラーメッセージを生成する
+ *
+ * エラー型ごとに適切なエラーメッセージを抽出・生成する。
+ *
+ * @param error - AgentBrowserError
+ * @returns エラーメッセージ文字列
+ */
+const formatAgentBrowserErrorMessage = (error: AgentBrowserError): string => {
+  // message プロパティをそのまま使用するエラー型
+  if (
+    error.type === 'not_installed' ||
+    error.type === 'parse_error' ||
+    error.type === 'brand_validation_error'
+  ) {
+    return error.message;
+  }
+  // タイムアウトエラー
+  if (error.type === 'timeout') {
+    return `Timeout: ${error.command} (${error.timeoutMs}ms)`;
+  }
+  // パースエラー
+  if (error.type === 'agent_browser_output_parse_error') {
+    return `Parse error: ${error.message}`;
+  }
+  // コマンドエラー（errorMessage または stderr を使用）
+  return error.errorMessage ?? error.stderr;
+};
 
 /**
  * runコマンドの引数
@@ -336,22 +365,13 @@ const executeFlowWithProgress = async (
     onStepProgress: createStepProgressCallback(args.progressJson),
   });
 
-  return executeResult.mapErr((agentError: AgentBrowserError): CliError => {
-    const errorMessage =
-      agentError.type === 'not_installed'
-        ? agentError.message
-        : agentError.type === 'parse_error'
-          ? agentError.message
-          : agentError.type === 'timeout'
-            ? `Timeout: ${agentError.command} (${agentError.timeoutMs}ms)`
-            : (agentError.errorMessage ?? agentError.stderr);
-
-    return {
+  return executeResult.mapErr(
+    (agentError: AgentBrowserError): CliError => ({
       type: 'execution_error' as const,
-      message: errorMessage,
+      message: formatAgentBrowserErrorMessage(agentError),
       cause: agentError,
-    };
-  });
+    }),
+  );
 };
 
 /**
@@ -469,8 +489,8 @@ const executeAllFlows = async (
         if (result.status === 'passed') {
           passed++;
           // 正常終了時はセッションをクローズ
-          const closeResult = await closeSession(sessionName);
-          closeResult.mapErr((error) => {
+          const closeResult = await browserClose(sessionName);
+          closeResult.mapErr((error: AgentBrowserError) => {
             formatter.debug(`Failed to close session: ${error.type}`);
           });
         } else {

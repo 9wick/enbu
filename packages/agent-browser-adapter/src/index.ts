@@ -61,6 +61,7 @@ export { checkAgentBrowser } from './check';
 export type {
   // エラー型
   AgentBrowserError,
+  BrandValidationError,
   // 実行オプション
   ExecuteOptions,
   ScreenshotOptions,
