@@ -15,7 +15,8 @@ export type ExecutionErrorType =
   | 'timeout' // タイムアウト
   | 'parse_error' // レスポンスのパースに失敗
   | 'assertion_failed' // アサーションが失敗
-  | 'validation_error'; // バリデーションエラー
+  | 'validation_error' // バリデーションエラー
+  | 'agent_browser_output_parse_error'; // agent-browserの出力JSONのパース・検証に失敗
 
 /**
  * ステップ進捗コールバックに渡される情報

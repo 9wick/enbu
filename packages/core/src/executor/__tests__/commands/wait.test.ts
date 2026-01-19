@@ -6,11 +6,25 @@ import type { ExecutionContext } from '../../result';
 
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
-  executeCommand: vi.fn(),
-  parseJsonOutput: vi.fn(),
+  browserWaitForMs: vi.fn(),
+  browserWaitForSelector: vi.fn(),
+  browserWaitForText: vi.fn(),
+  browserWaitForLoad: vi.fn(),
+  browserWaitForUrl: vi.fn(),
+  browserWaitForFunction: vi.fn(),
+  asSelector: vi.fn((v) => v),
+  asJsExpression: vi.fn((v) => v),
+  asUrl: vi.fn((v) => v),
 }));
 
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
+import {
+  browserWaitForMs,
+  browserWaitForSelector,
+  browserWaitForText,
+  browserWaitForLoad,
+  browserWaitForUrl,
+  browserWaitForFunction,
+} from '@packages/agent-browser-adapter';
 
 describe('handleWait', () => {
   beforeEach(() => {
@@ -32,8 +46,8 @@ describe('handleWait', () => {
   /**
    * WAIT-1: wait コマンドが成功（ms指定）
    *
-   * 前提条件: agent-browser wait が成功、ms指定
-   * 検証項目: ok(CommandResult) が返され、wait <ms> が実行される
+   * 前提条件: browserWaitForMs が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-1: waitコマンド（ms指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -42,28 +56,21 @@ describe('handleWait', () => {
       ms: 1000,
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForMs).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['1000', '--json'],
-      mockContext.executeOptions,
-    );
+    expect(browserWaitForMs).toHaveBeenCalledWith(1000, mockContext.executeOptions);
   });
 
   /**
    * WAIT-2: wait コマンドが成功（selector指定）
    *
-   * 前提条件: agent-browser wait が成功、selector指定
-   * 検証項目: ok(CommandResult) が返され、wait <selector> が実行される
+   * 前提条件: browserWaitForSelector が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-2: waitコマンド（selector指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -72,19 +79,17 @@ describe('handleWait', () => {
       selector: '#loading-spinner',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForSelector).mockResolvedValue(
+      ok({ success: true, data: {}, error: null }),
+    );
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['#loading-spinner', '--json'],
+    expect(browserWaitForSelector).toHaveBeenCalledWith(
+      '#loading-spinner',
       mockContext.executeOptions,
     );
   });
@@ -92,8 +97,8 @@ describe('handleWait', () => {
   /**
    * WAIT-3: wait コマンドが成功（text指定）
    *
-   * 前提条件: agent-browser wait が成功、text指定
-   * 検証項目: ok(CommandResult) が返され、wait --text <text> が実行される
+   * 前提条件: browserWaitForText が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-3: waitコマンド（text指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -102,28 +107,21 @@ describe('handleWait', () => {
       text: '読み込み完了',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForText).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['--text', '読み込み完了', '--json'],
-      mockContext.executeOptions,
-    );
+    expect(browserWaitForText).toHaveBeenCalledWith('読み込み完了', mockContext.executeOptions);
   });
 
   /**
    * WAIT-4: wait コマンドが成功（load指定）
    *
-   * 前提条件: agent-browser wait が成功、load指定
-   * 検証項目: ok(CommandResult) が返され、wait --load <state> が実行される
+   * 前提条件: browserWaitForLoad が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-4: waitコマンド（load指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -132,28 +130,21 @@ describe('handleWait', () => {
       load: 'networkidle',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForLoad).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['--load', 'networkidle', '--json'],
-      mockContext.executeOptions,
-    );
+    expect(browserWaitForLoad).toHaveBeenCalledWith('networkidle', mockContext.executeOptions);
   });
 
   /**
    * WAIT-5: wait コマンドが成功（url指定）
    *
-   * 前提条件: agent-browser wait が成功、url指定
-   * 検証項目: ok(CommandResult) が返され、wait --url <pattern> が実行される
+   * 前提条件: browserWaitForUrl が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-5: waitコマンド（url指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -162,28 +153,21 @@ describe('handleWait', () => {
       url: '**/dashboard',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForUrl).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['--url', '**/dashboard', '--json'],
-      mockContext.executeOptions,
-    );
+    expect(browserWaitForUrl).toHaveBeenCalledWith('**/dashboard', mockContext.executeOptions);
   });
 
   /**
    * WAIT-6: wait コマンドが成功（fn指定）
    *
-   * 前提条件: agent-browser wait が成功、fn指定
-   * 検証項目: ok(CommandResult) が返され、wait --fn <expression> が実行される
+   * 前提条件: browserWaitForFunction が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('WAIT-6: waitコマンド（fn指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -192,19 +176,17 @@ describe('handleWait', () => {
       fn: 'window.appReady === true',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForFunction).mockResolvedValue(
+      ok({ success: true, data: {}, error: null }),
+    );
 
     // Act
     const result = await handleWait(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'wait',
-      ['--fn', 'window.appReady === true', '--json'],
+    expect(browserWaitForFunction).toHaveBeenCalledWith(
+      'window.appReady === true',
       mockContext.executeOptions,
     );
   });

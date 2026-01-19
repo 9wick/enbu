@@ -1,6 +1,11 @@
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import {
+  browserScroll,
+  browserScrollIntoView,
+  browserFocus,
+  asSelector,
+} from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, ScrollDirection } from '@packages/agent-browser-adapter';
 import type { ScrollCommand, ScrollIntoViewCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
 import { resolveTextSelector } from './selector-utils';
@@ -20,19 +25,12 @@ export const handleScroll = async (
   context: ExecutionContext,
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
+  const direction: ScrollDirection = command.direction;
 
-  return (
-    await executeCommand(
-      'scroll',
-      [command.direction, command.amount.toString(), '--json'],
-      context.executeOptions,
-    )
-  )
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return (await browserScroll(direction, command.amount, context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**
@@ -72,12 +70,17 @@ export const handleScrollIntoView = async (
 
   // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
   // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
-  const commandName = isRefSelector(selector) ? 'focus' : 'scrollintoview';
-
-  return (await executeCommand(commandName, [selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
+  if (isRefSelector(selector)) {
+    return (await browserFocus(asSelector(selector), context.executeOptions)).map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
     }));
+  }
+
+  return (await browserScrollIntoView(asSelector(selector), context.executeOptions)).map(
+    (output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }),
+  );
 };

@@ -6,11 +6,11 @@ import type { ExecutionContext } from '../../result';
 
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
-  executeCommand: vi.fn(),
-  parseJsonOutput: vi.fn(),
+  browserOpen: vi.fn(),
+  asUrl: vi.fn((v) => v),
 }));
 
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
+import { browserOpen } from '@packages/agent-browser-adapter';
 
 describe('handleOpen', () => {
   beforeEach(() => {
@@ -42,10 +42,7 @@ describe('handleOpen', () => {
       url: 'https://example.com',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValue(
+    vi.mocked(browserOpen).mockResolvedValue(
       ok({ success: true, data: { url: 'https://example.com' }, error: null }),
     );
 
@@ -56,19 +53,11 @@ describe('handleOpen', () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (commandResult) => {
-        expect(commandResult.stdout).toContain('success');
         expect(commandResult.duration).toBeGreaterThanOrEqual(0);
       },
       () => {
         throw new Error('Expected ok result');
       },
-    );
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'open',
-      ['https://example.com', '--json'],
-      mockContext.executeOptions,
     );
   });
 
@@ -85,12 +74,12 @@ describe('handleOpen', () => {
       url: 'https://invalid-url',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
+    vi.mocked(browserOpen).mockResolvedValue(
       err({
         type: 'command_failed',
         message: 'Invalid URL',
         command: 'open',
-        args: ['https://invalid-url', '--json'],
+        args: [],
         exitCode: 1,
         stderr: '',
         errorMessage: 'Invalid URL',

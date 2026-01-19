@@ -12,7 +12,9 @@ const debugLog = (msg: string, ...args: unknown[]) => {
 };
 
 /**
- * agent-browserコマンドを実行する
+ * agent-browserコマンドを実行する（内部関数）
+ *
+ * 注意: この関数は内部実装用。外部からは commands/ 配下の型安全な関数を使用すること。
  *
  * @param command - 実行するコマンド（例: "open", "click", "snapshot"）
  * @param args - コマンド引数（例: ["https://example.com"]）

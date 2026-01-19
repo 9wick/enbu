@@ -1,5 +1,5 @@
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
+import { browserOpen, asUrl } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { OpenCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
@@ -20,14 +20,12 @@ export const handleOpen = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  return (await executeCommand('open', [command.url, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => {
-      const duration = Date.now() - startTime;
+  return (await browserOpen(asUrl(command.url), context.executeOptions)).map((output) => {
+    const duration = Date.now() - startTime;
 
-      return {
-        stdout: JSON.stringify(output),
-        duration,
-      };
-    });
+    return {
+      stdout: JSON.stringify(output),
+      duration,
+    };
+  });
 };

@@ -7,11 +7,7 @@
  */
 
 import { Result, ok, err } from 'neverthrow';
-import {
-  executeCommand,
-  parseJsonOutput,
-  parseSnapshotRefs,
-} from '@packages/agent-browser-adapter';
+import { browserSnapshot } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError, SnapshotRefs } from '@packages/agent-browser-adapter';
 import type { ExecutionContext } from './result';
 
@@ -63,18 +59,31 @@ export const autoWait = async (
     debugLog(`poll #${pollCount}: calling snapshot...`);
     // snapshot取得（全要素を対象とする。-iオプションはインタラクティブ要素のみになり、
     // assertVisibleなどで静的テキスト要素が見つからなくなるため使用しない）
-    const commandResult = await executeCommand('snapshot', ['--json'], executeOptions);
-    debugLog(`poll #${pollCount}: snapshot done, isOk=${commandResult.isOk()}`);
-
-    const snapshotResult = commandResult.andThen(parseJsonOutput).andThen(parseSnapshotRefs);
+    const snapshotResult = await browserSnapshot(executeOptions);
+    debugLog(`poll #${pollCount}: snapshot done, isOk=${snapshotResult.isOk()}`);
 
     // snapshotのパース失敗は致命的エラー
     if (snapshotResult.isErr()) {
-      debugLog(`poll #${pollCount}: parse error`, snapshotResult.error);
+      debugLog(`poll #${pollCount}: error`, snapshotResult.error);
       return err(snapshotResult.error);
     }
 
-    const refs = snapshotResult.value;
+    // 出力データからrefsを取得
+    const snapshotOutput = snapshotResult.value;
+    if (!snapshotOutput.success || !snapshotOutput.data) {
+      debugLog(`poll #${pollCount}: snapshot failed or no data`);
+      return err({
+        type: 'command_failed',
+        message: snapshotOutput.error || 'Snapshot failed',
+        command: 'snapshot',
+        args: [],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: snapshotOutput.error,
+      });
+    }
+
+    const refs = snapshotOutput.data.refs;
     debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
 
     // セレクタに一致する要素を検索

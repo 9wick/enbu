@@ -1,6 +1,6 @@
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserHover, browserSelect, asSelector } from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
 import type { HoverCommand, SelectCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
 
@@ -8,8 +8,8 @@ import type { ExecutionContext, CommandResult } from '../result';
  * セレクタを解決する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
-  return context.resolvedRef ?? originalSelector;
+const resolveSelector = (originalSelector: string, context: ExecutionContext): Selector => {
+  return asSelector(context.resolvedRef ?? originalSelector);
 };
 
 /**
@@ -29,12 +29,10 @@ export const handleHover = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('hover', [selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return (await browserHover(selector, context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**
@@ -54,12 +52,8 @@ export const handleSelect = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('select', [selector, command.value, '--json'], context.executeOptions)
-  )
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return (await browserSelect(selector, command.value, context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

@@ -1,7 +1,15 @@
 import { ok, err } from 'neverthrow';
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import {
+  browserWaitForSelector,
+  browserWaitForText,
+  browserWaitForNetworkIdle,
+  browserIsVisible,
+  browserIsEnabled,
+  browserIsChecked,
+  asSelector,
+} from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
 import type {
   AssertVisibleCommand,
   AssertNotVisibleCommand,
@@ -15,8 +23,8 @@ import { isCssOrRefSelector, resolveTextSelector } from './selector-utils';
  * セレクタを解決する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
-  return context.resolvedRef ?? originalSelector;
+const resolveSelector = (originalSelector: string, context: ExecutionContext): Selector => {
+  return asSelector(context.resolvedRef ?? originalSelector);
 };
 
 /**
@@ -25,20 +33,23 @@ const resolveSelector = (originalSelector: string, context: ExecutionContext): s
  * autoWaitで解決されたresolvedRefがあればそれを使用、
  * なければテキストセレクタ変換を適用する。
  */
-const resolveVisibilitySelector = (originalSelector: string, context: ExecutionContext): string => {
+const resolveVisibilitySelector = (
+  originalSelector: string,
+  context: ExecutionContext,
+): Selector => {
   // autoWaitで解決されたrefがあればそれを使用
   if (context.resolvedRef) {
-    return context.resolvedRef;
+    return asSelector(context.resolvedRef);
   }
   // テキストセレクタの変換を適用
-  return resolveTextSelector(originalSelector);
+  return asSelector(resolveTextSelector(originalSelector));
 };
 
 /**
  * 要素の出現を待機する
  *
- * CSSセレクタ/@ref/text=形式の場合: wait <selector>
- * テキストの場合: wait --text <text>
+ * CSSセレクタ/@ref/text=形式の場合: browserWaitForSelector
+ * テキストの場合: browserWaitForText
  *
  * @param originalSelector - 元のセレクタ
  * @param context - 実行コンテキスト
@@ -48,22 +59,17 @@ const waitForElement = async (
   originalSelector: string,
   context: ExecutionContext,
 ): Promise<Result<undefined, AgentBrowserError>> => {
-  // @ref、#id、.class、[attr]、text= 形式の場合: wait <selector>
+  // @ref、#id、.class、[attr]、text= 形式の場合: browserWaitForSelector
   if (isCssOrRefSelector(originalSelector)) {
-    const result = await executeCommand(
-      'wait',
-      [originalSelector, '--json'],
+    const result = await browserWaitForSelector(
+      asSelector(originalSelector),
       context.executeOptions,
     );
     return result.map(() => undefined);
   }
 
-  // テキストの場合: wait --text <text>
-  const result = await executeCommand(
-    'wait',
-    ['--text', originalSelector, '--json'],
-    context.executeOptions,
-  );
+  // テキストの場合: browserWaitForText
+  const result = await browserWaitForText(originalSelector, context.executeOptions);
   return result.map(() => undefined);
 };
 
@@ -76,11 +82,7 @@ const waitForElement = async (
 const waitForPageStable = async (
   context: ExecutionContext,
 ): Promise<Result<undefined, AgentBrowserError>> => {
-  const result = await executeCommand(
-    'wait',
-    ['--load', 'networkidle', '--json'],
-    context.executeOptions,
-  );
+  const result = await browserWaitForNetworkIdle(context.executeOptions);
   return result.map(() => undefined);
 };
 
@@ -123,65 +125,57 @@ export const handleAssertVisible = async (
   // 2. 表示状態を確認
   const selector = resolveVisibilitySelector(command.selector, context);
 
-  return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .andThen((output) => {
-      const duration = Date.now() - startTime;
+  return (await browserIsVisible(selector, context.executeOptions)).andThen((output) => {
+    const duration = Date.now() - startTime;
 
-      // 1. コマンド実行の成否を確認
-      if (!output.success) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: output.error || 'Failed to check visibility',
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: output.error,
-        };
-        return err(error);
-      }
+    // 1. コマンド実行の成否を確認
+    if (!output.success) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: output.error || 'Failed to check visibility',
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: output.error,
+      };
+      return err(error);
+    }
 
-      // 2. データの妥当性を確認（型ガードで絞り込む）
-      const data = output.data;
-      const hasVisibleField = (d: unknown): d is Record<'visible', unknown> =>
-        d !== null && typeof d === 'object' && 'visible' in d;
-      const isVisibleData = (d: unknown): d is { visible: boolean } =>
-        hasVisibleField(d) && typeof d.visible === 'boolean';
-      const visibleData = isVisibleData(data) ? data : null;
+    // 2. データの妥当性を確認
+    const visibleData = output.data;
+    if (!visibleData) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: 'Invalid response data: missing visible field',
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      if (!visibleData) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: 'Invalid response data: missing or invalid visible field',
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
+    // 3. アサーション条件を確認
+    if (!visibleData.visible) {
+      const error: AgentBrowserError = {
+        type: 'assertion_failed',
+        message: `Element "${command.selector}" is not visible`,
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      // 3. アサーション条件を確認
-      if (!visibleData.visible) {
-        const error: AgentBrowserError = {
-          type: 'assertion_failed',
-          message: `Element "${command.selector}" is not visible`,
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
-
-      return ok({
-        stdout: JSON.stringify(output),
-        duration,
-      });
+    return ok({
+      stdout: JSON.stringify(output),
+      duration,
     });
+  });
 };
 
 /**
@@ -220,65 +214,57 @@ export const handleAssertNotVisible = async (
   // 2. 表示状態を確認
   const selector = resolveVisibilitySelector(command.selector, context);
 
-  return (await executeCommand('is', ['visible', selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .andThen((output) => {
-      const duration = Date.now() - startTime;
+  return (await browserIsVisible(selector, context.executeOptions)).andThen((output) => {
+    const duration = Date.now() - startTime;
 
-      // 1. コマンド実行の成否を確認
-      if (!output.success) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: output.error || 'Failed to check visibility',
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: output.error,
-        };
-        return err(error);
-      }
+    // 1. コマンド実行の成否を確認
+    if (!output.success) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: output.error || 'Failed to check visibility',
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: output.error,
+      };
+      return err(error);
+    }
 
-      // 2. データの妥当性を確認（型ガードで絞り込む）
-      const data = output.data;
-      const hasVisibleField = (d: unknown): d is Record<'visible', unknown> =>
-        d !== null && typeof d === 'object' && 'visible' in d;
-      const isVisibleData = (d: unknown): d is { visible: boolean } =>
-        hasVisibleField(d) && typeof d.visible === 'boolean';
-      const visibleData = isVisibleData(data) ? data : null;
+    // 2. データの妥当性を確認
+    const visibleData = output.data;
+    if (!visibleData) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: 'Invalid response data: missing visible field',
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      if (!visibleData) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: 'Invalid response data: missing or invalid visible field',
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
+    // 3. アサーション条件を確認
+    if (visibleData.visible) {
+      const error: AgentBrowserError = {
+        type: 'assertion_failed',
+        message: `Element "${command.selector}" is visible`,
+        command: 'is',
+        args: ['visible', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      // 3. アサーション条件を確認
-      if (visibleData.visible) {
-        const error: AgentBrowserError = {
-          type: 'assertion_failed',
-          message: `Element "${command.selector}" is visible`,
-          command: 'is',
-          args: ['visible', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
-
-      return ok({
-        stdout: JSON.stringify(output),
-        duration,
-      });
+    return ok({
+      stdout: JSON.stringify(output),
+      duration,
     });
+  });
 };
 
 /**
@@ -299,65 +285,57 @@ export const handleAssertEnabled = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('is', ['enabled', selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .andThen((output) => {
-      const duration = Date.now() - startTime;
+  return (await browserIsEnabled(selector, context.executeOptions)).andThen((output) => {
+    const duration = Date.now() - startTime;
 
-      // 1. コマンド実行の成否を確認
-      if (!output.success) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: output.error || 'Failed to check enabled state',
-          command: 'is',
-          args: ['enabled', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: output.error,
-        };
-        return err(error);
-      }
+    // 1. コマンド実行の成否を確認
+    if (!output.success) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: output.error || 'Failed to check enabled state',
+        command: 'is',
+        args: ['enabled', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: output.error,
+      };
+      return err(error);
+    }
 
-      // 2. データの妥当性を確認（型ガードで絞り込む）
-      const data = output.data;
-      const hasEnabledField = (d: unknown): d is Record<'enabled', unknown> =>
-        d !== null && typeof d === 'object' && 'enabled' in d;
-      const isEnabledData = (d: unknown): d is { enabled: boolean } =>
-        hasEnabledField(d) && typeof d.enabled === 'boolean';
-      const enabledData = isEnabledData(data) ? data : null;
+    // 2. データの妥当性を確認
+    const enabledData = output.data;
+    if (!enabledData) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: 'Invalid response data: missing enabled field',
+        command: 'is',
+        args: ['enabled', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      if (!enabledData) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: 'Invalid response data: missing or invalid enabled field',
-          command: 'is',
-          args: ['enabled', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
+    // 3. アサーション条件を確認
+    if (!enabledData.enabled) {
+      const error: AgentBrowserError = {
+        type: 'assertion_failed',
+        message: `Element "${command.selector}" is not enabled`,
+        command: 'is',
+        args: ['enabled', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      // 3. アサーション条件を確認
-      if (!enabledData.enabled) {
-        const error: AgentBrowserError = {
-          type: 'assertion_failed',
-          message: `Element "${command.selector}" is not enabled`,
-          command: 'is',
-          args: ['enabled', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
-
-      return ok({
-        stdout: JSON.stringify(output),
-        duration,
-      });
+    return ok({
+      stdout: JSON.stringify(output),
+      duration,
     });
+  });
 };
 
 /**
@@ -378,66 +356,58 @@ export const handleAssertChecked = async (
   const startTime = Date.now();
   const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('is', ['checked', selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .andThen((output) => {
-      const duration = Date.now() - startTime;
+  return (await browserIsChecked(selector, context.executeOptions)).andThen((output) => {
+    const duration = Date.now() - startTime;
 
-      // 1. コマンド実行の成否を確認
-      if (!output.success) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: output.error || 'Failed to check checked state',
-          command: 'is',
-          args: ['checked', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: output.error,
-        };
-        return err(error);
-      }
+    // 1. コマンド実行の成否を確認
+    if (!output.success) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: output.error || 'Failed to check checked state',
+        command: 'is',
+        args: ['checked', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: output.error,
+      };
+      return err(error);
+    }
 
-      // 2. データの妥当性を確認（型ガードで絞り込む）
-      const data = output.data;
-      const hasCheckedField = (d: unknown): d is Record<'checked', unknown> =>
-        d !== null && typeof d === 'object' && 'checked' in d;
-      const isCheckedData = (d: unknown): d is { checked: boolean } =>
-        hasCheckedField(d) && typeof d.checked === 'boolean';
-      const checkedData = isCheckedData(data) ? data : null;
+    // 2. データの妥当性を確認
+    const checkedData = output.data;
+    if (!checkedData) {
+      const error: AgentBrowserError = {
+        type: 'command_failed',
+        message: 'Invalid response data: missing checked field',
+        command: 'is',
+        args: ['checked', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      if (!checkedData) {
-        const error: AgentBrowserError = {
-          type: 'command_failed',
-          message: 'Invalid response data: missing or invalid checked field',
-          command: 'is',
-          args: ['checked', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
+    // 3. アサーション条件を確認
+    const expectedChecked = command.checked ?? true; // デフォルトはtrue
+    const actualChecked = checkedData.checked;
 
-      // 3. アサーション条件を確認
-      const expectedChecked = command.checked ?? true; // デフォルトはtrue
-      const actualChecked = checkedData.checked;
+    if (actualChecked !== expectedChecked) {
+      const error: AgentBrowserError = {
+        type: 'assertion_failed',
+        message: `Element "${command.selector}" checked state is ${actualChecked}, expected ${expectedChecked}`,
+        command: 'is',
+        args: ['checked', command.selector],
+        exitCode: 1,
+        stderr: '',
+        errorMessage: null,
+      };
+      return err(error);
+    }
 
-      if (actualChecked !== expectedChecked) {
-        const error: AgentBrowserError = {
-          type: 'assertion_failed',
-          message: `Element "${command.selector}" checked state is ${actualChecked}, expected ${expectedChecked}`,
-          command: 'is',
-          args: ['checked', command.selector],
-          exitCode: 1,
-          stderr: '',
-          errorMessage: null,
-        };
-        return err(error);
-      }
-
-      return ok({
-        stdout: JSON.stringify(output),
-        duration,
-      });
+    return ok({
+      stdout: JSON.stringify(output),
+      duration,
     });
+  });
 };

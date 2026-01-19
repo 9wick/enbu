@@ -5,16 +5,10 @@ import type { ExecutionContext } from '../result';
 
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
-  executeCommand: vi.fn(),
-  parseJsonOutput: vi.fn(),
-  parseSnapshotRefs: vi.fn(),
+  browserSnapshot: vi.fn(),
 }));
 
-import {
-  executeCommand,
-  parseJsonOutput,
-  parseSnapshotRefs,
-} from '@packages/agent-browser-adapter';
+import { browserSnapshot } from '@packages/agent-browser-adapter';
 
 describe('autoWait', () => {
   beforeEach(() => {
@@ -46,19 +40,13 @@ describe('autoWait', () => {
    */
   it('AW-1: 要素が最初のsnapshotで見つかる場合、すぐに成功を返す', async () => {
     // Arrange: snapshotが "ログイン" 要素を含む
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok(
-        '{"success":true,"data":{"refs":{"e1":{"name":"ログイン","role":"button"}}},"error":null}',
-      ),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValue(
+    vi.mocked(browserSnapshot).mockResolvedValue(
       ok({
         success: true,
-        data: { refs: { e1: { name: 'ログイン', role: 'button' } } },
+        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
         error: null,
       }),
     );
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({ e1: { name: 'ログイン', role: 'button' } }));
 
     // Act: ログイン要素を待機
     const promise = autoWait('ログイン', mockContext);
@@ -83,27 +71,15 @@ describe('autoWait', () => {
    */
   it('AW-2: ポーリングで要素が見つかる場合、成功を返す', async () => {
     // Arrange: 1回目は空、2回目でログイン要素が出現
-    vi.mocked(executeCommand)
-      .mockResolvedValueOnce(ok('{"success":true,"data":{"refs":{}},"error":null}'))
+    vi.mocked(browserSnapshot)
+      .mockResolvedValueOnce(ok({ success: true, data: { snapshot: '', refs: {} }, error: null }))
       .mockResolvedValueOnce(
-        ok(
-          '{"success":true,"data":{"refs":{"e1":{"name":"ログイン","role":"button"}}},"error":null}',
-        ),
-      );
-
-    vi.mocked(parseJsonOutput)
-      .mockReturnValueOnce(ok({ success: true, data: { refs: {} }, error: null }))
-      .mockReturnValueOnce(
         ok({
           success: true,
-          data: { refs: { e1: { name: 'ログイン', role: 'button' } } },
+          data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
           error: null,
         }),
       );
-
-    vi.mocked(parseSnapshotRefs)
-      .mockReturnValueOnce(ok({}))
-      .mockReturnValueOnce(ok({ e1: { name: 'ログイン', role: 'button' } }));
 
     // Act: ログイン要素を待機
     const promise = autoWait('ログイン', mockContext);
@@ -122,13 +98,9 @@ describe('autoWait', () => {
    */
   it('AW-3: タイムアウトまで要素が見つからない場合、timeoutエラーを返す', async () => {
     // Arrange: 常に空のsnapshotを返す
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok('{"success":true,"data":{"refs":{}},"error":null}'),
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      ok({ success: true, data: { snapshot: '', refs: {} }, error: null }),
     );
-    vi.mocked(parseJsonOutput).mockReturnValue(
-      ok({ success: true, data: { refs: {} }, error: null }),
-    );
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({}));
 
     // Act: 存在しない要素を待機
     const promise = autoWait('NotExist', mockContext);
@@ -178,19 +150,13 @@ describe('autoWait', () => {
    */
   it('AW-5: 参照ID形式のセレクタで要素が見つかる', async () => {
     // Arrange: snapshotが e1 参照を含む
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok(
-        '{"success":true,"data":{"refs":{"e1":{"name":"ログイン","role":"button"}}},"error":null}',
-      ),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValue(
+    vi.mocked(browserSnapshot).mockResolvedValue(
       ok({
         success: true,
-        data: { refs: { e1: { name: 'ログイン', role: 'button' } } },
+        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
         error: null,
       }),
     );
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({ e1: { name: 'ログイン', role: 'button' } }));
 
     // Act: @e1 参照IDで待機
     const promise = autoWait('@e1', mockContext);
@@ -204,19 +170,19 @@ describe('autoWait', () => {
   /**
    * AW-6: snapshotのパースが失敗
    *
-   * 前提条件: parseSnapshotRefs が err を返す
-   * 検証項目: err({ type: 'parse_error' }) が返される
+   * 前提条件: browserSnapshot が err を返す
+   * 検証項目: err({ type: 'agent_browser_output_parse_error' }) が返される
    */
   it('AW-6: snapshotのパースが失敗した場合、エラーを返す', async () => {
     // Arrange: snapshotのパースが失敗
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok('{"success":true,"data":{"refs":{}},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValue(
-      ok({ success: true, data: { refs: {} }, error: null }),
-    );
-    vi.mocked(parseSnapshotRefs).mockReturnValue(
-      err({ type: 'parse_error', message: 'Invalid refs', rawOutput: '' }),
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      err({
+        type: 'agent_browser_output_parse_error',
+        message: 'Invalid refs',
+        command: 'snapshot',
+        issues: [],
+        rawOutput: '',
+      }),
     );
 
     // Act: ログイン要素を待機
@@ -231,7 +197,7 @@ describe('autoWait', () => {
         throw new Error('Expected err result');
       },
       (error) => {
-        expect(error.type).toBe('parse_error');
+        expect(error.type).toBe('agent_browser_output_parse_error');
       },
     );
   });
@@ -252,13 +218,9 @@ describe('autoWait', () => {
       e5: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok(JSON.stringify({ success: true, data: { refs: multipleRefs }, error: null })),
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      ok({ success: true, data: { snapshot: '', refs: multipleRefs }, error: null }),
     );
-    vi.mocked(parseJsonOutput).mockReturnValue(
-      ok({ success: true, data: { refs: multipleRefs }, error: null }),
-    );
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok(multipleRefs));
 
     // Act: 「詳細を見る」を待機
     const promise = autoWait('詳細を見る', mockContext);
@@ -296,11 +258,9 @@ describe('autoWait', () => {
       e4: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok(JSON.stringify({ success: true, data: { refs }, error: null })),
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      ok({ success: true, data: { snapshot: '', refs }, error: null }),
     );
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: { refs }, error: null }));
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok(refs));
 
     // Act: 「ログイン」を待機
     const promise = autoWait('ログイン', mockContext);

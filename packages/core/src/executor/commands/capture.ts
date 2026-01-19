@@ -1,5 +1,5 @@
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
+import { browserScreenshot, browserSnapshot, asFilePath } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { ScreenshotCommand, SnapshotCommand } from '../../types';
 import type { ExecutionContext, CommandResult } from '../result';
@@ -20,18 +20,15 @@ export const handleScreenshot = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  const args = [command.path];
-  if (command.full) {
-    args.push('--full');
-  }
-  args.push('--json');
-
-  return (await executeCommand('screenshot', args, context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return (
+    await browserScreenshot(asFilePath(command.path), {
+      ...context.executeOptions,
+      fullPage: command.fullPage,
+    })
+  ).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**
@@ -50,10 +47,8 @@ export const handleSnapshot = async (
 ): Promise<Result<CommandResult, AgentBrowserError>> => {
   const startTime = Date.now();
 
-  return (await executeCommand('snapshot', ['--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return (await browserSnapshot(context.executeOptions)).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

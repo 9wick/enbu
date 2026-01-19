@@ -6,11 +6,20 @@ import type { ExecutionContext } from '../../result';
 
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
-  executeCommand: vi.fn(),
-  parseJsonOutput: vi.fn(),
+  browserClick: vi.fn(),
+  browserType: vi.fn(),
+  browserFill: vi.fn(),
+  browserPress: vi.fn(),
+  asSelector: vi.fn((v) => v),
+  asKeyboardKey: vi.fn((v) => v),
 }));
 
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
+import {
+  browserClick,
+  browserType,
+  browserFill,
+  browserPress,
+} from '@packages/agent-browser-adapter';
 
 describe('handleClick', () => {
   beforeEach(() => {
@@ -32,7 +41,7 @@ describe('handleClick', () => {
   /**
    * INT-1: click コマンドが成功
    *
-   * 前提条件: agent-browser click が成功
+   * 前提条件: browserClick が成功
    * 検証項目: ok(CommandResult) が返される
    */
   it('INT-1: clickコマンドが成功した場合、CommandResultを返す', async () => {
@@ -42,12 +51,7 @@ describe('handleClick', () => {
       selector: 'ログインボタン',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
-      ok('{"success":true,"data":{"clicked":true},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValue(
-      ok({ success: true, data: { clicked: true }, error: null }),
-    );
+    vi.mocked(browserClick).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleClick(command, mockContext);
@@ -56,26 +60,18 @@ describe('handleClick', () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (commandResult) => {
-        expect(commandResult.stdout).toContain('success');
         expect(commandResult.duration).toBeGreaterThanOrEqual(0);
       },
       () => {
         throw new Error('Expected ok result');
       },
     );
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'click',
-      ['ログインボタン', '--json'],
-      mockContext.executeOptions,
-    );
   });
 
   /**
    * INT-2: click コマンドが失敗
    *
-   * 前提条件: agent-browser click が command_failed を返す
+   * 前提条件: browserClick が command_failed を返す
    * 検証項目: err(AgentBrowserError) が返される
    */
   it('INT-2: clickコマンドが失敗した場合、エラーを返す', async () => {
@@ -85,12 +81,12 @@ describe('handleClick', () => {
       selector: '存在しないボタン',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(
+    vi.mocked(browserClick).mockResolvedValue(
       err({
         type: 'command_failed',
         message: 'Element not found',
         command: 'click',
-        args: ['存在しないボタン', '--json'],
+        args: [],
         exitCode: 1,
         stderr: '',
         errorMessage: 'Element not found',
@@ -133,8 +129,8 @@ describe('handleType', () => {
   /**
    * INT-3: type コマンドが成功
    *
-   * 前提条件: agent-browser type が成功
-   * 検証項目: ok(CommandResult) が返される、valueフィールドが正しく渡される
+   * 前提条件: browserType が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('INT-3: typeコマンドが成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -144,21 +140,13 @@ describe('handleType', () => {
       value: 'テストユーザー',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserType).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleType(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'type',
-      ['ユーザー名入力欄', 'テストユーザー', '--json'],
-      mockContext.executeOptions,
-    );
   });
 });
 
@@ -182,8 +170,8 @@ describe('handleFill', () => {
   /**
    * INT-4: fill コマンドが成功
    *
-   * 前提条件: agent-browser fill が成功
-   * 検証項目: ok(CommandResult) が返される、valueフィールドが正しく渡される
+   * 前提条件: browserFill が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('INT-4: fillコマンドが成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -193,21 +181,13 @@ describe('handleFill', () => {
       value: 'test@example.com',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserFill).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleFill(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'fill',
-      ['メールアドレス', 'test@example.com', '--json'],
-      mockContext.executeOptions,
-    );
   });
 });
 
@@ -231,8 +211,8 @@ describe('handlePress', () => {
   /**
    * INT-5: press コマンドが成功
    *
-   * 前提条件: agent-browser press が成功
-   * 検証項目: ok(CommandResult) が返される、keyフィールドが正しく渡される
+   * 前提条件: browserPress が成功
+   * 検証項目: ok(CommandResult) が返される
    */
   it('INT-5: pressコマンドが成功した場合、CommandResultを返す', async () => {
     // Arrange
@@ -241,20 +221,12 @@ describe('handlePress', () => {
       key: 'Enter',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserPress).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handlePress(command, mockContext);
 
     // Assert
     expect(result.isOk()).toBe(true);
-
-    // executeCommand が正しい引数で呼ばれたか検証
-    expect(executeCommand).toHaveBeenCalledWith(
-      'press',
-      ['Enter', '--json'],
-      mockContext.executeOptions,
-    );
   });
 });

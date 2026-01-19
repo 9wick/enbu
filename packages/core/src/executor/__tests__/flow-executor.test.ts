@@ -6,20 +6,33 @@ import type { FlowExecutionOptions } from '../result';
 
 // モック設定
 vi.mock('@packages/agent-browser-adapter', () => ({
-  executeCommand: vi.fn(),
-  parseJsonOutput: vi.fn(),
-  parseSnapshotRefs: vi.fn(),
+  browserOpen: vi.fn(),
+  browserClick: vi.fn(),
+  browserFill: vi.fn(),
+  browserSnapshot: vi.fn(),
+  browserWaitForMs: vi.fn(),
+  browserScreenshot: vi.fn(),
+  asUrl: vi.fn((v) => v),
+  asSelector: vi.fn((v) => v),
+  asFilePath: vi.fn((v) => v),
 }));
 
 import {
-  executeCommand,
-  parseJsonOutput,
-  parseSnapshotRefs,
+  browserOpen,
+  browserClick,
+  browserFill,
+  browserSnapshot,
+  browserWaitForMs,
+  browserScreenshot,
 } from '@packages/agent-browser-adapter';
 
 describe('executeFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // エラー時スクリーンショット用のデフォルトモック
+    vi.mocked(browserScreenshot).mockResolvedValue(
+      ok({ success: true, data: { path: '/tmp/screenshot.png' }, error: null }),
+    );
   });
 
   /**
@@ -47,37 +60,21 @@ describe('executeFlow', () => {
     };
 
     // open コマンドのモック
-    vi.mocked(executeCommand).mockResolvedValueOnce(
-      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+    vi.mocked(browserOpen).mockResolvedValueOnce(
       ok({ success: true, data: { url: 'https://example.com' }, error: null }),
     );
 
     // 自動待機用の snapshot のモック
-    vi.mocked(executeCommand).mockResolvedValueOnce(
-      ok(
-        '{"success":true,"data":{"refs":{"e1":{"name":"ログイン","role":"button"}}},"error":null}',
-      ),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+    vi.mocked(browserSnapshot).mockResolvedValueOnce(
       ok({
         success: true,
-        data: { refs: { e1: { name: 'ログイン', role: 'button' } } },
+        data: { snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } },
         error: null,
       }),
     );
-    vi.mocked(parseSnapshotRefs).mockReturnValueOnce(
-      ok({ e1: { name: 'ログイン', role: 'button' } }),
-    );
 
     // click コマンドのモック
-    vi.mocked(executeCommand).mockResolvedValueOnce(
-      ok('{"success":true,"data":{"clicked":true},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValueOnce(
-      ok({ success: true, data: { clicked: true }, error: null }),
-    );
+    vi.mocked(browserClick).mockResolvedValueOnce(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -126,11 +123,21 @@ describe('executeFlow', () => {
     };
 
     // open コマンドのモック
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserOpen).mockResolvedValue(
+      ok({ success: true, data: { url: 'https://example.com/login' }, error: null }),
+    );
 
     // 自動待機のモック
-    vi.mocked(parseSnapshotRefs).mockReturnValue(ok({ e1: { name: 'email', role: 'textbox' } }));
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      ok({
+        success: true,
+        data: { snapshot: '', refs: { e1: { name: 'email', role: 'textbox' } } },
+        error: null,
+      }),
+    );
+
+    // fill コマンドのモック
+    vi.mocked(browserFill).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -227,7 +234,7 @@ describe('executeFlow', () => {
   /**
    * FE-7: agent-browser未インストール
    *
-   * 前提条件: executeCommand が not_installed エラーを返す
+   * 前提条件: browserOpen が not_installed エラーを返す
    * 検証項目: FlowResult { status: 'failed', error: { type: 'not_installed' } }
    */
   it('FE-7: agent-browserが未インストールの場合、failedステータスを返す', async () => {
@@ -242,7 +249,7 @@ describe('executeFlow', () => {
       sessionName: 'test-session',
     };
 
-    vi.mocked(executeCommand).mockResolvedValueOnce(
+    vi.mocked(browserOpen).mockResolvedValueOnce(
       err({ type: 'not_installed', message: 'agent-browser not found' }),
     );
 
@@ -284,8 +291,10 @@ describe('executeFlow', () => {
       sessionName: 'test-session',
     };
 
-    vi.mocked(executeCommand).mockResolvedValue(ok('{"success":true,"data":{},"error":null}'));
-    vi.mocked(parseJsonOutput).mockReturnValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserOpen).mockResolvedValue(
+      ok({ success: true, data: { url: 'https://example.com' }, error: null }),
+    );
+    vi.mocked(browserWaitForMs).mockResolvedValue(ok({ success: true, data: {}, error: null }));
 
     // Act
     const result = await executeFlow(flow, options);
@@ -327,14 +336,10 @@ describe('executeFlow', () => {
       screenshot: false,
     };
 
-    // 自動待機がタイムアウト
-    vi.mocked(executeCommand).mockResolvedValueOnce(
-      ok('{"success":true,"data":{"refs":{}},"error":null}'),
+    // 自動待機がタイムアウト（常に空のrefsを返す）
+    vi.mocked(browserSnapshot).mockResolvedValue(
+      ok({ success: true, data: { snapshot: '', refs: {} }, error: null }),
     );
-    vi.mocked(parseJsonOutput).mockReturnValueOnce(
-      ok({ success: true, data: { refs: {} }, error: null }),
-    );
-    vi.mocked(parseSnapshotRefs).mockReturnValueOnce(ok({}));
 
     // タイマーを使用して時間経過をシミュレート
     vi.useFakeTimers();
@@ -374,10 +379,7 @@ describe('executeFlow', () => {
       sessionName: 'test-session-success',
     };
 
-    vi.mocked(executeCommand).mockResolvedValueOnce(
-      ok('{"success":true,"data":{"url":"https://example.com"},"error":null}'),
-    );
-    vi.mocked(parseJsonOutput).mockReturnValueOnce(
+    vi.mocked(browserOpen).mockResolvedValueOnce(
       ok({ success: true, data: { url: 'https://example.com' }, error: null }),
     );
 
@@ -416,7 +418,7 @@ describe('executeFlow', () => {
       sessionName: 'test-session-failure',
     };
 
-    vi.mocked(executeCommand).mockResolvedValueOnce(
+    vi.mocked(browserOpen).mockResolvedValueOnce(
       err({ type: 'not_installed', message: 'agent-browser not found' }),
     );
 

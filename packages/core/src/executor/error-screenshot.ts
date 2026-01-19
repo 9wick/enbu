@@ -7,7 +7,7 @@
 
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { executeCommand } from '@packages/agent-browser-adapter';
+import { browserScreenshot, asFilePath } from '@packages/agent-browser-adapter';
 import type { ExecutionContext } from './result';
 
 /**
@@ -29,11 +29,7 @@ export const captureErrorScreenshot = async (
   const timestamp = Date.now();
   const screenshotPath = path.join(os.tmpdir(), `flow-error-${timestamp}.png`);
 
-  const result = await executeCommand(
-    'screenshot',
-    [screenshotPath, '--json'],
-    context.executeOptions,
-  );
+  const result = await browserScreenshot(asFilePath(screenshotPath), context.executeOptions);
 
   // 撮影失敗時は undefined を返す
   return result.match(
