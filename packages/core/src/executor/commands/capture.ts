@@ -8,7 +8,7 @@ import type { ExecutionContext, CommandResult } from '../result';
  * screenshot コマンドのハンドラ
  *
  * ページのスクリーンショットを撮影し、指定されたパスに保存する。
- * fullPageオプションがtrueの場合、ページ全体のスクリーンショットを撮影する。
+ * fullオプションがtrueの場合、ページ全体のスクリーンショットを撮影する。
  *
  * @param command - screenshot コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -21,7 +21,7 @@ export const handleScreenshot = async (
   const startTime = Date.now();
 
   const args = [command.path];
-  if (command.fullPage) {
+  if (command.full) {
     args.push('--full');
   }
   args.push('--json');

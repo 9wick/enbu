@@ -65,7 +65,7 @@ describe('E2E: Basic Flow Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
         // フロー実行完了のメッセージが出力されること
         // （実装に応じて、適切なメッセージを検証）
       }
@@ -99,7 +99,7 @@ describe('E2E: Basic Flow Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
         // assertVisible が成功したことを示すログが含まれる
         // （実装に応じて、適切なログメッセージを検証）
       }
@@ -132,7 +132,7 @@ describe('E2E: Basic Flow Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
         // 各ステップが実行されたことを示すログが含まれる
         // （実装に応じて、適切なログメッセージを検証）
       }
@@ -165,7 +165,7 @@ describe('E2E: Basic Flow Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
         // スクリーンショット機能は実装されているが、
         // 出力先を指定できないため、ファイルの存在確認は行わない
       }

@@ -110,15 +110,27 @@ export const startTestServer = async (
 
   // サーバーの起動を試行
   const listenResult = await listenServer(server, port);
-  return listenResult.map((listeningServer) => {
-    // 実際に割り当てられたポート番号を取得
-    const address = listeningServer.address();
-    const actualPort = typeof address === 'object' && address !== null ? address.port : port;
-    return {
-      url: `http://localhost:${actualPort}`,
-      port: actualPort,
-      close: async () => closeServer(listeningServer),
-    };
+  if (listenResult.isErr()) {
+    return listenResult;
+  }
+
+  const listeningServer = listenResult.value;
+  const address = listeningServer.address();
+  const actualPort = typeof address === 'object' && address !== null ? address.port : port;
+  const baseUrl = `http://localhost:${actualPort}`;
+
+  // ヘルスチェック: サーバーがリクエストを受け付けられるまで待機
+  const healthCheckResult = await waitForServerReady(baseUrl);
+  if (healthCheckResult.isErr()) {
+    // ヘルスチェック失敗時はサーバーを閉じてエラーを返す
+    await closeServer(listeningServer);
+    return err(healthCheckResult.error);
+  }
+
+  return ok({
+    url: baseUrl,
+    port: actualPort,
+    close: async () => closeServer(listeningServer),
   });
 };
 
@@ -139,6 +151,41 @@ const readFileContent = async (filePath: string): Promise<Result<string, FileRea
       filePath,
     });
   }
+};
+
+/**
+ * サーバーがリクエストを受け付けられるようになるまで待機する
+ *
+ * この関数は、サーバーがlisten後に実際にHTTPリクエストを処理できる状態になるまで
+ * ポーリングを行います。これにより、テストの初期化フェーズでのレースコンディションを防ぎます。
+ *
+ * @param baseUrl - サーバーのベースURL
+ * @param maxRetries - 最大リトライ回数（デフォルト: 10）
+ * @param retryIntervalMs - リトライ間隔（ミリ秒、デフォルト: 100）
+ * @returns 成功時: void、失敗時: ServerStartError
+ */
+const waitForServerReady = async (
+  baseUrl: string,
+  maxRetries = 10,
+  retryIntervalMs = 100,
+): Promise<Result<void, ServerStartError>> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(baseUrl);
+      // 404でもOK（サーバーが応答している）
+      if (response.status === 200 || response.status === 404) {
+        return ok(undefined);
+      }
+    } catch {
+      // 接続エラーは無視してリトライ
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
+  }
+
+  return err({
+    type: 'server_start_failed',
+    message: `サーバーが起動しませんでした: ${baseUrl} (${maxRetries}回リトライ後)`,
+  });
 };
 
 /**

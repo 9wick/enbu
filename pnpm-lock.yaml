@@ -103,6 +103,9 @@ importers:
 
   apps/vscode-extension:
     dependencies:
+      '@packages/agent-browser-adapter':
+        specifier: workspace:*
+        version: link:../../packages/agent-browser-adapter
       '@packages/core':
         specifier: workspace:*
         version: link:../../packages/core

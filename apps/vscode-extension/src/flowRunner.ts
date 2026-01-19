@@ -18,9 +18,15 @@ import type { ProgressMessage } from './types';
  * @returns enbuバイナリのパス、見つからない場合はnull
  */
 const findEnbuBinary = (startDir: string, rootDir: string): string | null => {
-  let currentDir = startDir;
+  // まずrootDirでnode_modules/.bin/enbuを探索
+  const rootEnbuPath = join(rootDir, 'node_modules', '.bin', 'enbu');
+  if (existsSync(rootEnbuPath)) {
+    return rootEnbuPath;
+  }
 
-  while (currentDir.startsWith(rootDir)) {
+  // 次にstartDirから上に向かってnode_modules/.bin/enbuを探索
+  let currentDir = startDir;
+  while (currentDir.startsWith(rootDir) || currentDir === rootDir) {
     const enbuPath = join(currentDir, 'node_modules', '.bin', 'enbu');
     if (existsSync(enbuPath)) {
       return enbuPath;
@@ -69,6 +75,7 @@ export class FlowRunner extends EventEmitter {
   private process: ChildProcess | null = null;
   private readonly filePath: string;
   private readonly workspaceRoot: string;
+  private readonly sessionName: string;
 
   /**
    * コンストラクタ
@@ -80,6 +87,11 @@ export class FlowRunner extends EventEmitter {
     super();
     this.filePath = filePath;
     this.workspaceRoot = workspaceRoot;
+    // セッション名を生成（CLIと同じ形式）
+    const timestamp = Date.now().toString(36);
+    const fileName = this.filePath.split('/').pop()?.replace('.enbu.yaml', '') ?? 'flow';
+    const shortName = fileName.slice(0, 12);
+    this.sessionName = `enbu-${shortName}-${timestamp}`;
   }
 
   /**
@@ -106,10 +118,14 @@ export class FlowRunner extends EventEmitter {
 
       // enbuが見つかったディレクトリをcwdとして使用（そのpackage.jsonのコンテキストで実行）
       const enbuDir = dirname(dirname(dirname(enbuBin))); // node_modules/.bin/enbu -> project root
-      this.process = spawn(enbuBin, ['run', this.filePath, '--progress-json', '--headed'], {
-        cwd: enbuDir,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
+      this.process = spawn(
+        enbuBin,
+        [this.filePath, '--progress-json', '--headed', '--session', this.sessionName],
+        {
+          cwd: enbuDir,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      );
 
       // stdoutを行単位でバッファリング
       let stdoutBuffer = '';
@@ -250,6 +266,15 @@ export class FlowRunner extends EventEmitter {
     if (this.process) {
       this.process.kill();
     }
+  }
+
+  /**
+   * セッション名を取得する
+   *
+   * @returns セッション名
+   */
+  public getSessionName(): string {
+    return this.sessionName;
   }
 
   /**

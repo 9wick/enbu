@@ -1,6 +1,7 @@
 import { parseArgs } from './args-parser';
 import { runInitCommand } from './commands/init';
 import { runFlowCommand } from './commands/run';
+import { runCleanupCommand } from './commands/cleanup';
 import { showHelp, showVersion, OutputFormatter } from './output/formatter';
 import { EXIT_CODE, exitWithCode } from './output/exit-code';
 
@@ -35,6 +36,18 @@ const main = async (): Promise<void> => {
       if (args.command === 'init') {
         const result = await runInitCommand({
           force: args.force,
+          verbose: args.verbose,
+        });
+
+        result.match(
+          () => exitWithCode(EXIT_CODE.SUCCESS),
+          (error) => {
+            process.stderr.write(`Error: ${error.message}\n`);
+            exitWithCode(EXIT_CODE.EXECUTION_ERROR);
+          },
+        );
+      } else if (args.command === 'cleanup') {
+        const result = await runCleanupCommand({
           verbose: args.verbose,
         });
 

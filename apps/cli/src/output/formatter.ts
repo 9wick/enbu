@@ -233,6 +233,7 @@ USAGE:
 
 COMMANDS:
   init              Initialize a new project
+  cleanup           Clean up enbu-* sessions
   (default)         Run flow files
 
 OPTIONS:
@@ -248,6 +249,7 @@ OPTIONS:
 
 EXAMPLES:
   npx enbu init
+  npx enbu cleanup
   npx enbu
   npx enbu login.flow.yaml
   npx enbu --headed --env USER=test login.flow.yaml

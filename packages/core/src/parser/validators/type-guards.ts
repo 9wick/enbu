@@ -689,13 +689,13 @@ export const normalizeWaitCommand = (value: unknown): WaitCommand | null => {
  * ScreenshotCommandを構築するヘルパー
  *
  * @param path - スクリーンショットのパス
- * @param fullPage - フルページオプション（オプショナル）
+ * @param full - フルページオプション（オプショナル）
  * @returns ScreenshotCommand
  */
-const buildScreenshotCommand = (path: string, fullPage: unknown): ScreenshotCommand => {
+const buildScreenshotCommand = (path: string, full: unknown): ScreenshotCommand => {
   const result: ScreenshotCommand = { command: 'screenshot', path };
-  if (typeof fullPage === 'boolean') {
-    result.fullPage = fullPage;
+  if (typeof full === 'boolean') {
+    result.full = full;
   }
   return result;
 };
@@ -712,22 +712,22 @@ const normalizeYamlScreenshot = (value: unknown): ScreenshotCommand | null => {
     return { command: 'screenshot', path: value };
   }
 
-  // { screenshot: { path: '...', fullPage: true } }
+  // { screenshot: { path: '...', full: true } }
   const inner: Record<string, unknown> | null = toRecord(value);
   if (inner === null || typeof inner.path !== 'string') {
     return null;
   }
 
-  return buildScreenshotCommand(inner.path, inner.fullPage);
+  return buildScreenshotCommand(inner.path, inner.full);
 };
 
 /**
  * ScreenshotCommandを正規化
  *
- * 正規化済み形式: { command: 'screenshot', path: '...', fullPage?: boolean }
+ * 正規化済み形式: { command: 'screenshot', path: '...', full?: boolean }
  * YAML簡略形式:
  * - { screenshot: './path.png' }
- * - { screenshot: { path: '...', fullPage: true } }
+ * - { screenshot: { path: '...', full: true } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたScreenshotCommand、または不正な場合null
@@ -739,7 +739,7 @@ export const normalizeScreenshotCommand = (value: unknown): ScreenshotCommand | 
   }
 
   if (obj.command === 'screenshot' && typeof obj.path === 'string') {
-    return buildScreenshotCommand(obj.path, obj.fullPage);
+    return buildScreenshotCommand(obj.path, obj.full);
   }
 
   if (hasYamlKey(obj, 'screenshot')) {

@@ -19,7 +19,7 @@
     "test": "nx run-many --target=test",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "test:examples": "pnpm --filter '@example/*' run test",
+    "test:examples": "pnpm --filter '@example/*' --workspace-concurrency=1 run test",
     "test:coverage": "vitest run --coverage"
   },
   "keywords": [],

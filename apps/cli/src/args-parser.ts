@@ -16,6 +16,30 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * @returns パース済み引数、またはエラー
  */
 export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
+  // バージョン・ヘルプフラグの確認
+  const versionOrHelpResult = checkVersionOrHelpFlags(argv);
+  if (versionOrHelpResult !== null) {
+    return versionOrHelpResult;
+  }
+
+  // verboseフラグ
+  const verbose = argv.includes('-v') || argv.includes('--verbose');
+
+  // コマンドを判定してパース
+  return parseCommand(argv, verbose);
+};
+
+/**
+ * バージョンまたはヘルプフラグをチェックする
+ *
+ * バージョンフラグまたはヘルプフラグが指定されている場合、
+ * 他の引数に関わらず対応するモードの引数を返す。
+ * どちらも指定されていない場合はnullを返す。
+ *
+ * @param argv - 引数配列
+ * @returns バージョン/ヘルプモードの引数、またはnull
+ */
+const checkVersionOrHelpFlags = (argv: string[]): Result<ParsedArgs, CliError> | null => {
   // バージョンフラグの確認
   if (argv.includes('-V') || argv.includes('--version')) {
     return ok({
@@ -28,7 +52,6 @@ export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
       env: {},
       timeout: DEFAULT_TIMEOUT_MS,
       screenshot: false,
-      bail: false,
       progressJson: false,
     });
   }
@@ -45,18 +68,32 @@ export const parseArgs = (argv: string[]): Result<ParsedArgs, CliError> => {
       env: {},
       timeout: DEFAULT_TIMEOUT_MS,
       screenshot: false,
-      bail: false,
       progressJson: false,
     });
   }
 
-  // verboseフラグ
-  const verbose = argv.includes('-v') || argv.includes('--verbose');
+  return null;
+};
 
-  // コマンド判定
+/**
+ * コマンドを判定してパースする
+ *
+ * 最初の位置引数からコマンドタイプを判定し、
+ * 対応するパース関数を呼び出す。
+ *
+ * @param argv - 引数配列
+ * @param verbose - verboseフラグが有効かどうか
+ * @returns パース済み引数、またはエラー
+ */
+const parseCommand = (argv: string[], verbose: boolean): Result<ParsedArgs, CliError> => {
   const firstArg = argv[0];
+
   if (firstArg === 'init') {
     return parseInitArgs(argv.slice(1), verbose);
+  }
+
+  if (firstArg === 'cleanup') {
+    return parseCleanupArgs(argv.slice(1), verbose);
   }
 
   // デフォルトはrunコマンド
@@ -401,4 +438,48 @@ const parseEnvArg = (arg: string): Result<[string, string], CliError> => {
   }
 
   return ok([key, value]);
+};
+
+/**
+ * cleanupコマンドの引数をパースする
+ *
+ * cleanupコマンドは現時点では追加のオプションを持たない。
+ * 未知のオプションが指定された場合はエラーを返す。
+ *
+ * @param argv - cleanupコマンド以降の引数配列
+ * @param verbose - verboseフラグが有効かどうか
+ * @returns パース済みのcleanup引数、またはエラー
+ */
+const parseCleanupArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliError> => {
+  // 未知のオプションチェック
+  for (const arg of argv) {
+    if (arg.startsWith('--')) {
+      if (arg !== '--verbose') {
+        return err({
+          type: 'invalid_args',
+          message: `Unknown option for cleanup command: ${arg}`,
+        });
+      }
+    } else if (arg.startsWith('-')) {
+      if (arg !== '-v') {
+        return err({
+          type: 'invalid_args',
+          message: `Unknown option for cleanup command: ${arg}`,
+        });
+      }
+    } else {
+      // 位置引数は受け付けない
+      return err({
+        type: 'invalid_args',
+        message: `cleanup command does not accept positional arguments, got: ${arg}`,
+      });
+    }
+  }
+
+  return ok({
+    command: 'cleanup',
+    help: false,
+    version: false,
+    verbose,
+  });
 };

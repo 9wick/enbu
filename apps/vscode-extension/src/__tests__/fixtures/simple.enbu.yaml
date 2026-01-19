@@ -1,0 +1,3 @@
+steps:
+  - open: https://example.com
+  - screenshot: test-screenshot.png

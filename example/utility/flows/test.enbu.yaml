@@ -30,7 +30,7 @@ steps:
   # ステップ7: スクリーンショット保存（フルページ）
   - screenshot:
       path: ./screenshots/fullpage.png
-      fullPage: true
+      full: true
 
   # ステップ8: ページ構造スナップショット
   - snapshot: {}

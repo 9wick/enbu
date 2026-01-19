@@ -64,7 +64,7 @@ describe('E2E: Interaction Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（typeが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -95,7 +95,7 @@ describe('E2E: Interaction Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（fillが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -125,7 +125,7 @@ describe('E2E: Interaction Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（clickが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -157,7 +157,7 @@ describe('E2E: Interaction Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -195,7 +195,7 @@ describe('E2E: Interaction Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（全ステップが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();

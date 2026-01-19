@@ -205,14 +205,14 @@ export type WaitCommand = {
  * // YAML:
  * // - screenshot:
  * //     path: ./result.png
- * //     fullPage: true
- * { command: 'screenshot', path: './result.png', fullPage: true }
+ * //     full: true
+ * { command: 'screenshot', path: './result.png', full: true }
  */
 export type ScreenshotCommand = {
   command: 'screenshot';
   path: string;
-  /** ページ全体のスクリーンショットを撮影（デフォルト: false） */
-  fullPage?: boolean;
+  /** ページ全体のスクリーンショットを撮影（デフォルト: false）。agent-browserの--fullオプションに対応。 */
+  full?: boolean;
 };
 
 /**

@@ -7,6 +7,7 @@
 
 import * as vscode from 'vscode';
 import { getStepLineNumbers } from '@packages/core';
+import { closeSession, type AgentBrowserError } from '@packages/agent-browser-adapter';
 import { FlowRunner } from './flowRunner';
 import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from './types';
 import {
@@ -290,6 +291,21 @@ const setupRunnerEventListeners = (
 
   runner.on('flow:complete', (message: FlowCompleteMessage) => {
     handleFlowComplete(run, fileItem, message, createTestMessage);
+
+    // フロー成功時のみセッションをクローズする
+    // 失敗時はAIがデバッグできるようにセッションを残す
+    if (message.status === 'passed') {
+      const sessionName = runner.getSessionName();
+      // closeSessionは非同期だが、イベントハンドラーの処理をブロックしないため、
+      // void-returning async関数を即座に実行する
+      void (async () => {
+        const closeResult = await closeSession(sessionName);
+        closeResult.mapErr((error: AgentBrowserError) => {
+          // セッションクローズ失敗はログのみ出力し、テストは失敗扱いにしない
+          console.warn(`Failed to close session: ${error.type}`);
+        });
+      })();
+    }
   });
 
   runner.on('error', (error: Error) => {

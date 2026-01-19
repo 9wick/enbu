@@ -24,6 +24,7 @@
     "lint:check": "nx run vscode-extension:lint --configuration=ci"
   },
   "dependencies": {
+    "@packages/agent-browser-adapter": "workspace:*",
     "@packages/core": "workspace:*",
     "neverthrow": "^8.2.0"
   },

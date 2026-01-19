@@ -15,7 +15,9 @@ export default defineConfig({
     name: 'vscode-extension',
     environment: 'node',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: ['./src/__tests__/setup.ts'],
     passWithNoTests: false,
+    testTimeout: 60000, // E2Eテスト用に60秒に延長
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json'],

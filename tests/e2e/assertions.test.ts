@@ -64,7 +64,7 @@ describe('E2E: Assertion Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（assertVisibleが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -95,7 +95,7 @@ describe('E2E: Assertion Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（assertEnabledが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -126,7 +126,7 @@ describe('E2E: Assertion Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（assertCheckedが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();
@@ -157,7 +157,7 @@ describe('E2E: Assertion Tests', () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         // CLIが成功終了すること（assertCheckedが成功）
-        expect(result.value.exitCode).toBe(0);
+        expect(result.value).toBeCliSuccess();
       }
     } finally {
       await cleanup();

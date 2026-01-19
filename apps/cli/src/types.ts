@@ -6,11 +6,11 @@
  * パース済みCLI引数
  *
  * CLIから受け取った引数を解析した結果を表す型。
- * コマンドタイプ（init または run）によって異なるプロパティを持つ。
+ * コマンドタイプ（init、run、cleanup）によって異なるプロパティを持つ。
  */
 export type ParsedArgs = {
   /** 実行するコマンド */
-  command: 'init' | 'run';
+  command: 'init' | 'run' | 'cleanup';
   /** ヘルプメッセージを表示するかどうか */
   help: boolean;
   /** バージョン情報を表示するかどうか */
@@ -41,6 +41,10 @@ export type ParsedArgs = {
       session?: string;
       /** 進捗をJSON形式で出力するか（VS Code拡張など外部ツール連携用） */
       progressJson: boolean;
+    }
+  | {
+      /** cleanupコマンドの引数 */
+      command: 'cleanup';
     }
 );
 
