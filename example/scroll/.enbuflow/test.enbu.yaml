@@ -34,8 +34,10 @@ steps:
   # ステップ8: フッターの表示確認（ユニークなテキストを使用）
   - assertVisible: ページの最下部に到達しました
 
-  # ステップ9: 上部に戻る
-  - scrollIntoView: Scroll Test
+  # ステップ9: 上部に戻る（data-testidでユニークに指定）
+  - scrollIntoView:
+      css: '[data-testid="top-title"]'
 
-  # ステップ10: トップの表示確認
-  - assertVisible: Scroll Test
+  # ステップ10: トップの表示確認（data-testidでユニークに指定）
+  - assertVisible:
+      css: '[data-testid="top-title"]'

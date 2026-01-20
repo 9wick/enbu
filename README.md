@@ -6,9 +6,11 @@ Webブラウザ向けのシンプルなE2Eテストフレームワーク。YAML�
 
 ## 特徴
 
-- **YAMLベースのフロー定義** - 人間が読みやすいシンプルな形式でテストを記述
+- **YAMLで読みやすいステップ定義** - 人間が読みやすいシンプルな形式でテストを記述
 - **セマンティックな要素指定** - テキスト、ARIAロール、ラベル等で要素を特定
 - **自動待機** - 要素が現れるまで自動的に待機（明示的なsleep不要）
+- **Headless/Headed両対応** - CI/CDでの自動実行も、目視でのデバッグも可能
+- **失敗時のデバッグ継続** - テスト失敗時にブラウザ状態を保持したままデバッグ開始可能（AIに調査を依頼することも可能）
 - **agent-browser統合** - Rust製の高速ブラウザ自動化エンジンを利用
 
 ## 前提条件
@@ -85,11 +87,7 @@ steps:
 
   # CSSセレクタ
   - click: "#submit-button"
-
-  # 同名要素が複数ある場合はインデックス指定
-  - click:
-      selector: 商品を見る
-      index: 0
+  - click: "[data-testid='add-to-cart']"
 ```
 
 ### テキスト入力
@@ -247,12 +245,15 @@ npx enbu [options] [flow-files...]
 
 オプション:
   --headed          ブラウザを表示して実行（デフォルト: ヘッドレス）
-  --env KEY=VALUE   環境変数を設定
+  --env KEY=VALUE   環境変数を設定（複数回指定可）
   --timeout <ms>    デフォルトタイムアウト（デフォルト: 30000）
   --screenshot      失敗時にスクリーンショットを保存
+  --bail            最初の失敗時にテストを停止
+  --session <name>  agent-browserのセッション名を指定
+  --parallel <N>    N個のフローを並列実行
   -v, --verbose     詳細なログを出力
   -h, --help        ヘルプを表示
-  --version         バージョンを表示
+  -V, --version     バージョンを表示
 ```
 
 ## ディレクトリ構成
@@ -324,9 +325,9 @@ jobs:
 | `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
 | `drag <source> <target>` | ❌ | - |
 | `upload <selector> <files>` | ❌ | - |
-| `screenshot [path]` | ✅ | `- screenshot: <path>` |
+| `screenshot [path]` | ✅ | `- screenshot: <path>` または `{ path: <path>, full: true }` |
 | `pdf <path>` | ❌ | - |
-| `snapshot` | ✅ | `- snapshot` |
+| `snapshot` | ✅ | `- snapshot: {}` |
 | `eval <js>` | ✅ | `- eval: <script>` |
 | `close` | ❌ | - |
 

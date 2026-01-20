@@ -5,23 +5,56 @@
  * 各コマンドは共通の `command` フィールドで判別され、
  * コマンド固有のプロパティがフラットな構造で定義される。
  *
+ * セレクタは css, ref, text のいずれか1つを明示的に指定する。
+ * これによりDDDの「異なるドメイン概念を同じ型で扱わない」原則を満たす。
+ *
  * 全てのフィールドはparser層で検証済みのBranded Typeを使用する。
  * executor層では再検証不要で、型安全に操作可能。
  */
 
 import type {
+  CssSelector,
   FilePath,
   JsExpression,
   KeyboardKey,
   LoadState,
+  RefSelector,
   ScrollDirection,
-  Selector,
+  TextSelector,
   Url,
 } from '@packages/agent-browser-adapter';
 import type { UseDefault } from './utility-types';
 
 // LoadState, ScrollDirectionをre-export（後方互換のため）
 export type { LoadState, ScrollDirection } from '@packages/agent-browser-adapter';
+
+// ==========================================
+// セレクタ指定型（DDD準拠）
+// ==========================================
+
+/**
+ * セレクタ指定の共通型
+ *
+ * css, ref, text のいずれか1つのみを指定する。
+ * これにより「CSSセレクタ」「Ref参照」「テキスト検索」という
+ * 異なるドメイン概念を型で明確に分離する。
+ */
+export type SelectorSpec =
+  | { css: CssSelector; ref?: never; text?: never }
+  | { css?: never; ref: RefSelector; text?: never }
+  | { css?: never; ref?: never; text: TextSelector };
+
+/**
+ * 未検証のセレクタ指定型（YAMLパース直後）
+ */
+export type RawSelectorSpec =
+  | { css: string; ref?: never; text?: never }
+  | { css?: never; ref: string; text?: never }
+  | { css?: never; ref?: never; text: string };
+
+// ==========================================
+// コマンド型定義
+// ==========================================
 
 /**
  * ページを開く
@@ -39,13 +72,20 @@ export type OpenCommand = {
  * 要素をクリック
  *
  * @example
- * // YAML: - click: "ログインボタン"
- * { command: 'click', selector: 'ログインボタン' }
+ * // YAML:
+ * // - click:
+ * //     css: "#login-button"
+ * { command: 'click', css: '#login-button' }
+ *
+ * @example
+ * // YAML:
+ * // - click:
+ * //     text: "ログイン"
+ * { command: 'click', text: 'ログイン' }
  */
 export type ClickCommand = {
   command: 'click';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * テキストを入力（既存のテキストをクリアしない）
@@ -53,15 +93,14 @@ export type ClickCommand = {
  * @example
  * // YAML:
  * // - type:
- * //     selector: "検索欄"
+ * //     css: "#search"
  * //     value: "検索キーワード"
- * { command: 'type', selector: '検索欄', value: '検索キーワード' }
+ * { command: 'type', css: '#search', value: '検索キーワード' }
  */
 export type TypeCommand = {
   command: 'type';
-  selector: Selector;
   value: string;
-};
+} & SelectorSpec;
 
 /**
  * フォームにテキストを入力（既存のテキストをクリア）
@@ -69,15 +108,14 @@ export type TypeCommand = {
  * @example
  * // YAML:
  * // - fill:
- * //     selector: "メールアドレス"
+ * //     css: "#email"
  * //     value: "${EMAIL}"
- * { command: 'fill', selector: 'メールアドレス', value: 'user@example.com' }
+ * { command: 'fill', css: '#email', value: 'user@example.com' }
  */
 export type FillCommand = {
   command: 'fill';
-  selector: Selector;
   value: string;
-};
+} & SelectorSpec;
 
 /**
  * キーボードキーを押す
@@ -95,13 +133,14 @@ export type PressCommand = {
  * 要素にホバー
  *
  * @example
- * // YAML: - hover: "メニュー項目"
- * { command: 'hover', selector: 'メニュー項目' }
+ * // YAML:
+ * // - hover:
+ * //     css: ".menu-item"
+ * { command: 'hover', css: '.menu-item' }
  */
 export type HoverCommand = {
   command: 'hover';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * セレクトボックスから選択
@@ -109,15 +148,14 @@ export type HoverCommand = {
  * @example
  * // YAML:
  * // - select:
- * //     selector: "国選択"
+ * //     css: "#country"
  * //     value: "日本"
- * { command: 'select', selector: '国選択', value: '日本' }
+ * { command: 'select', css: '#country', value: '日本' }
  */
 export type SelectCommand = {
   command: 'select';
-  selector: Selector;
   value: string;
-};
+} & SelectorSpec;
 
 /**
  * ページをスクロール
@@ -139,20 +177,21 @@ export type ScrollCommand = {
  * 要素をビューにスクロール
  *
  * @example
- * // YAML: - scrollIntoView: "フッター"
- * { command: 'scrollIntoView', selector: 'フッター' }
+ * // YAML:
+ * // - scrollIntoView:
+ * //     css: "#footer"
+ * { command: 'scrollIntoView', css: '#footer' }
  */
 export type ScrollIntoViewCommand = {
   command: 'scrollIntoView';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * 待機コマンド
  *
  * agent-browserのwaitコマンドと1:1対応:
  * - ms: 指定ミリ秒待機 (wait <ms>)
- * - selector: CSSセレクタで要素出現を待つ (wait <selector>)
+ * - css/ref: CSSセレクタまたはRefで要素出現を待つ (wait <selector>)
  * - text: テキスト出現を待つ (wait --text <text>)
  * - load: ロード状態を待つ (wait --load <state>)
  * - url: URL変化を待つ (wait --url <pattern>)
@@ -163,43 +202,14 @@ export type ScrollIntoViewCommand = {
  * { command: 'wait', ms: 1000 }
  *
  * @example
- * // YAML: - wait: "#loading-spinner"
- * { command: 'wait', selector: '#loading-spinner' }
- *
- * @example
  * // YAML:
  * // - wait:
- * //     text: "読み込み完了"
- * { command: 'wait', text: '読み込み完了' }
- *
- * @example
- * // YAML:
- * // - wait:
- * //     load: networkidle
- * { command: 'wait', load: 'networkidle' }
- *
- * @example
- * // YAML形式:
- * // - wait:
- * //     url: pattern
- * // TypeScript形式: { command: 'wait', url: pattern }
- *
- * @example
- * // YAML形式:
- * // - wait:
- * //     fn: expression
- * // TypeScript形式: { command: 'wait', fn: expression }
+ * //     css: "#loading-spinner"
+ * { command: 'wait', css: '#loading-spinner' }
  */
 export type WaitCommand = {
   command: 'wait';
-} & (
-  | { ms: number }
-  | { selector: Selector }
-  | { text: string }
-  | { load: LoadState }
-  | { url: string }
-  | { fn: JsExpression }
-);
+} & ({ ms: number } | SelectorSpec | { load: LoadState } | { url: string } | { fn: JsExpression });
 
 /**
  * スクリーンショットを保存
@@ -207,18 +217,11 @@ export type WaitCommand = {
  * @example
  * // YAML: - screenshot: ./result.png
  * { command: 'screenshot', path: './result.png' }
- *
- * @example
- * // YAML:
- * // - screenshot:
- * //     path: ./result.png
- * //     full: true
- * { command: 'screenshot', path: './result.png', full: true }
  */
 export type ScreenshotCommand = {
   command: 'screenshot';
   path: FilePath;
-  /** ページ全体のスクリーンショットを撮影。未指定時はUseDefaultを設定。agent-browserの--fullオプションに対応。 */
+  /** ページ全体のスクリーンショットを撮影。未指定時はUseDefaultを設定。 */
   full: boolean | UseDefault;
 };
 
@@ -249,58 +252,62 @@ export type EvalCommand = {
  * 要素が表示されていることを確認
  *
  * @example
- * // YAML: - assertVisible: "ダッシュボード"
- * { command: 'assertVisible', selector: 'ダッシュボード' }
+ * // YAML:
+ * // - assertVisible:
+ * //     css: "#dashboard"
+ * { command: 'assertVisible', css: '#dashboard' }
  */
 export type AssertVisibleCommand = {
   command: 'assertVisible';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * 要素が表示されていないことを確認
  *
  * @example
- * // YAML: - assertNotVisible: "エラーメッセージ"
- * { command: 'assertNotVisible', selector: 'エラーメッセージ' }
+ * // YAML:
+ * // - assertNotVisible:
+ * //     css: ".error-message"
+ * { command: 'assertNotVisible', css: '.error-message' }
  */
 export type AssertNotVisibleCommand = {
   command: 'assertNotVisible';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * 要素が有効化されていることを確認
  *
  * @example
- * // YAML: - assertEnabled: "送信ボタン"
- * { command: 'assertEnabled', selector: '送信ボタン' }
+ * // YAML:
+ * // - assertEnabled:
+ * //     css: "#submit-button"
+ * { command: 'assertEnabled', css: '#submit-button' }
  */
 export type AssertEnabledCommand = {
   command: 'assertEnabled';
-  selector: Selector;
-};
+} & SelectorSpec;
 
 /**
  * チェックボックスがチェックされていることを確認
  *
  * @example
- * // YAML: - assertChecked: "利用規約に同意"
- * { command: 'assertChecked', selector: '利用規約に同意' }
+ * // YAML:
+ * // - assertChecked:
+ * //     css: "#agree-terms"
+ * { command: 'assertChecked', css: '#agree-terms' }
  *
  * @example
  * // YAML:
  * // - assertChecked:
- * //     selector: "利用規約に同意"
+ * //     css: "#agree-terms"
  * //     checked: false
- * { command: 'assertChecked', selector: '利用規約に同意', checked: false }
+ * { command: 'assertChecked', css: '#agree-terms', checked: false }
  */
 export type AssertCheckedCommand = {
   command: 'assertChecked';
-  selector: Selector;
   /** 期待されるチェック状態。未指定時はUseDefaultを設定。 */
   checked: boolean | UseDefault;
-};
+} & SelectorSpec;
 
 /**
  * 全てのコマンド型のユニオン
@@ -338,22 +345,19 @@ export type RawOpenCommand = {
 /** 未検証のClickCommand */
 export type RawClickCommand = {
   command: 'click';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のTypeCommand */
 export type RawTypeCommand = {
   command: 'type';
-  selector: string;
   value: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のFillCommand */
 export type RawFillCommand = {
   command: 'fill';
-  selector: string;
   value: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のPressCommand */
 export type RawPressCommand = {
@@ -364,15 +368,13 @@ export type RawPressCommand = {
 /** 未検証のHoverCommand */
 export type RawHoverCommand = {
   command: 'hover';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のSelectCommand */
 export type RawSelectCommand = {
   command: 'select';
-  selector: string;
   value: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のScrollCommand */
 export type RawScrollCommand = {
@@ -384,20 +386,12 @@ export type RawScrollCommand = {
 /** 未検証のScrollIntoViewCommand */
 export type RawScrollIntoViewCommand = {
   command: 'scrollIntoView';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のWaitCommand */
 export type RawWaitCommand = {
   command: 'wait';
-} & (
-  | { ms: number }
-  | { selector: string }
-  | { text: string }
-  | { load: LoadState }
-  | { url: string }
-  | { fn: string }
-);
+} & ({ ms: number } | RawSelectorSpec | { load: LoadState } | { url: string } | { fn: string });
 
 /** 未検証のScreenshotCommand */
 export type RawScreenshotCommand = {
@@ -420,27 +414,23 @@ export type RawEvalCommand = {
 /** 未検証のAssertVisibleCommand */
 export type RawAssertVisibleCommand = {
   command: 'assertVisible';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のAssertNotVisibleCommand */
 export type RawAssertNotVisibleCommand = {
   command: 'assertNotVisible';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のAssertEnabledCommand */
 export type RawAssertEnabledCommand = {
   command: 'assertEnabled';
-  selector: string;
-};
+} & RawSelectorSpec;
 
 /** 未検証のAssertCheckedCommand */
 export type RawAssertCheckedCommand = {
   command: 'assertChecked';
-  selector: string;
   checked: boolean | UseDefault;
-};
+} & RawSelectorSpec;
 
 /**
  * 未検証コマンド型のユニオン（parser層で使用）

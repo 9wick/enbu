@@ -74,8 +74,8 @@ done
   "scripts": {
     "start": "tsx server.ts",
     "dev": "tsx watch server.ts",
-    "test:e2e": "enbu flows/test.enbu.yaml",
-    "test:headed": "enbu --headed flows/test.enbu.yaml"
+    "test:e2e": "enbu .enbuflow/test.enbu.yaml",
+    "test:headed": "enbu --headed .enbuflow/test.enbu.yaml"
   }
 }
 ```
@@ -89,21 +89,22 @@ example/{category}/
 ├── package.json          # パッケージ定義（専用ポート設定）
 ├── server.ts             # Expressサーバー
 ├── tsconfig.json         # TypeScript設定
-├── flows/
+├── .enbuflow/
 │   └── test.enbu.yaml    # e2eテストフロー
 └── public/
     ├── index.html        # メインページ
     └── *.html            # 追加ページ（必要に応じて）
 ```
 
-## 技術的制約
+## セレクタの使い方
 
-### agent-browserのセレクタ制限
+### 対応しているセレクタ形式
 
-- ✅ **動作する**: テキストベースのセレクタ（ボタンテキスト、リンクテキスト、フォームラベル）
-- ❌ **動作しない**: CSSセレクタ（`[data-testid="..."]`など）
+- ✅ **テキストセレクタ**: ボタンテキスト、リンクテキスト、フォームラベル（例: `ログイン`）
+- ✅ **CSSセレクタ**: ID、クラス、属性セレクタ（例: `#submit-button`, `.btn`, `[data-testid="..."]`）
+- ✅ **@ref形式**: agent-browserの要素参照（例: `@e1`）
 
-すべてのフローファイルでテキストベースのセレクタを使用しています。
+テキストベースのセレクタは可読性が高く推奨されますが、一意に特定できない場合はCSSセレクタを使用してください。
 
 ### 実装されているコマンド一覧
 

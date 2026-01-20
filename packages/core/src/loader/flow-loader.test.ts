@@ -38,7 +38,8 @@ describe('loadFlows', () => {
     const yamlContent = `
 steps:
   - open: https://example.com
-  - click: "ボタン"
+  - click:
+      text: "ボタン"
 `;
     await writeFile(join(TEST_DIR, 'test.enbu.yaml'), yamlContent);
 
@@ -57,7 +58,7 @@ steps:
         });
         expect(flows[0].steps[1]).toEqual({
           command: 'click',
-          selector: 'ボタン',
+          text: 'ボタン',
         });
       },
       () => {

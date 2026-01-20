@@ -1,3 +1,9 @@
+/**
+ * 待機系コマンドハンドラ
+ *
+ * waitコマンドの各バリアントを処理する。
+ */
+
 import type { AgentBrowserError, ExecuteOptions } from '@packages/agent-browser-adapter';
 import {
   browserWaitForFunction,
@@ -30,7 +36,8 @@ const createResultMapper =
  *
  * agent-browserのwaitコマンドと1:1対応:
  * - ms: 指定ミリ秒待機 (wait <ms>)
- * - selector: CSSセレクタで要素出現を待つ (wait <selector>)
+ * - css: CSSセレクタで要素出現を待つ (wait <selector>)
+ * - ref: Refセレクタで要素出現を待つ (wait <selector>)
  * - text: テキスト出現を待つ (wait --text <text>)
  * - load: ロード状態を待つ (wait --load <state>)
  * - url: URL変化を待つ (wait --url <pattern>)
@@ -51,9 +58,8 @@ export const handleWait = (
 
   return match(command)
     .with({ ms: P.number }, (cmd) => browserWaitForMs(cmd.ms, options).map(toResult))
-    .with({ selector: P.string }, (cmd) =>
-      browserWaitForSelector(cmd.selector, options).map(toResult),
-    )
+    .with({ css: P.string }, (cmd) => browserWaitForSelector(cmd.css, options).map(toResult))
+    .with({ ref: P.string }, (cmd) => browserWaitForSelector(cmd.ref, options).map(toResult))
     .with({ text: P.string }, (cmd) => browserWaitForText(cmd.text, options).map(toResult))
     .with({ load: P.string }, (cmd) => browserWaitForLoad(cmd.load, options).map(toResult))
     .with({ url: P.string }, (cmd) => browserWaitForUrl(cmd.url, options).map(toResult))

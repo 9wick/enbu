@@ -125,16 +125,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-4: 簡略形式のコマンド
    *
-   * 前提条件: 簡略形式のYAML（- click: "ボタン"）
+   * 前提条件: 簡略形式のYAML（- click: { text: "ボタン" }）
    * 検証項目:
    * - オブジェクト形式に正規化される
-   * - { command: 'click', selector: "ボタン" } となる
+   * - { command: 'click', text: "ボタン" } となる
    */
   it('YP-4: 簡略形式のコマンドが正規化される', () => {
     // Arrange
     const yamlContent = `
 steps:
-  - click: "ログインボタン"
+  - click:
+      text: "ログインボタン"
   - open: https://example.com
 `;
 
@@ -144,7 +145,7 @@ steps:
     // Assert
     result.match(
       (flow) => {
-        expect(flow.steps[0]).toEqual({ command: 'click', selector: 'ログインボタン' });
+        expect(flow.steps[0]).toEqual({ command: 'click', text: 'ログインボタン' });
         expect(flow.steps[1]).toEqual({ command: 'open', url: 'https://example.com' });
       },
       () => {
@@ -276,7 +277,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "チェックボックス"
+      css: "#checkbox"
       checked: false
 `;
 
@@ -290,7 +291,7 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
-          expect(command.selector).toBe('チェックボックス');
+          expect('css' in command && command.css).toBe('#checkbox');
           expect(command.checked).toBe(false);
         }
       },
@@ -313,7 +314,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "同意チェックボックス"
+      text: "同意チェックボックス"
       checked: true
 `;
 
@@ -327,7 +328,7 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
-          expect(command.selector).toBe('同意チェックボックス');
+          expect('text' in command && command.text).toBe('同意チェックボックス');
           expect(command.checked).toBe(true);
         }
       },
@@ -350,7 +351,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "規約チェックボックス"
+      ref: "@termscheckbox"
 `;
 
     // Act
@@ -363,7 +364,7 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
-          expect(command.selector).toBe('規約チェックボックス');
+          expect('ref' in command && command.ref).toBe('@termscheckbox');
           expect(command.checked).toBe(UseDefault);
         }
       },
@@ -385,7 +386,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "チェックボックス"
+      css: "#checkbox"
       checked: "yes"
 `;
 
@@ -415,7 +416,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "チェックボックス"
+      css: "#checkbox"
       checked: 1
 `;
 
@@ -445,7 +446,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      selector: "チェックボックス"
+      css: "#checkbox"
       checked: null
 `;
 

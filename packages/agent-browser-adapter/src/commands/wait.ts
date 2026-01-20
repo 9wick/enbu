@@ -8,15 +8,21 @@
 import { type ResultAsync } from 'neverthrow';
 import type {
   AgentBrowserError,
+  CssSelector,
   ExecuteOptions,
   JsExpression,
   LoadState,
-  Selector,
+  RefSelector,
 } from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
+
+/**
+ * CLIに渡せるセレクタ型
+ */
+type CliSelector = CssSelector | RefSelector;
 
 /**
  * 指定したミリ秒だけ待機する
@@ -36,12 +42,12 @@ export const browserWaitForMs = (
 /**
  * 指定したセレクタの要素が出現するまで待機する
  *
- * @param selector - 待機対象のセレクタ
+ * @param selector - 待機対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserWaitForSelector = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
   executeCommand('wait', [selector, '--json'], options).andThen((stdout) =>

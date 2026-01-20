@@ -14,12 +14,12 @@ steps:
 
   # Enter email address
   - fill:
-      selector: Email Address
+      text: Email Address
       value: test@example.com
 
   # Enter password
   - fill:
-      selector: Password
+      text: Password
       value: password123
 
   # Click login button (type=submit button)

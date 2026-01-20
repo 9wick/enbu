@@ -5,21 +5,35 @@
  */
 
 import { type ResultAsync } from 'neverthrow';
-import type { AgentBrowserError, ExecuteOptions, KeyboardKey, Selector } from '../types';
+import type {
+  AgentBrowserError,
+  CssSelector,
+  ExecuteOptions,
+  KeyboardKey,
+  RefSelector,
+} from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
 
 /**
+ * CLIに渡せるセレクタ型
+ *
+ * CssSelector または RefSelector のみCLIに直接渡せる
+ * TextSelector は core層で RefSelector に解決されてから渡される
+ */
+type CliSelector = CssSelector | RefSelector;
+
+/**
  * 指定したセレクタの要素をクリックする
  *
- * @param selector - クリック対象のセレクタ
+ * @param selector - クリック対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserClick = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
   executeCommand('click', [selector, '--json'], options).andThen((stdout) =>
@@ -29,13 +43,13 @@ export const browserClick = (
 /**
  * 指定したセレクタの要素にテキストを入力する（既存テキストはクリアしない）
  *
- * @param selector - 入力対象のセレクタ
+ * @param selector - 入力対象のセレクタ（CssSelector または RefSelector）
  * @param value - 入力するテキスト
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserType = (
-  selector: Selector,
+  selector: CliSelector,
   value: string,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
@@ -46,13 +60,13 @@ export const browserType = (
 /**
  * 指定したセレクタのフォーム要素にテキストを入力する（既存テキストをクリア）
  *
- * @param selector - 入力対象のセレクタ
+ * @param selector - 入力対象のセレクタ（CssSelector または RefSelector）
  * @param value - 入力するテキスト
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserFill = (
-  selector: Selector,
+  selector: CliSelector,
   value: string,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
@@ -78,12 +92,12 @@ export const browserPress = (
 /**
  * 指定したセレクタの要素にマウスホバーする
  *
- * @param selector - ホバー対象のセレクタ
+ * @param selector - ホバー対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserHover = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
   executeCommand('hover', [selector, '--json'], options).andThen((stdout) =>
@@ -93,13 +107,13 @@ export const browserHover = (
 /**
  * 指定したセレクタのセレクトボックスから値を選択する
  *
- * @param selector - セレクトボックスのセレクタ
+ * @param selector - セレクトボックスのセレクタ（CssSelector または RefSelector）
  * @param value - 選択する値
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserSelect = (
-  selector: Selector,
+  selector: CliSelector,
   value: string,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
@@ -110,12 +124,12 @@ export const browserSelect = (
 /**
  * 指定したセレクタの要素にフォーカスする
  *
- * @param selector - フォーカス対象のセレクタ
+ * @param selector - フォーカス対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserFocus = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
   executeCommand('focus', [selector, '--json'], options).andThen((stdout) =>

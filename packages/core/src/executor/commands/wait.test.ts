@@ -1,4 +1,4 @@
-import type { JsExpression, Selector } from '@packages/agent-browser-adapter';
+import type { CssSelector, JsExpression, TextSelector } from '@packages/agent-browser-adapter';
 import { okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WaitCommand } from '../../types';
@@ -6,7 +6,8 @@ import type { ExecutionContext } from '../result';
 import { handleWait } from './wait';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
-const toSelector = (s: string) => s as Selector;
+const toCssSelector = (s: string) => s as CssSelector;
+const toTextSelector = (s: string) => s as TextSelector;
 const toJsExpression = (s: string) => s as JsExpression;
 
 // agent-browser-adapter をモック
@@ -74,16 +75,16 @@ describe('handleWait', () => {
   });
 
   /**
-   * WAIT-2: wait コマンドが成功（selector指定）
+   * WAIT-2: wait コマンドが成功（css指定）
    *
    * 前提条件: browserWaitForSelector が成功
    * 検証項目: ok(CommandResult) が返される
    */
-  it('WAIT-2: waitコマンド（selector指定）が成功した場合、CommandResultを返す', async () => {
+  it('WAIT-2: waitコマンド（css指定）が成功した場合、CommandResultを返す', async () => {
     // Arrange
     const command: WaitCommand = {
       command: 'wait',
-      selector: toSelector('#loading-spinner'),
+      css: toCssSelector('#loading-spinner'),
     };
 
     vi.mocked(browserWaitForSelector).mockReturnValue(
@@ -111,7 +112,7 @@ describe('handleWait', () => {
     // Arrange
     const command: WaitCommand = {
       command: 'wait',
-      text: '読み込み完了',
+      text: toTextSelector('読み込み完了'),
     };
 
     vi.mocked(browserWaitForText).mockReturnValue(

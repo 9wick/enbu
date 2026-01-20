@@ -81,31 +81,62 @@ const outputProgressJson = (message: ProgressJsonMessage): void => {
 const formatCommandDescription = (command: Command): string =>
   match(command)
     .with({ command: 'open', url: P.string }, (cmd) => `open ${cmd.url}`)
-    .with({ command: 'click', selector: P.string }, (cmd) => `click "${cmd.selector}"`)
+    .with({ command: 'click', css: P.string }, (cmd) => `click "${cmd.css}"`)
+    .with({ command: 'click', ref: P.string }, (cmd) => `click ref:"${cmd.ref}"`)
+    .with({ command: 'click', text: P.string }, (cmd) => `click text:"${cmd.text}"`)
     .with(
-      { command: 'type', selector: P.string, value: P.string },
-      (cmd) => `type "${cmd.selector}" = "${cmd.value}"`,
+      { command: 'type', css: P.string, value: P.string },
+      (cmd) => `type "${cmd.css}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'fill', selector: P.string, value: P.string },
-      (cmd) => `fill "${cmd.selector}" = "${cmd.value}"`,
+      { command: 'type', ref: P.string, value: P.string },
+      (cmd) => `type ref:"${cmd.ref}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'type', text: P.string, value: P.string },
+      (cmd) => `type text:"${cmd.text}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'fill', css: P.string, value: P.string },
+      (cmd) => `fill "${cmd.css}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'fill', ref: P.string, value: P.string },
+      (cmd) => `fill ref:"${cmd.ref}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'fill', text: P.string, value: P.string },
+      (cmd) => `fill text:"${cmd.text}" = "${cmd.value}"`,
     )
     .with({ command: 'press', key: P.string }, (cmd) => `press ${cmd.key}`)
-    .with({ command: 'hover', selector: P.string }, (cmd) => `hover "${cmd.selector}"`)
+    .with({ command: 'hover', css: P.string }, (cmd) => `hover "${cmd.css}"`)
+    .with({ command: 'hover', ref: P.string }, (cmd) => `hover ref:"${cmd.ref}"`)
+    .with({ command: 'hover', text: P.string }, (cmd) => `hover text:"${cmd.text}"`)
     .with(
-      { command: 'select', selector: P.string, value: P.string },
-      (cmd) => `select "${cmd.selector}" = "${cmd.value}"`,
+      { command: 'select', css: P.string, value: P.string },
+      (cmd) => `select "${cmd.css}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'select', ref: P.string, value: P.string },
+      (cmd) => `select ref:"${cmd.ref}" = "${cmd.value}"`,
+    )
+    .with(
+      { command: 'select', text: P.string, value: P.string },
+      (cmd) => `select text:"${cmd.text}" = "${cmd.value}"`,
     )
     .with(
       { command: 'scroll', direction: P.string, amount: P.number },
       (cmd) => `scroll ${cmd.direction} ${cmd.amount}px`,
     )
+    .with({ command: 'scrollIntoView', css: P.string }, (cmd) => `scrollIntoView "${cmd.css}"`)
+    .with({ command: 'scrollIntoView', ref: P.string }, (cmd) => `scrollIntoView ref:"${cmd.ref}"`)
     .with(
-      { command: 'scrollIntoView', selector: P.string },
-      (cmd) => `scrollIntoView "${cmd.selector}"`,
+      { command: 'scrollIntoView', text: P.string },
+      (cmd) => `scrollIntoView text:"${cmd.text}"`,
     )
     .with({ command: 'wait', ms: P.number }, (cmd) => `wait ${cmd.ms}ms`)
-    .with({ command: 'wait', selector: P.string }, (cmd) => `wait "${cmd.selector}"`)
+    .with({ command: 'wait', css: P.string }, (cmd) => `wait "${cmd.css}"`)
+    .with({ command: 'wait', ref: P.string }, (cmd) => `wait ref:"${cmd.ref}"`)
     .with({ command: 'wait', text: P.string }, (cmd) => `wait text "${cmd.text}"`)
     .with({ command: 'wait', load: P.string }, (cmd) => `wait load ${cmd.load}`)
     .with({ command: 'wait', url: P.string }, (cmd) => `wait url "${cmd.url}"`)
@@ -116,22 +147,24 @@ const formatCommandDescription = (command: Command): string =>
       { command: 'eval', script: P.string },
       (cmd) => `eval "${cmd.script.substring(0, 50)}${cmd.script.length > 50 ? '...' : ''}"`,
     )
+    .with({ command: 'assertVisible', css: P.string }, (cmd) => `assertVisible "${cmd.css}"`)
+    .with({ command: 'assertVisible', ref: P.string }, (cmd) => `assertVisible ref:"${cmd.ref}"`)
+    .with({ command: 'assertVisible', text: P.string }, (cmd) => `assertVisible text:"${cmd.text}"`)
+    .with({ command: 'assertNotVisible', css: P.string }, (cmd) => `assertNotVisible "${cmd.css}"`)
     .with(
-      { command: 'assertVisible', selector: P.string },
-      (cmd) => `assertVisible "${cmd.selector}"`,
+      { command: 'assertNotVisible', ref: P.string },
+      (cmd) => `assertNotVisible ref:"${cmd.ref}"`,
     )
     .with(
-      { command: 'assertNotVisible', selector: P.string },
-      (cmd) => `assertNotVisible "${cmd.selector}"`,
+      { command: 'assertNotVisible', text: P.string },
+      (cmd) => `assertNotVisible text:"${cmd.text}"`,
     )
-    .with(
-      { command: 'assertEnabled', selector: P.string },
-      (cmd) => `assertEnabled "${cmd.selector}"`,
-    )
-    .with(
-      { command: 'assertChecked', selector: P.string },
-      (cmd) => `assertChecked "${cmd.selector}"`,
-    )
+    .with({ command: 'assertEnabled', css: P.string }, (cmd) => `assertEnabled "${cmd.css}"`)
+    .with({ command: 'assertEnabled', ref: P.string }, (cmd) => `assertEnabled ref:"${cmd.ref}"`)
+    .with({ command: 'assertEnabled', text: P.string }, (cmd) => `assertEnabled text:"${cmd.text}"`)
+    .with({ command: 'assertChecked', css: P.string }, (cmd) => `assertChecked "${cmd.css}"`)
+    .with({ command: 'assertChecked', ref: P.string }, (cmd) => `assertChecked ref:"${cmd.ref}"`)
+    .with({ command: 'assertChecked', text: P.string }, (cmd) => `assertChecked text:"${cmd.text}"`)
     .exhaustive();
 
 /**

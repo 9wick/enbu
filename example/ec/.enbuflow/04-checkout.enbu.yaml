@@ -8,10 +8,10 @@ steps:
   # Login and add product to cart
   - open: ${BASE_URL}/login.html
   - fill:
-      selector: Email Address
+      text: Email Address
       value: test@example.com
   - fill:
-      selector: Password
+      text: Password
       value: password123
   - click: Sign In
   - assertVisible: Welcome, John Smith
@@ -36,13 +36,13 @@ steps:
 
   # Enter shipping information
   - fill:
-      selector: Postal Code
+      text: Postal Code
       value: "123-4567"
   - fill:
-      selector: Address
+      text: Address
       value: 123 Fifth Avenue, New York
   - fill:
-      selector: Phone Number
+      text: Phone Number
       value: "555-123-4567"
 
   # Payment method is Credit Card by default

@@ -194,7 +194,7 @@ describe('runFlowCommand', () => {
           steps: [
             {
               index: 0,
-              command: { command: 'click', selector: 'NotExist' as never },
+              command: { command: 'click', css: 'NotExist' as never },
               status: 'failed',
               duration: 2000,
               error: {
@@ -276,7 +276,7 @@ describe('runFlowCommand', () => {
           steps: [
             {
               index: 0,
-              command: { command: 'click', selector: 'NotExist' as never },
+              command: { command: 'click', css: 'NotExist' as never },
               status: 'failed',
               duration: 2000,
               error: {
@@ -348,7 +348,7 @@ describe('runFlowCommand', () => {
           steps: [
             {
               index: 0,
-              command: { command: 'click', selector: 'NotExist' as never },
+              command: { command: 'click', css: 'NotExist' as never },
               status: 'failed',
               duration: 2000,
               error: {
@@ -487,7 +487,7 @@ describe('runFlowCommand', () => {
           steps: [
             {
               index: 0,
-              command: { command: 'click', selector: 'NotExist' as never },
+              command: { command: 'click', css: 'NotExist' as never },
               status: 'failed',
               duration: 2000,
               error: {

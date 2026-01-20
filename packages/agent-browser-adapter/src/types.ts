@@ -10,22 +10,54 @@ import * as valibot from 'valibot';
 import { ok, err, type Result } from 'neverthrow';
 
 // ==========================================
-// Brand型定義（valibotのbrand関数で実装）
-// agent-browserと同様にmin(1)で空文字列を禁止
+// セレクタ型定義（DDD準拠：異なるドメイン概念を明確に分離）
 // ==========================================
 
 /**
- * CSSセレクタまたは@ref形式のセレクタ
+ * CSSセレクタ
  *
- * 例: "#login-button", ".submit", "@e1", "text=\"ログイン\""
- * 空文字列は許可されない（agent-browserのz.string().min(1)に対応）
+ * Playwrightに直接渡せるCSSセレクタ形式
+ * 例: "#login-button", ".submit", "div", "[data-testid='x']", "button.primary"
+ * 空文字列は許可されない
  */
-const SelectorSchema = valibot.pipe(
+const CssSelectorSchema = valibot.pipe(
   valibot.string(),
-  valibot.minLength(1, 'セレクタは空文字列にできません'),
-  valibot.brand('Selector'),
+  valibot.minLength(1, 'CSSセレクタは空文字列にできません'),
+  valibot.brand('CssSelector'),
 );
-export type Selector = valibot.InferOutput<typeof SelectorSchema>;
+export type CssSelector = valibot.InferOutput<typeof CssSelectorSchema>;
+
+/**
+ * Ref形式セレクタ
+ *
+ * agent-browser snapshot由来の要素参照
+ * 形式: @ + 英数字 (例: @e1, @e2, @login)
+ */
+const RefSelectorSchema = valibot.pipe(
+  valibot.string(),
+  valibot.regex(/^@[a-zA-Z0-9]+$/, 'RefSelectorは@で始まり英数字が続く形式です'),
+  valibot.brand('RefSelector'),
+);
+export type RefSelector = valibot.InferOutput<typeof RefSelectorSchema>;
+
+/**
+ * テキストセレクタ
+ *
+ * 要素のテキスト内容で検索するためのセレクタ
+ * 実行時にsnapshot→テキストマッチ→RefSelectorに変換される
+ * 空文字列は許可されない
+ */
+const TextSelectorSchema = valibot.pipe(
+  valibot.string(),
+  valibot.minLength(1, 'TextSelectorは空文字列にできません'),
+  valibot.brand('TextSelector'),
+);
+export type TextSelector = valibot.InferOutput<typeof TextSelectorSchema>;
+
+// ==========================================
+// Brand型定義（valibotのbrand関数で実装）
+// agent-browserと同様にmin(1)で空文字列を禁止
+// ==========================================
 
 /**
  * URL文字列
@@ -104,36 +136,89 @@ export type BrandValidationError = {
   /** エラーメッセージ（日本語） */
   message: string;
   /** 検証に失敗したフィールド名 */
-  field: 'selector' | 'url' | 'filePath' | 'keyboardKey' | 'jsExpression';
+  field:
+    | 'cssSelector'
+    | 'refSelector'
+    | 'textSelector'
+    | 'url'
+    | 'filePath'
+    | 'keyboardKey'
+    | 'jsExpression';
   /** 検証に失敗した値 */
   value: string;
+};
+
+// ==========================================
+// セレクタ型のファクトリ関数（Result型を返す）
+// ==========================================
+
+/**
+ * CSSセレクタとして検証・変換
+ *
+ * 空文字列の場合はエラーを返す
+ *
+ * @param value - 検証する文字列
+ * @returns 検証成功時はCssSelector型、失敗時はBrandValidationError
+ */
+export const asCssSelector = (value: string): Result<CssSelector, BrandValidationError> => {
+  const result = valibot.safeParse(CssSelectorSchema, value);
+  if (result.success) {
+    return ok(result.output);
+  }
+  return err({
+    type: 'brand_validation_error',
+    message: 'CSSセレクタは空文字列にできません',
+    field: 'cssSelector',
+    value,
+  });
+};
+
+/**
+ * RefSelectorとして検証・変換
+ *
+ * @で始まり英数字が続く形式でない場合はエラーを返す
+ *
+ * @param value - 検証する文字列
+ * @returns 検証成功時はRefSelector型、失敗時はBrandValidationError
+ */
+export const asRefSelector = (value: string): Result<RefSelector, BrandValidationError> => {
+  const result = valibot.safeParse(RefSelectorSchema, value);
+  if (result.success) {
+    return ok(result.output);
+  }
+  return err({
+    type: 'brand_validation_error',
+    message: 'RefSelectorは@で始まり英数字が続く形式です',
+    field: 'refSelector',
+    value,
+  });
+};
+
+/**
+ * TextSelectorとして検証・変換
+ *
+ * 空文字列の場合はエラーを返す
+ *
+ * @param value - 検証する文字列
+ * @returns 検証成功時はTextSelector型、失敗時はBrandValidationError
+ */
+export const asTextSelector = (value: string): Result<TextSelector, BrandValidationError> => {
+  const result = valibot.safeParse(TextSelectorSchema, value);
+  if (result.success) {
+    return ok(result.output);
+  }
+  return err({
+    type: 'brand_validation_error',
+    message: 'TextSelectorは空文字列にできません',
+    field: 'textSelector',
+    value,
+  });
 };
 
 // ==========================================
 // Brand型のファクトリ関数（Result型を返す）
 // agent-browserのz.string().min(1)に対応した検証を実行
 // ==========================================
-
-/**
- * セレクタとして検証・変換
- *
- * 空文字列の場合はエラーを返す
- *
- * @param value - 検証する文字列
- * @returns 検証成功時はSelector型、失敗時はBrandValidationError
- */
-export const asSelector = (value: string): Result<Selector, BrandValidationError> => {
-  const result = valibot.safeParse(SelectorSchema, value);
-  if (result.success) {
-    return ok(result.output);
-  }
-  return err({
-    type: 'brand_validation_error',
-    message: 'セレクタは空文字列にできません',
-    field: 'selector',
-    value,
-  });
-};
 
 /**
  * URLとして検証・変換

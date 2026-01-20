@@ -8,13 +8,13 @@ steps:
 
   # メールアドレスを入力
   - type:
-      selector: メールアドレス
-      text: test@example.com
+      text: メールアドレス
+      value: test@example.com
 
   # パスワードを入力
   - type:
-      selector: パスワード
-      text: password123
+      text: パスワード
+      value: password123
 
   # ログインボタンをクリック
   - click: ログインする

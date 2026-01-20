@@ -334,9 +334,9 @@ const shouldAutoWait = (command: Command): boolean => {
 /**
  * コマンドからセレクタ入力を取得する
  *
- * コマンドの種類によって、セレクタが格納されているフィールド名が異なる:
- * - 多くのコマンドは 'selector' フィールドを持つ
- * - 一部のコマンドは 'target' フィールドを持つ
+ * SelectorSpec形式 (css/ref/text) からセレクタ文字列を抽出する。
+ * autoWaitはテキストセレクタを解決するために使用されるため、
+ * textセレクタの場合もセレクタを返す。
  *
  * ts-patternで型安全にセレクタを抽出する。
  *
@@ -345,8 +345,16 @@ const shouldAutoWait = (command: Command): boolean => {
  */
 const getSelectorFromCommand = (command: Command): SelectorInput =>
   match(command)
-    .with({ selector: P.string }, (cmd) => ({
+    .with({ css: P.string }, (cmd) => ({
       type: 'hasSelector' as const,
-      selector: cmd.selector,
+      selector: cmd.css,
+    }))
+    .with({ ref: P.string }, (cmd) => ({
+      type: 'hasSelector' as const,
+      selector: cmd.ref,
+    }))
+    .with({ text: P.string }, (cmd) => ({
+      type: 'hasSelector' as const,
+      selector: cmd.text,
     }))
     .otherwise(() => ({ type: 'noSelector' as const }));

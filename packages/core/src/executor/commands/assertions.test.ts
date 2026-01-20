@@ -1,4 +1,4 @@
-import type { Selector } from '@packages/agent-browser-adapter';
+import type { CssSelector } from '@packages/agent-browser-adapter';
 import { errAsync, okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -11,18 +11,19 @@ import type { ExecutionContext } from '../result';
 import { handleAssertChecked, handleAssertNotVisible, handleAssertVisible } from './assertions';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
-const toSelector = (s: string) => s as Selector;
+const toCssSelector = (s: string) => s as CssSelector;
 
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
   browserIsVisible: vi.fn(),
   browserIsChecked: vi.fn(),
+  browserIsEnabled: vi.fn(),
   browserWaitForSelector: vi.fn(),
   browserWaitForText: vi.fn(),
   browserWaitForNetworkIdle: vi.fn(),
-  asSelector: vi.fn((v) => {
-    const { okAsync } = require('neverthrow');
-    return okAsync(v);
+  asRefSelector: vi.fn((v) => {
+    const { ok } = require('neverthrow');
+    return ok(v);
   }),
 }));
 
@@ -30,6 +31,7 @@ import {
   browserIsChecked,
   browserIsVisible,
   browserWaitForNetworkIdle,
+  browserWaitForSelector,
   browserWaitForText,
 } from '@packages/agent-browser-adapter';
 
@@ -37,6 +39,7 @@ describe('handleAssertVisible', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // waitForElement用のデフォルトモック
+    vi.mocked(browserWaitForSelector).mockReturnValue(okAsync({}));
     vi.mocked(browserWaitForText).mockReturnValue(okAsync({}));
   });
 
@@ -64,7 +67,7 @@ describe('handleAssertVisible', () => {
     // Arrange
     const command: AssertVisibleCommand = {
       command: 'assertVisible',
-      selector: toSelector('ログイン'),
+      css: toCssSelector('#login-button'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
@@ -86,7 +89,7 @@ describe('handleAssertVisible', () => {
     // Arrange
     const command: AssertVisibleCommand = {
       command: 'assertVisible',
-      selector: toSelector('ログイン'),
+      css: toCssSelector('#login-button'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: false }));
@@ -119,7 +122,7 @@ describe('handleAssertVisible', () => {
     // Arrange
     const command: AssertVisibleCommand = {
       command: 'assertVisible',
-      selector: toSelector('存在しない要素'),
+      css: toCssSelector('#not-found'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(
@@ -162,7 +165,7 @@ describe('handleAssertVisible', () => {
     // Arrange
     const command: AssertVisibleCommand = {
       command: 'assertVisible',
-      selector: toSelector('ログイン'),
+      css: toCssSelector('#login-button'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(
@@ -222,7 +225,7 @@ describe('handleAssertNotVisible', () => {
     // Arrange
     const command: AssertNotVisibleCommand = {
       command: 'assertNotVisible',
-      selector: toSelector('エラーメッセージ'),
+      css: toCssSelector('.error-message'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: false }));
@@ -244,7 +247,7 @@ describe('handleAssertNotVisible', () => {
     // Arrange
     const command: AssertNotVisibleCommand = {
       command: 'assertNotVisible',
-      selector: toSelector('エラーメッセージ'),
+      css: toCssSelector('.error-message'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
@@ -277,7 +280,7 @@ describe('handleAssertNotVisible', () => {
     // Arrange
     const command: AssertNotVisibleCommand = {
       command: 'assertNotVisible',
-      selector: toSelector('存在しない要素'),
+      css: toCssSelector('#not-found'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(
@@ -320,7 +323,7 @@ describe('handleAssertNotVisible', () => {
     // Arrange
     const command: AssertNotVisibleCommand = {
       command: 'assertNotVisible',
-      selector: toSelector('エラーメッセージ'),
+      css: toCssSelector('.error-message'),
     };
 
     vi.mocked(browserIsVisible).mockReturnValue(
@@ -378,7 +381,7 @@ describe('handleAssertChecked', () => {
     // Arrange
     const command: AssertCheckedCommand = {
       command: 'assertChecked',
-      selector: toSelector('利用規約に同意'),
+      css: toCssSelector('#agree-terms'),
       checked: UseDefault,
     };
 
@@ -401,7 +404,7 @@ describe('handleAssertChecked', () => {
     // Arrange
     const command: AssertCheckedCommand = {
       command: 'assertChecked',
-      selector: toSelector('利用規約に同意'),
+      css: toCssSelector('#agree-terms'),
       checked: false,
     };
 
@@ -424,7 +427,7 @@ describe('handleAssertChecked', () => {
     // Arrange
     const command: AssertCheckedCommand = {
       command: 'assertChecked',
-      selector: toSelector('利用規約に同意'),
+      css: toCssSelector('#agree-terms'),
       checked: UseDefault,
     };
 
@@ -458,7 +461,7 @@ describe('handleAssertChecked', () => {
     // Arrange
     const command: AssertCheckedCommand = {
       command: 'assertChecked',
-      selector: toSelector('存在しない要素'),
+      css: toCssSelector('#not-found'),
       checked: UseDefault,
     };
 
@@ -502,7 +505,7 @@ describe('handleAssertChecked', () => {
     // Arrange
     const command: AssertCheckedCommand = {
       command: 'assertChecked',
-      selector: toSelector('利用規約に同意'),
+      css: toCssSelector('#agree-terms'),
       checked: UseDefault,
     };
 

@@ -1,32 +1,21 @@
-import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
-import { asSelector, browserHover, browserSelect } from '@packages/agent-browser-adapter';
-import type { Result } from 'neverthrow';
-import { errAsync, type ResultAsync } from 'neverthrow';
+/**
+ * ホバー・セレクト系コマンドハンドラ
+ *
+ * hover, select などのコマンドを処理する。
+ */
+
+import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserHover, browserSelect } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { HoverCommand, SelectCommand } from '../../types';
 import type { CommandResult, ExecutionContext } from '../result';
-
-/**
- * セレクタを解決する
- * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
- *
- * @returns セレクタのResult型。空文字列の場合はエラー。
- */
-const resolveSelector = (
-  originalSelector: string,
-  context: ExecutionContext,
-): Result<Selector, AgentBrowserError> => {
-  const selectorString =
-    context.resolvedRefState.status === 'resolved'
-      ? context.resolvedRefState.ref
-      : originalSelector;
-  return asSelector(selectorString);
-};
+import { resolveCliSelector } from './cli-selector-utils';
 
 /**
  * hover コマンドのハンドラ
  *
  * 指定されたセレクタの要素にマウスホバーする。
- * agent-browser の hover コマンドを実行する。
+ * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
  *
  * @param command - hover コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -38,22 +27,19 @@ export const handleHover = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // セレクタ検証とブラウザ操作実行
-  return resolveSelector(command.selector, context).match(
-    (selector) =>
-      browserHover(selector, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserHover(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
 };
 
 /**
  * select コマンドのハンドラ
  *
  * 指定されたセレクタのセレクトボックスから値を選択する。
- * agent-browser の select コマンドを実行する。
+ * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
  *
  * @param command - select コマンドのパラメータ
  * @param context - 実行コンテキスト
@@ -65,13 +51,10 @@ export const handleSelect = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // セレクタ検証とブラウザ操作実行
-  return resolveSelector(command.selector, context).match(
-    (selector) =>
-      browserSelect(selector, command.value, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserSelect(selector, command.value, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
 };

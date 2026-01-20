@@ -8,10 +8,10 @@ steps:
   # Login and go to top page
   - open: ${BASE_URL}/login.html
   - fill:
-      selector: Email Address
+      text: Email Address
       value: test@example.com
   - fill:
-      selector: Password
+      text: Password
       value: password123
   - click: Sign In
   - assertVisible: Welcome, John Smith

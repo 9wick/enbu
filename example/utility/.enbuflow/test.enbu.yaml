@@ -11,7 +11,8 @@ steps:
 
   # ステップ2: メインタイトルの表示確認
   # "Utility Test"は他の要素にも含まれるため、data-testidを使用
-  - assertVisible: '[data-testid="main-title"]'
+  - assertVisible:
+      css: '[data-testid="main-title"]'
 
   # ステップ3: 2秒待機
   - wait: 2000

@@ -1,5 +1,5 @@
-import type { Selector, Url } from '@packages/agent-browser-adapter';
-import { errAsync, ok, okAsync } from 'neverthrow';
+import type { CssSelector, TextSelector, Url } from '@packages/agent-browser-adapter';
+import { errAsync, okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Flow } from '../types';
 import { executeFlow } from './flow-executor';
@@ -8,7 +8,8 @@ import { isPassedFlowResult, NO_CALLBACK } from './result';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
 const toUrl = (s: string) => s as Url;
-const toSelector = (s: string) => s as Selector;
+const toCssSelector = (s: string) => s as CssSelector;
+const toTextSelector = (s: string) => s as TextSelector;
 
 /**
  * テスト用のデフォルトFlowExecutionOptionsを生成する
@@ -33,17 +34,18 @@ const createTestOptions = (
 });
 
 // モック設定
-vi.mock('@packages/agent-browser-adapter', () => ({
-  browserOpen: vi.fn(),
-  browserClick: vi.fn(),
-  browserFill: vi.fn(),
-  browserSnapshot: vi.fn(),
-  browserWaitForMs: vi.fn(),
-  browserScreenshot: vi.fn(),
-  asUrl: vi.fn((v) => ok(v)),
-  asSelector: vi.fn((v) => ok(v)),
-  asFilePath: vi.fn((v) => ok(v)),
-}));
+vi.mock('@packages/agent-browser-adapter', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@packages/agent-browser-adapter')>();
+  return {
+    ...actual,
+    browserOpen: vi.fn(),
+    browserClick: vi.fn(),
+    browserFill: vi.fn(),
+    browserSnapshot: vi.fn(),
+    browserWaitForMs: vi.fn(),
+    browserScreenshot: vi.fn(),
+  };
+});
 
 import {
   browserClick,
@@ -77,7 +79,7 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com') },
-        { command: 'click', selector: toSelector('ログイン') },
+        { command: 'click', text: toTextSelector('ログイン') },
       ],
     };
 
@@ -86,7 +88,7 @@ describe('executeFlow', () => {
     // open コマンドのモック
     vi.mocked(browserOpen).mockReturnValueOnce(okAsync({ url: 'https://example.com' }));
 
-    // 自動待機用の snapshot のモック
+    // 自動待機用の snapshot のモック（textセレクタのため）
     vi.mocked(browserSnapshot).mockReturnValueOnce(
       okAsync({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
@@ -134,7 +136,7 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com/login') },
-        { command: 'fill', selector: toSelector('email'), value: 'test@example.com' },
+        { command: 'fill', css: toCssSelector('#email'), value: 'test@example.com' },
       ],
     };
 
@@ -143,12 +145,7 @@ describe('executeFlow', () => {
     // open コマンドのモック
     vi.mocked(browserOpen).mockReturnValue(okAsync({ url: 'https://example.com/login' }));
 
-    // 自動待機のモック
-    vi.mocked(browserSnapshot).mockReturnValue(
-      okAsync({ snapshot: '', refs: { e1: { name: 'email', role: 'textbox' } } }),
-    );
-
-    // fill コマンドのモック
+    // fill コマンドのモック（cssセレクタを使用するためautoWaitは不要）
     vi.mocked(browserFill).mockReturnValue(okAsync({}));
 
     // Act
@@ -296,22 +293,28 @@ describe('executeFlow', () => {
     const flow: Flow = {
       name: 'テストフロー',
       env: {},
-      steps: [{ command: 'click', selector: toSelector('NotExist') }],
+      steps: [{ command: 'click', css: toCssSelector('#not-exist') }],
     };
 
     const options = createTestOptions({
       screenshot: false,
     });
 
-    // 自動待機がタイムアウト（常に空のrefsを返す）
-    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs: {} }));
+    // click コマンドを失敗させる（存在しない要素）
+    vi.mocked(browserClick).mockReturnValueOnce(
+      errAsync({
+        type: 'command_failed',
+        message: 'Element not found',
+        command: 'click',
+        args: ['#not-exist'],
+        stderr: 'Element not found',
+        exitCode: 1,
+        rawError: 'Element not found',
+      }),
+    );
 
-    // タイマーを使用して時間経過をシミュレート
-    vi.useFakeTimers();
-    const promise = executeFlow(flow, options);
-    await vi.advanceTimersByTimeAsync(31000); // デフォルトタイムアウトを超える
-    const result = await promise;
-    vi.useRealTimers();
+    // Act
+    const result = await executeFlow(flow, options);
 
     // Assert
     expect(result.isOk()).toBe(true);
@@ -425,29 +428,31 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com') },
-        { command: 'click', selector: toSelector('存在しないボタン') },
-        { command: 'click', selector: toSelector('次のボタン') }, // これは実行されないはず
+        { command: 'click', css: toCssSelector('#not-exist-button') },
+        { command: 'click', css: toCssSelector('#next-button') }, // これは実行されないはず
       ],
     };
 
-    const options = createTestOptions({
-      autoWaitTimeoutMs: 100,
-      autoWaitIntervalMs: 50,
-    });
+    const options = createTestOptions();
 
     // 1番目のステップ: open 成功
     vi.mocked(browserOpen).mockReturnValueOnce(okAsync({ url: 'https://example.com' }));
 
-    // 2番目のステップ: click 自動待機でタイムアウト（要素が見つからない）
-    // 自動待機用のsnapshotが空を返し続ける
-    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs: {} }));
+    // 2番目のステップ: click 失敗（要素が見つからない）
+    vi.mocked(browserClick).mockReturnValueOnce(
+      errAsync({
+        type: 'command_failed',
+        message: 'Element not found',
+        command: 'click',
+        args: ['#not-exist-button'],
+        stderr: 'Element not found',
+        exitCode: 1,
+        rawError: 'Element not found',
+      }),
+    );
 
-    // タイマーを使用して自動待機のタイムアウトをシミュレート
-    vi.useFakeTimers();
-    const promise = executeFlow(flow, options);
-    await vi.advanceTimersByTimeAsync(200);
-    const result = await promise;
-    vi.useRealTimers();
+    // Act
+    const result = await executeFlow(flow, options);
 
     // Assert
     expect(result.isOk()).toBe(true);
@@ -500,8 +505,8 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com') },
-        { command: 'click', selector: toSelector('ボタン1') },
-        { command: 'click', selector: toSelector('ボタン2') },
+        { command: 'click', css: toCssSelector('#button1') },
+        { command: 'click', css: toCssSelector('#button2') },
       ],
     };
 
@@ -566,15 +571,13 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com') },
-        { command: 'click', selector: toSelector('存在しないボタン') },
-        { command: 'click', selector: toSelector('次のボタン') },
+        { command: 'click', css: toCssSelector('#not-exist-button') },
+        { command: 'click', css: toCssSelector('#next-button') },
       ],
     };
 
     const progressCalls: Array<{ stepIndex: number; status: string }> = [];
     const options = createTestOptions({
-      autoWaitTimeoutMs: 100,
-      autoWaitIntervalMs: 50,
       onStepProgress: (progress) => {
         progressCalls.push({ stepIndex: progress.stepIndex, status: progress.status });
       },
@@ -583,16 +586,21 @@ describe('executeFlow', () => {
     // 1番目のステップ: open 成功
     vi.mocked(browserOpen).mockReturnValueOnce(okAsync({ url: 'https://example.com' }));
 
-    // 2番目のステップ: 自動待機タイムアウト
-    // 自動待機用のsnapshotが空を返し続ける
-    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs: {} }));
+    // 2番目のステップ: click 失敗
+    vi.mocked(browserClick).mockReturnValueOnce(
+      errAsync({
+        type: 'command_failed',
+        message: 'Element not found',
+        command: 'click',
+        args: ['#not-exist-button'],
+        stderr: 'Element not found',
+        exitCode: 1,
+        rawError: 'Element not found',
+      }),
+    );
 
     // Act
-    vi.useFakeTimers();
-    const promise = executeFlow(flow, options);
-    await vi.advanceTimersByTimeAsync(200);
-    const result = await promise;
-    vi.useRealTimers();
+    const result = await executeFlow(flow, options);
 
     // Assert
     expect(result.isOk()).toBe(true);

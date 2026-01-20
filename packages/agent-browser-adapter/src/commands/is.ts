@@ -5,21 +5,26 @@
  */
 
 import { type ResultAsync } from 'neverthrow';
-import type { AgentBrowserError, ExecuteOptions, Selector } from '../types';
+import type { AgentBrowserError, CssSelector, ExecuteOptions, RefSelector } from '../types';
 import type { IsCheckedData, IsEnabledData, IsVisibleData } from '../schemas';
 import { IsCheckedDataSchema, IsEnabledDataSchema, IsVisibleDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
 
 /**
+ * CLIに渡せるセレクタ型
+ */
+type CliSelector = CssSelector | RefSelector;
+
+/**
  * 指定したセレクタの要素が表示されているかチェックする
  *
- * @param selector - チェック対象のセレクタ
+ * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsVisibleData、失敗時: AgentBrowserError
  */
 export const browserIsVisible = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<IsVisibleData, AgentBrowserError> =>
   executeCommand('is', ['visible', selector, '--json'], options).andThen((stdout) =>
@@ -29,12 +34,12 @@ export const browserIsVisible = (
 /**
  * 指定したセレクタの要素が有効化されているかチェックする
  *
- * @param selector - チェック対象のセレクタ
+ * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsEnabledData、失敗時: AgentBrowserError
  */
 export const browserIsEnabled = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<IsEnabledData, AgentBrowserError> =>
   executeCommand('is', ['enabled', selector, '--json'], options).andThen((stdout) =>
@@ -44,12 +49,12 @@ export const browserIsEnabled = (
 /**
  * 指定したセレクタのチェックボックスがチェックされているかチェックする
  *
- * @param selector - チェック対象のセレクタ
+ * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsCheckedData、失敗時: AgentBrowserError
  */
 export const browserIsChecked = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<IsCheckedData, AgentBrowserError> =>
   executeCommand('is', ['checked', selector, '--json'], options).andThen((stdout) =>

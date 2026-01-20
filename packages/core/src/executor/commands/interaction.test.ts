@@ -1,4 +1,4 @@
-import type { KeyboardKey, Selector } from '@packages/agent-browser-adapter';
+import type { CssSelector, KeyboardKey } from '@packages/agent-browser-adapter';
 import { errAsync, ok, okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClickCommand, FillCommand, PressCommand, TypeCommand } from '../../types';
@@ -6,7 +6,7 @@ import type { ExecutionContext } from '../result';
 import { handleClick, handleFill, handlePress, handleType } from './interaction';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
-const toSelector = (s: string) => s as Selector;
+const toCssSelector = (s: string) => s as CssSelector;
 const toKeyboardKey = (s: string) => s as KeyboardKey;
 
 // agent-browser-adapter をモック
@@ -15,7 +15,7 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserType: vi.fn(),
   browserFill: vi.fn(),
   browserPress: vi.fn(),
-  asSelector: vi.fn((v) => ok(v)),
+  asCssSelector: vi.fn((v) => ok(v)),
   asKeyboardKey: vi.fn((v) => ok(v)),
 }));
 
@@ -55,7 +55,7 @@ describe('handleClick', () => {
     // Arrange
     const command: ClickCommand = {
       command: 'click',
-      selector: toSelector('ログインボタン'),
+      css: toCssSelector('ログインボタン'),
     };
 
     vi.mocked(browserClick).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
@@ -85,7 +85,7 @@ describe('handleClick', () => {
     // Arrange
     const command: ClickCommand = {
       command: 'click',
-      selector: toSelector('存在しないボタン'),
+      css: toCssSelector('存在しないボタン'),
     };
 
     vi.mocked(browserClick).mockReturnValue(
@@ -145,7 +145,7 @@ describe('handleType', () => {
     // Arrange
     const command: TypeCommand = {
       command: 'type',
-      selector: toSelector('ユーザー名入力欄'),
+      css: toCssSelector('ユーザー名入力欄'),
       value: 'テストユーザー',
     };
 
@@ -188,7 +188,7 @@ describe('handleFill', () => {
     // Arrange
     const command: FillCommand = {
       command: 'fill',
-      selector: toSelector('メールアドレス'),
+      css: toCssSelector('メールアドレス'),
       value: 'test@example.com',
     };
 

@@ -6,15 +6,17 @@
  */
 
 import {
+  asCssSelector,
   asFilePath,
   asJsExpression,
   asKeyboardKey,
-  asSelector,
+  asRefSelector,
+  asTextSelector,
   asUrl,
 } from '@packages/agent-browser-adapter';
 import { err, ok, type Result } from 'neverthrow';
 import { P, match } from 'ts-pattern';
-import type { Command, ParseError, RawCommand } from '../../types';
+import type { Command, ParseError, RawCommand, RawSelectorSpec, SelectorSpec } from '../../types';
 import { UseDefault } from '../../types/utility-types';
 import { normalizers } from './type-guards';
 
@@ -27,6 +29,68 @@ const makeError = (message: string, commandIndex: number, raw: RawCommand): Pars
   commandIndex,
   commandContent: raw,
 });
+
+/**
+ * CssSelectorをSelectorSpecに変換
+ */
+const convertCssSelector = (
+  cssValue: string,
+  commandIndex: number,
+  rawCommand: RawCommand,
+): Result<SelectorSpec, ParseError> =>
+  asCssSelector(cssValue).match(
+    (css): Result<SelectorSpec, ParseError> => ok({ css }),
+    (e) => err(makeError(e.message, commandIndex, rawCommand)),
+  );
+
+/**
+ * RefSelectorをSelectorSpecに変換
+ */
+const convertRefSelector = (
+  refValue: string,
+  commandIndex: number,
+  rawCommand: RawCommand,
+): Result<SelectorSpec, ParseError> =>
+  asRefSelector(refValue).match(
+    (ref): Result<SelectorSpec, ParseError> => ok({ ref }),
+    (e) => err(makeError(e.message, commandIndex, rawCommand)),
+  );
+
+/**
+ * TextSelectorをSelectorSpecに変換
+ */
+const convertTextSelector = (
+  textValue: string,
+  commandIndex: number,
+  rawCommand: RawCommand,
+): Result<SelectorSpec, ParseError> =>
+  asTextSelector(textValue).match(
+    (text): Result<SelectorSpec, ParseError> => ok({ text }),
+    (e) => err(makeError(e.message, commandIndex, rawCommand)),
+  );
+
+/**
+ * RawSelectorSpecをSelectorSpecに変換
+ *
+ * css, ref, text のいずれか1つを検証してBranded Typeに変換する。
+ * どれも指定されていない場合はエラーを返す。
+ * ts-patternを使用して型安全にマッチングする。
+ *
+ * @param raw - 未検証のセレクタ指定
+ * @param commandIndex - コマンドのインデックス（エラーメッセージ用）
+ * @param rawCommand - 元のRawCommand（エラーメッセージ用）
+ * @returns 成功時: SelectorSpec、失敗時: ParseError
+ */
+const convertSelectorSpec = (
+  raw: RawSelectorSpec,
+  commandIndex: number,
+  rawCommand: RawCommand,
+): Result<SelectorSpec, ParseError> =>
+  match(raw)
+    .with({ css: P.string }, (r) => convertCssSelector(r.css, commandIndex, rawCommand))
+    .with({ ref: P.string }, (r) => convertRefSelector(r.ref, commandIndex, rawCommand))
+    .with({ text: P.string }, (r) => convertTextSelector(r.text, commandIndex, rawCommand))
+    .exhaustive();
 
 // ==========================================
 // 各コマンドのBranded Type変換関数
@@ -47,9 +111,8 @@ const convertClick = (
   raw: Extract<RawCommand, { command: 'click' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'click', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'click', ...selectorSpec }) as const,
   );
 
 /** typeコマンドをBranded Typeに変換 */
@@ -57,9 +120,8 @@ const convertType = (
   raw: Extract<RawCommand, { command: 'type' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'type', selector, value: raw.value } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'type', ...selectorSpec, value: raw.value }) as const,
   );
 
 /** fillコマンドをBranded Typeに変換 */
@@ -67,9 +129,8 @@ const convertFill = (
   raw: Extract<RawCommand, { command: 'fill' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'fill', selector, value: raw.value } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'fill', ...selectorSpec, value: raw.value }) as const,
   );
 
 /** pressコマンドをBranded Typeに変換 */
@@ -87,9 +148,8 @@ const convertHover = (
   raw: Extract<RawCommand, { command: 'hover' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'hover', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'hover', ...selectorSpec }) as const,
   );
 
 /** selectコマンドをBranded Typeに変換 */
@@ -97,9 +157,8 @@ const convertSelect = (
   raw: Extract<RawCommand, { command: 'select' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'select', selector, value: raw.value } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'select', ...selectorSpec, value: raw.value }) as const,
   );
 
 /** scrollIntoViewコマンドをBranded Typeに変換 */
@@ -107,9 +166,8 @@ const convertScrollIntoView = (
   raw: Extract<RawCommand, { command: 'scrollIntoView' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'scrollIntoView', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'scrollIntoView', ...selectorSpec }) as const,
   );
 
 /** screenshotコマンドをBranded Typeに変換 */
@@ -142,9 +200,8 @@ const convertAssertVisible = (
   raw: Extract<RawCommand, { command: 'assertVisible' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'assertVisible', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'assertVisible', ...selectorSpec }) as const,
   );
 
 /** assertNotVisibleコマンドをBranded Typeに変換 */
@@ -152,9 +209,8 @@ const convertAssertNotVisible = (
   raw: Extract<RawCommand, { command: 'assertNotVisible' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'assertNotVisible', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'assertNotVisible', ...selectorSpec }) as const,
   );
 
 /** assertEnabledコマンドをBranded Typeに変換 */
@@ -162,9 +218,8 @@ const convertAssertEnabled = (
   raw: Extract<RawCommand, { command: 'assertEnabled' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) => ok({ command: 'assertEnabled', selector } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) => ({ command: 'assertEnabled', ...selectorSpec }) as const,
   );
 
 /** assertCheckedコマンドをBranded Typeに変換 */
@@ -172,20 +227,22 @@ const convertAssertChecked = (
   raw: Extract<RawCommand, { command: 'assertChecked' }>,
   commandIndex: number,
 ): Result<Command, ParseError> =>
-  asSelector(raw.selector).match(
-    (selector) =>
-      ok({
+  convertSelectorSpec(raw, commandIndex, raw).map(
+    (selectorSpec) =>
+      ({
         command: 'assertChecked',
-        selector,
+        ...selectorSpec,
         checked: raw.checked ?? UseDefault,
-      } as const),
-    (e) => err(makeError(e.message, commandIndex, raw)),
+      }) as const,
   );
 
 /**
  * RawWaitCommandをWaitCommandに変換する
  *
  * WaitCommandは複数のバリアントを持つため、ts-patternで型安全にルーティングする。
+ * セレクタは css/ref/text の形式に対応する。
+ * waitのtextフィールドは別のバリアント（テキスト出現待機）なので、
+ * TextSelectorとは異なる処理となる。
  */
 const convertWait = (
   raw: Extract<RawCommand, { command: 'wait' }>,
@@ -194,15 +251,27 @@ const convertWait = (
   match(raw)
     // ms: number - Branded Typeなし
     .with({ ms: P.number }, (r) => ok({ command: 'wait' as const, ms: r.ms }))
-    // selector: Selector
-    .with({ selector: P.string }, (r) =>
-      asSelector(r.selector).match(
-        (selector) => ok({ command: 'wait' as const, selector }),
+    // css: CssSelector
+    .with({ css: P.string }, (r) =>
+      asCssSelector(r.css).match(
+        (css) => ok({ command: 'wait' as const, css }),
         (e) => err(makeError(e.message, commandIndex, raw)),
       ),
     )
-    // text: string - Branded Typeなし
-    .with({ text: P.string }, (r) => ok({ command: 'wait' as const, text: r.text }))
+    // ref: RefSelector
+    .with({ ref: P.string }, (r) =>
+      asRefSelector(r.ref).match(
+        (ref) => ok({ command: 'wait' as const, ref }),
+        (e) => err(makeError(e.message, commandIndex, raw)),
+      ),
+    )
+    // text: TextSelector（waitコマンド専用のテキスト検索待機）
+    .with({ text: P.string }, (r) =>
+      asTextSelector(r.text).match(
+        (text) => ok({ command: 'wait' as const, text }),
+        (e) => err(makeError(e.message, commandIndex, raw)),
+      ),
+    )
     // load: LoadState - Branded Typeなし（リテラル型）
     .with({ load: P.string }, (r) => ok({ command: 'wait' as const, load: r.load }))
     // url: string - Branded Typeなし

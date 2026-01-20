@@ -65,8 +65,11 @@ export type {
   // 実行オプション
   ExecuteOptions,
   ScreenshotOptions,
-  // Brand型
-  Selector,
+  // セレクタ型（DDD準拠：異なるドメイン概念を分離）
+  CssSelector,
+  RefSelector,
+  TextSelector,
+  // その他Brand型
   Url,
   FilePath,
   KeyboardKey,
@@ -79,9 +82,15 @@ export type {
   SnapshotRefs,
 } from './types';
 
-// Brand型ファクトリ関数
+// セレクタ型ファクトリ関数
 export {
-  asSelector,
+  asCssSelector,
+  asRefSelector,
+  asTextSelector,
+} from './types';
+
+// その他Brand型ファクトリ関数
+export {
   asUrl,
   asFilePath,
   asKeyboardKey,

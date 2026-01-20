@@ -2,9 +2,7 @@
  * コマンド型ガード・正規化関数
  *
  * YAMLからパースされた値を正規化されたRawCommand型に変換する。
- * 以下の2つの形式をサポート:
- * 1. 正規化済み形式: { command: 'click', selector: '...' }
- * 2. YAML簡略形式: { click: '...' }
+ * SelectorSpec形式 (css/ref/text) をサポート。
  *
  * RawCommand型は未検証の状態であり、command-validatorで
  * Branded Typeに変換される。
@@ -28,6 +26,7 @@ import type {
   RawScrollCommand,
   RawScrollIntoViewCommand,
   RawSelectCommand,
+  RawSelectorSpec,
   RawSnapshotCommand,
   RawTypeCommand,
   RawWaitCommand,
@@ -79,6 +78,64 @@ const toRecord = (value: unknown): Record<string, unknown> | null => {
 };
 
 /**
+ * セレクタフィールドの存在を確認するヘルパー
+ *
+ * @param obj - チェック対象のオブジェクト
+ * @returns [hasCss, hasRef, hasText]
+ */
+const checkSelectorFields = (obj: Record<string, unknown>): [boolean, boolean, boolean] => {
+  return [typeof obj.css === 'string', typeof obj.ref === 'string', typeof obj.text === 'string'];
+};
+
+/**
+ * セレクタ値を抽出するヘルパー
+ *
+ * @param obj - 抽出対象のオブジェクト
+ * @param hasCss - cssフィールドが存在するか
+ * @param hasRef - refフィールドが存在するか
+ * @param hasText - textフィールドが存在するか
+ * @returns RawSelectorSpec または null
+ */
+const extractSelectorValue = (
+  obj: Record<string, unknown>,
+  hasCss: boolean,
+  hasRef: boolean,
+  hasText: boolean,
+): RawSelectorSpec | null => {
+  if (hasCss && typeof obj.css === 'string') {
+    return { css: obj.css };
+  }
+  if (hasRef && typeof obj.ref === 'string') {
+    return { ref: obj.ref };
+  }
+  if (hasText && typeof obj.text === 'string') {
+    return { text: obj.text };
+  }
+  return null;
+};
+
+/**
+ * RawSelectorSpecを抽出する共通ヘルパー
+ *
+ * オブジェクトから css/ref/text のいずれかを抽出する。
+ * 複数指定されている場合や、いずれも存在しない場合はnullを返す。
+ *
+ * @param obj - 抽出対象のオブジェクト
+ * @returns RawSelectorSpec、または抽出できない場合null
+ */
+const extractRawSelectorSpec = (obj: Record<string, unknown>): RawSelectorSpec | null => {
+  const [hasCss, hasRef, hasText] = checkSelectorFields(obj);
+
+  // 複数指定されている場合は不正
+  const count = [hasCss, hasRef, hasText].filter(Boolean).length;
+  if (count !== 1) {
+    return null;
+  }
+
+  return extractSelectorValue(obj, hasCss, hasRef, hasText);
+};
+
+/**
  * OpenCommandを正規化
  *
  * 正規化済み形式: { command: 'open', url: '...' }
@@ -107,26 +164,22 @@ export const normalizeOpenCommand = (value: unknown): RawOpenCommand | null => {
 };
 
 /**
- * ClickCommandを構築するヘルパー
- *
- * @param selector - セレクタ文字列
- * @returns ClickCommand
- */
-const buildClickCommand = (selector: string): RawClickCommand => {
-  return { command: 'click', selector };
-};
-
-/**
  * 正規化済みClickCommandを検証
  *
  * @param obj - 検証対象のオブジェクト
  * @returns ClickCommand、または不正な場合null
  */
 const checkNormalizedClick = (obj: Record<string, unknown>): RawClickCommand | null => {
-  if (obj.command === 'click' && typeof obj.selector === 'string') {
-    return buildClickCommand(obj.selector);
+  if (obj.command !== 'click') {
+    return null;
   }
-  return null;
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'click', ...selectorSpec };
 };
 
 /**
@@ -140,25 +193,37 @@ const checkYamlClick = (obj: Record<string, unknown>): RawClickCommand | null =>
     return null;
   }
 
-  // { click: 'セレクタ' }
+  // { click: 'テキスト' } → text形式として解釈
   if (typeof obj.click === 'string') {
-    return { command: 'click', selector: obj.click };
+    return { command: 'click', text: obj.click };
   }
 
-  // { click: { selector: '...' } }
+  // { click: { css: '...', ref: '...', text: '...' } }
   const inner: Record<string, unknown> | null = toRecord(obj.click);
-  if (inner !== null && typeof inner.selector === 'string') {
-    return buildClickCommand(inner.selector);
+  if (inner === null) {
+    return null;
   }
 
-  return null;
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'click', ...selectorSpec };
 };
 
 /**
  * ClickCommandを正規化
  *
- * 正規化済み形式: { command: 'click', selector: '...' }
- * YAML簡略形式: { click: '...' } または { click: { selector: '...' } }
+ * 正規化済み形式:
+ * - { command: 'click', css: '...' }
+ * - { command: 'click', ref: '...' }
+ * - { command: 'click', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { click: { css: '...' } }
+ * - { click: { ref: '...' } }
+ * - { click: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたClickCommand、または不正な場合null
@@ -178,43 +243,22 @@ export const normalizeClickCommand = (value: unknown): RawClickCommand | null =>
 };
 
 /**
- * テキスト値を取得するヘルパー（text または value フィールド）
- *
- * @param obj - オブジェクト
- * @returns テキスト値、または存在しない場合null
- */
-const extractTextOrValue = (obj: Record<string, unknown>): string | null => {
-  if (typeof obj.text === 'string') {
-    return obj.text;
-  }
-  if (typeof obj.value === 'string') {
-    return obj.value;
-  }
-  return null;
-};
-
-/**
- * TypeCommandを構築するヘルパー
- *
- * @param selector - セレクタ文字列
- * @param value - 入力値
- * @returns TypeCommand
- */
-const buildTypeCommand = (selector: string, value: string): RawTypeCommand => {
-  return { command: 'type', selector, value };
-};
-
-/**
  * 正規化済みTypeCommandを検証
  *
  * @param obj - 検証対象のオブジェクト
  * @returns TypeCommand、または不正な場合null
  */
 const checkNormalizedType = (obj: Record<string, unknown>): RawTypeCommand | null => {
-  if (obj.command === 'type' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
-    return buildTypeCommand(obj.selector, obj.value);
+  if (obj.command !== 'type' || typeof obj.value !== 'string') {
+    return null;
   }
-  return null;
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'type', value: obj.value, ...selectorSpec };
 };
 
 /**
@@ -229,23 +273,30 @@ const checkYamlType = (obj: Record<string, unknown>): RawTypeCommand | null => {
   }
 
   const inner: Record<string, unknown> | null = toRecord(obj.type);
-  if (inner === null || typeof inner.selector !== 'string') {
+  if (inner === null || typeof inner.value !== 'string') {
     return null;
   }
 
-  const text: string | null = extractTextOrValue(inner);
-  if (text === null) {
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
     return null;
   }
 
-  return buildTypeCommand(inner.selector, text);
+  return { command: 'type', value: inner.value, ...selectorSpec };
 };
 
 /**
  * TypeCommandを正規化
  *
- * 正規化済み形式: { command: 'type', selector: '...', value: '...' }
- * YAML簡略形式: { type: { selector: '...', text: '...' } } または { type: { selector: '...', value: '...' } }
+ * 正規化済み形式:
+ * - { command: 'type', css: '...', value: '...' }
+ * - { command: 'type', ref: '...', value: '...' }
+ * - { command: 'type', text: '...', value: '...' }
+ *
+ * YAML簡略形式:
+ * - { type: { css: '...', value: '...' } }
+ * - { type: { ref: '...', value: '...' } }
+ * - { type: { text: '...', value: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたTypeCommand、または不正な場合null
@@ -271,10 +322,16 @@ export const normalizeTypeCommand = (value: unknown): RawTypeCommand | null => {
  * @returns FillCommand、または不正な場合null
  */
 const checkNormalizedFill = (obj: Record<string, unknown>): RawFillCommand | null => {
-  if (obj.command === 'fill' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
-    return { command: 'fill', selector: obj.selector, value: obj.value };
+  if (obj.command !== 'fill' || typeof obj.value !== 'string') {
+    return null;
   }
-  return null;
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'fill', value: obj.value, ...selectorSpec };
 };
 
 /**
@@ -289,23 +346,30 @@ const checkYamlFill = (obj: Record<string, unknown>): RawFillCommand | null => {
   }
 
   const inner: Record<string, unknown> | null = toRecord(obj.fill);
-  if (inner === null || typeof inner.selector !== 'string') {
+  if (inner === null || typeof inner.value !== 'string') {
     return null;
   }
 
-  const text: string | null = extractTextOrValue(inner);
-  if (text === null) {
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
     return null;
   }
 
-  return { command: 'fill', selector: inner.selector, value: text };
+  return { command: 'fill', value: inner.value, ...selectorSpec };
 };
 
 /**
  * FillCommandを正規化
  *
- * 正規化済み形式: { command: 'fill', selector: '...', value: '...' }
- * YAML簡略形式: { fill: { selector: '...', text: '...' } } または { fill: { selector: '...', value: '...' } }
+ * 正規化済み形式:
+ * - { command: 'fill', css: '...', value: '...' }
+ * - { command: 'fill', ref: '...', value: '...' }
+ * - { command: 'fill', text: '...', value: '...' }
+ *
+ * YAML簡略形式:
+ * - { fill: { css: '...', value: '...' } }
+ * - { fill: { ref: '...', value: '...' } }
+ * - { fill: { text: '...', value: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたFillCommand、または不正な場合null
@@ -351,10 +415,65 @@ export const normalizePressCommand = (value: unknown): RawPressCommand | null =>
 };
 
 /**
+ * 正規化済みHoverCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns HoverCommand、または不正な場合null
+ */
+const checkNormalizedHover = (obj: Record<string, unknown>): RawHoverCommand | null => {
+  if (obj.command !== 'hover') {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'hover', ...selectorSpec };
+};
+
+/**
+ * YAML簡略形式のHoverCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns HoverCommand、または不正な場合null
+ */
+const checkYamlHover = (obj: Record<string, unknown>): RawHoverCommand | null => {
+  if (!hasYamlKey(obj, 'hover')) {
+    return null;
+  }
+
+  // { hover: 'テキスト' } → text形式として解釈
+  if (typeof obj.hover === 'string') {
+    return { command: 'hover', text: obj.hover };
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.hover);
+  if (inner === null) {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'hover', ...selectorSpec };
+};
+
+/**
  * HoverCommandを正規化
  *
- * 正規化済み形式: { command: 'hover', selector: '...' }
- * YAML簡略形式: { hover: '...' }
+ * 正規化済み形式:
+ * - { command: 'hover', css: '...' }
+ * - { command: 'hover', ref: '...' }
+ * - { command: 'hover', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { hover: { css: '...' } }
+ * - { hover: { ref: '...' } }
+ * - { hover: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたHoverCommand、または不正な場合null
@@ -365,15 +484,12 @@ export const normalizeHoverCommand = (value: unknown): RawHoverCommand | null =>
     return null;
   }
 
-  if (obj.command === 'hover' && typeof obj.selector === 'string') {
-    return { command: 'hover', selector: obj.selector };
+  const normalized: RawHoverCommand | null = checkNormalizedHover(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'hover') && typeof obj.hover === 'string') {
-    return { command: 'hover', selector: obj.hover };
-  }
-
-  return null;
+  return checkYamlHover(obj);
 };
 
 /**
@@ -383,14 +499,16 @@ export const normalizeHoverCommand = (value: unknown): RawHoverCommand | null =>
  * @returns SelectCommand、または不正な場合null
  */
 const checkNormalizedSelect = (obj: Record<string, unknown>): RawSelectCommand | null => {
-  if (
-    obj.command === 'select' &&
-    typeof obj.selector === 'string' &&
-    typeof obj.value === 'string'
-  ) {
-    return { command: 'select', selector: obj.selector, value: obj.value };
+  if (obj.command !== 'select' || typeof obj.value !== 'string') {
+    return null;
   }
-  return null;
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'select', value: obj.value, ...selectorSpec };
 };
 
 /**
@@ -405,18 +523,30 @@ const checkYamlSelect = (obj: Record<string, unknown>): RawSelectCommand | null 
   }
 
   const inner: Record<string, unknown> | null = toRecord(obj.select);
-  if (inner === null || typeof inner.selector !== 'string' || typeof inner.value !== 'string') {
+  if (inner === null || typeof inner.value !== 'string') {
     return null;
   }
 
-  return { command: 'select', selector: inner.selector, value: inner.value };
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'select', value: inner.value, ...selectorSpec };
 };
 
 /**
  * SelectCommandを正規化
  *
- * 正規化済み形式: { command: 'select', selector: '...', value: '...' }
- * YAML簡略形式: { select: { selector: '...', value: '...' } }
+ * 正規化済み形式:
+ * - { command: 'select', css: '...', value: '...' }
+ * - { command: 'select', ref: '...', value: '...' }
+ * - { command: 'select', text: '...', value: '...' }
+ *
+ * YAML簡略形式:
+ * - { select: { css: '...', value: '...' } }
+ * - { select: { ref: '...', value: '...' } }
+ * - { select: { text: '...', value: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたSelectCommand、または不正な場合null
@@ -502,10 +632,67 @@ export const normalizeScrollCommand = (value: unknown): RawScrollCommand | null 
 };
 
 /**
+ * 正規化済みScrollIntoViewCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ScrollIntoViewCommand、または不正な場合null
+ */
+const checkNormalizedScrollIntoView = (
+  obj: Record<string, unknown>,
+): RawScrollIntoViewCommand | null => {
+  if (obj.command !== 'scrollIntoView') {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'scrollIntoView', ...selectorSpec };
+};
+
+/**
+ * YAML簡略形式のScrollIntoViewCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns ScrollIntoViewCommand、または不正な場合null
+ */
+const checkYamlScrollIntoView = (obj: Record<string, unknown>): RawScrollIntoViewCommand | null => {
+  if (!hasYamlKey(obj, 'scrollIntoView')) {
+    return null;
+  }
+
+  // { scrollIntoView: 'テキスト' } → text形式として解釈
+  if (typeof obj.scrollIntoView === 'string') {
+    return { command: 'scrollIntoView', text: obj.scrollIntoView };
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.scrollIntoView);
+  if (inner === null) {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'scrollIntoView', ...selectorSpec };
+};
+
+/**
  * ScrollIntoViewCommandを正規化
  *
- * 正規化済み形式: { command: 'scrollIntoView', selector: '...' }
- * YAML簡略形式: { scrollIntoView: '...' }
+ * 正規化済み形式:
+ * - { command: 'scrollIntoView', css: '...' }
+ * - { command: 'scrollIntoView', ref: '...' }
+ * - { command: 'scrollIntoView', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { scrollIntoView: { css: '...' } }
+ * - { scrollIntoView: { ref: '...' } }
+ * - { scrollIntoView: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたScrollIntoViewCommand、または不正な場合null
@@ -516,15 +703,12 @@ export const normalizeScrollIntoViewCommand = (value: unknown): RawScrollIntoVie
     return null;
   }
 
-  if (obj.command === 'scrollIntoView' && typeof obj.selector === 'string') {
-    return { command: 'scrollIntoView', selector: obj.selector };
+  const normalized: RawScrollIntoViewCommand | null = checkNormalizedScrollIntoView(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'scrollIntoView') && typeof obj.scrollIntoView === 'string') {
-    return { command: 'scrollIntoView', selector: obj.scrollIntoView };
-  }
-
-  return null;
+  return checkYamlScrollIntoView(obj);
 };
 
 /**
@@ -548,16 +732,15 @@ const checkNormalizedWaitBasic = (obj: Record<string, unknown>): RawWaitCommand 
     return null;
   }
 
+  // ms指定
   if (typeof obj.ms === 'number') {
     return { command: 'wait', ms: obj.ms };
   }
 
-  if (typeof obj.selector === 'string') {
-    return { command: 'wait', selector: obj.selector };
-  }
-
-  if (typeof obj.text === 'string') {
-    return { command: 'wait', text: obj.text };
+  // SelectorSpec (css/ref/text) の抽出を試みる
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec !== null) {
+    return { command: 'wait', ...selectorSpec };
   }
 
   return null;
@@ -606,8 +789,10 @@ const checkNormalizedWait = (obj: Record<string, unknown>): RawWaitCommand | nul
  * @returns WaitCommand、または不正な場合null
  */
 const checkYamlWaitObject = (inner: Record<string, unknown>): RawWaitCommand | null => {
-  if (typeof inner.text === 'string') {
-    return { command: 'wait', text: inner.text };
+  // SelectorSpec (css/ref/text) の抽出を試みる
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec !== null) {
+    return { command: 'wait', ...selectorSpec };
   }
 
   if (isLoadState(inner.load)) {
@@ -641,13 +826,7 @@ const checkYamlWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
     return { command: 'wait', ms: obj.wait };
   }
 
-  // { wait: string } → selectorとして扱う
-  // agent-browser の wait <selector> と同じ動作（そのまま Playwright に渡す）
-  if (typeof obj.wait === 'string') {
-    return { command: 'wait', selector: obj.wait };
-  }
-
-  // { wait: { text: "...", load: "...", url: "...", fn: "..." } }
+  // { wait: { css: "...", ref: "...", text: "...", load: "...", url: "...", fn: "..." } }
   const inner: Record<string, unknown> | null = toRecord(obj.wait);
   if (inner === null) {
     return null;
@@ -661,7 +840,8 @@ const checkYamlWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
  *
  * 正規化済み形式:
  * - { command: 'wait', ms: number }
- * - { command: 'wait', selector: string }
+ * - { command: 'wait', css: string }
+ * - { command: 'wait', ref: string }
  * - { command: 'wait', text: string }
  * - { command: 'wait', load: LoadState }
  * - { command: 'wait', url: string }
@@ -669,8 +849,9 @@ const checkYamlWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
  *
  * YAML簡略形式:
  * - { wait: number } → ms指定
- * - { wait: "<selector>" } → selector指定（agent-browserと同じ動作）
- * - { wait: { text: "..." } } → text指定
+ * - { wait: { css: "..." } } → cssセレクタ待機
+ * - { wait: { ref: "..." } } → ref待機
+ * - { wait: { text: "..." } } → text待機
  * - { wait: { load: "networkidle" } } → load指定
  * - { wait: { url: "..." } } → url指定
  * - { wait: { fn: "..." } } → fn指定
@@ -809,10 +990,67 @@ export const normalizeEvalCommand = (value: unknown): RawEvalCommand | null => {
 };
 
 /**
+ * 正規化済みAssertVisibleCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertVisibleCommand、または不正な場合null
+ */
+const checkNormalizedAssertVisible = (
+  obj: Record<string, unknown>,
+): RawAssertVisibleCommand | null => {
+  if (obj.command !== 'assertVisible') {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertVisible', ...selectorSpec };
+};
+
+/**
+ * YAML簡略形式のAssertVisibleCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertVisibleCommand、または不正な場合null
+ */
+const checkYamlAssertVisible = (obj: Record<string, unknown>): RawAssertVisibleCommand | null => {
+  if (!hasYamlKey(obj, 'assertVisible')) {
+    return null;
+  }
+
+  // { assertVisible: 'テキスト' } → text形式として解釈
+  if (typeof obj.assertVisible === 'string') {
+    return { command: 'assertVisible', text: obj.assertVisible };
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.assertVisible);
+  if (inner === null) {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertVisible', ...selectorSpec };
+};
+
+/**
  * AssertVisibleCommandを正規化
  *
- * 正規化済み形式: { command: 'assertVisible', selector: '...' }
- * YAML簡略形式: { assertVisible: '...' }
+ * 正規化済み形式:
+ * - { command: 'assertVisible', css: '...' }
+ * - { command: 'assertVisible', ref: '...' }
+ * - { command: 'assertVisible', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { assertVisible: { css: '...' } }
+ * - { assertVisible: { ref: '...' } }
+ * - { assertVisible: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたAssertVisibleCommand、または不正な場合null
@@ -823,22 +1061,78 @@ export const normalizeAssertVisibleCommand = (value: unknown): RawAssertVisibleC
     return null;
   }
 
-  if (obj.command === 'assertVisible' && typeof obj.selector === 'string') {
-    return { command: 'assertVisible', selector: obj.selector };
+  const normalized: RawAssertVisibleCommand | null = checkNormalizedAssertVisible(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'assertVisible') && typeof obj.assertVisible === 'string') {
-    return { command: 'assertVisible', selector: obj.assertVisible };
+  return checkYamlAssertVisible(obj);
+};
+
+/**
+ * 正規化済みAssertNotVisibleCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertNotVisibleCommand、または不正な場合null
+ */
+const checkNormalizedAssertNotVisible = (
+  obj: Record<string, unknown>,
+): RawAssertNotVisibleCommand | null => {
+  if (obj.command !== 'assertNotVisible') {
+    return null;
   }
 
-  return null;
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertNotVisible', ...selectorSpec };
+};
+
+/**
+ * YAML簡略形式のAssertNotVisibleCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertNotVisibleCommand、または不正な場合null
+ */
+const checkYamlAssertNotVisible = (
+  obj: Record<string, unknown>,
+): RawAssertNotVisibleCommand | null => {
+  if (!hasYamlKey(obj, 'assertNotVisible')) {
+    return null;
+  }
+
+  // { assertNotVisible: 'テキスト' } → text形式として解釈
+  if (typeof obj.assertNotVisible === 'string') {
+    return { command: 'assertNotVisible', text: obj.assertNotVisible };
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.assertNotVisible);
+  if (inner === null) {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertNotVisible', ...selectorSpec };
 };
 
 /**
  * AssertNotVisibleCommandを正規化
  *
- * 正規化済み形式: { command: 'assertNotVisible', selector: '...' }
- * YAML簡略形式: { assertNotVisible: '...' }
+ * 正規化済み形式:
+ * - { command: 'assertNotVisible', css: '...' }
+ * - { command: 'assertNotVisible', ref: '...' }
+ * - { command: 'assertNotVisible', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { assertNotVisible: { css: '...' } }
+ * - { assertNotVisible: { ref: '...' } }
+ * - { assertNotVisible: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたAssertNotVisibleCommand、または不正な場合null
@@ -851,22 +1145,76 @@ export const normalizeAssertNotVisibleCommand = (
     return null;
   }
 
-  if (obj.command === 'assertNotVisible' && typeof obj.selector === 'string') {
-    return { command: 'assertNotVisible', selector: obj.selector };
+  const normalized: RawAssertNotVisibleCommand | null = checkNormalizedAssertNotVisible(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'assertNotVisible') && typeof obj.assertNotVisible === 'string') {
-    return { command: 'assertNotVisible', selector: obj.assertNotVisible };
+  return checkYamlAssertNotVisible(obj);
+};
+
+/**
+ * 正規化済みAssertEnabledCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertEnabledCommand、または不正な場合null
+ */
+const checkNormalizedAssertEnabled = (
+  obj: Record<string, unknown>,
+): RawAssertEnabledCommand | null => {
+  if (obj.command !== 'assertEnabled') {
+    return null;
   }
 
-  return null;
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertEnabled', ...selectorSpec };
+};
+
+/**
+ * YAML簡略形式のAssertEnabledCommandを検証
+ *
+ * @param obj - 検証対象のオブジェクト
+ * @returns AssertEnabledCommand、または不正な場合null
+ */
+const checkYamlAssertEnabled = (obj: Record<string, unknown>): RawAssertEnabledCommand | null => {
+  if (!hasYamlKey(obj, 'assertEnabled')) {
+    return null;
+  }
+
+  // { assertEnabled: 'テキスト' } → text形式として解釈
+  if (typeof obj.assertEnabled === 'string') {
+    return { command: 'assertEnabled', text: obj.assertEnabled };
+  }
+
+  const inner: Record<string, unknown> | null = toRecord(obj.assertEnabled);
+  if (inner === null) {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return { command: 'assertEnabled', ...selectorSpec };
 };
 
 /**
  * AssertEnabledCommandを正規化
  *
- * 正規化済み形式: { command: 'assertEnabled', selector: '...' }
- * YAML簡略形式: { assertEnabled: '...' }
+ * 正規化済み形式:
+ * - { command: 'assertEnabled', css: '...' }
+ * - { command: 'assertEnabled', ref: '...' }
+ * - { command: 'assertEnabled', text: '...' }
+ *
+ * YAML簡略形式:
+ * - { assertEnabled: { css: '...' } }
+ * - { assertEnabled: { ref: '...' } }
+ * - { assertEnabled: { text: '...' } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたAssertEnabledCommand、または不正な場合null
@@ -877,39 +1225,12 @@ export const normalizeAssertEnabledCommand = (value: unknown): RawAssertEnabledC
     return null;
   }
 
-  if (obj.command === 'assertEnabled' && typeof obj.selector === 'string') {
-    return { command: 'assertEnabled', selector: obj.selector };
+  const normalized: RawAssertEnabledCommand | null = checkNormalizedAssertEnabled(obj);
+  if (normalized !== null) {
+    return normalized;
   }
 
-  if (hasYamlKey(obj, 'assertEnabled') && typeof obj.assertEnabled === 'string') {
-    return { command: 'assertEnabled', selector: obj.assertEnabled };
-  }
-
-  return null;
-};
-
-/**
- * AssertCheckedCommandを構築するヘルパー
- *
- * @param selector - セレクタ文字列
- * @param checked - 期待されるチェック状態
- * @returns AssertCheckedCommand、またはcheckedが不正な型の場合null
- */
-const buildAssertCheckedCommand = (
-  selector: string,
-  checked: unknown,
-): RawAssertCheckedCommand | null => {
-  // checkedが存在し、かつboolean以外の場合は不正
-  if (checked !== undefined && typeof checked !== 'boolean') {
-    return null;
-  }
-
-  const result: RawAssertCheckedCommand = {
-    command: 'assertChecked',
-    selector,
-    checked: typeof checked === 'boolean' ? checked : UseDefault,
-  };
-  return result;
+  return checkYamlAssertEnabled(obj);
 };
 
 /**
@@ -921,10 +1242,51 @@ const buildAssertCheckedCommand = (
 const checkNormalizedAssertChecked = (
   obj: Record<string, unknown>,
 ): RawAssertCheckedCommand | null => {
-  if (obj.command === 'assertChecked' && typeof obj.selector === 'string') {
-    return buildAssertCheckedCommand(obj.selector, obj.checked);
+  if (obj.command !== 'assertChecked') {
+    return null;
   }
-  return null;
+
+  // checkedが存在し、かつboolean以外の場合は不正
+  if (obj.checked !== undefined && typeof obj.checked !== 'boolean') {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(obj);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return {
+    command: 'assertChecked',
+    checked: typeof obj.checked === 'boolean' ? obj.checked : UseDefault,
+    ...selectorSpec,
+  };
+};
+
+/**
+ * YAML簡略形式のAssertCheckedCommand（オブジェクト形式）を検証
+ *
+ * @param inner - assertCheckedオブジェクトの内容
+ * @returns AssertCheckedCommand、または不正な場合null
+ */
+const checkYamlAssertCheckedObject = (
+  inner: Record<string, unknown>,
+): RawAssertCheckedCommand | null => {
+  // checkedが存在し、かつboolean以外の場合は不正
+  if (inner.checked !== undefined && typeof inner.checked !== 'boolean') {
+    return null;
+  }
+
+  const selectorSpec = extractRawSelectorSpec(inner);
+  if (selectorSpec === null) {
+    return null;
+  }
+
+  return {
+    command: 'assertChecked',
+    checked: typeof inner.checked === 'boolean' ? inner.checked : UseDefault,
+    ...selectorSpec,
+  };
 };
 
 /**
@@ -938,25 +1300,31 @@ const checkYamlAssertChecked = (obj: Record<string, unknown>): RawAssertCheckedC
     return null;
   }
 
-  // { assertChecked: 'セレクタ' }
+  // { assertChecked: 'テキスト' } → text形式として解釈（checked=true）
   if (typeof obj.assertChecked === 'string') {
-    return { command: 'assertChecked', selector: obj.assertChecked, checked: UseDefault };
+    return { command: 'assertChecked', text: obj.assertChecked, checked: UseDefault };
   }
 
-  // { assertChecked: { selector: '...', checked?: boolean } }
   const inner: Record<string, unknown> | null = toRecord(obj.assertChecked);
-  if (inner !== null && typeof inner.selector === 'string') {
-    return buildAssertCheckedCommand(inner.selector, inner.checked);
+  if (inner === null) {
+    return null;
   }
 
-  return null;
+  return checkYamlAssertCheckedObject(inner);
 };
 
 /**
  * AssertCheckedCommandを正規化
  *
- * 正規化済み形式: { command: 'assertChecked', selector: '...', checked?: boolean }
- * YAML簡略形式: { assertChecked: '...' } または { assertChecked: { selector: '...', checked?: boolean } }
+ * 正規化済み形式:
+ * - { command: 'assertChecked', css: '...', checked?: boolean }
+ * - { command: 'assertChecked', ref: '...', checked?: boolean }
+ * - { command: 'assertChecked', text: '...', checked?: boolean }
+ *
+ * YAML簡略形式:
+ * - { assertChecked: { css: '...', checked?: boolean } }
+ * - { assertChecked: { ref: '...', checked?: boolean } }
+ * - { assertChecked: { text: '...', checked?: boolean } }
  *
  * @param value - 検証対象の値
  * @returns 正規化されたAssertCheckedCommand、または不正な場合null

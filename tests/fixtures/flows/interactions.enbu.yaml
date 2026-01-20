@@ -6,18 +6,18 @@ steps:
 
   # テキスト入力
   - type:
-      selector: ユーザー名
-      text: テストユーザー
+      text: ユーザー名
+      value: テストユーザー
 
   # メールアドレス入力
   - type:
-      selector: メールアドレス
-      text: test@example.com
+      text: メールアドレス
+      value: test@example.com
 
   # 年齢入力
   - fill:
-      selector: 年齢
-      text: "25"
+      text: 年齢
+      value: "25"
 
   # チェックボックスをクリック
   - click: 読書

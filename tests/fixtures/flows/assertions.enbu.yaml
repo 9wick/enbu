@@ -15,5 +15,5 @@ steps:
 
   # 未チェックのチェックボックス（checked: falseで検証）
   - assertChecked:
-      selector: 未チェックチェックボックス
+      text: 未チェックチェックボックス
       checked: false

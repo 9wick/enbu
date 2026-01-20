@@ -20,7 +20,7 @@ steps:
 
   # Enter "Scarf" in search box (using aria-label="Search products")
   - fill:
-      selector: Search products
+      text: Search products
       value: Scarf
 
   # Press Enter to search

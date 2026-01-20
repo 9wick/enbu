@@ -5,11 +5,22 @@
  */
 
 import { type ResultAsync } from 'neverthrow';
-import type { AgentBrowserError, ExecuteOptions, ScrollDirection, Selector } from '../types';
+import type {
+  AgentBrowserError,
+  CssSelector,
+  ExecuteOptions,
+  RefSelector,
+  ScrollDirection,
+} from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
+
+/**
+ * CLIに渡せるセレクタ型
+ */
+type CliSelector = CssSelector | RefSelector;
 
 /**
  * ページを指定した方向と量でスクロールする
@@ -31,12 +42,12 @@ export const browserScroll = (
 /**
  * 指定したセレクタの要素がビューポートに表示されるようにスクロールする
  *
- * @param selector - スクロール先のセレクタ
+ * @param selector - スクロール先のセレクタ（CssSelector または RefSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
 export const browserScrollIntoView = (
-  selector: Selector,
+  selector: CliSelector,
   options: ExecuteOptions = {},
 ): ResultAsync<EmptyData, AgentBrowserError> =>
   executeCommand('scrollintoview', [selector, '--json'], options).andThen((stdout) =>

@@ -138,7 +138,7 @@ describe('E2E: Assertion Tests', () => {
    *
    * 前提条件:
    * - tests/fixtures/html/assertions.html に未チェックチェックボックス「未チェックチェックボックス」が存在する
-   * - assertions.enbu.yaml に assertChecked: { selector: 未チェックチェックボックス, checked: false } が含まれる
+   * - assertions.enbu.yaml に assertChecked: { text: 未チェックチェックボックス, checked: false } が含まれる
    *
    * 検証項目:
    * - assertChecked コマンドで未チェックのチェックボックスが検出される（checked: falseで検証）
