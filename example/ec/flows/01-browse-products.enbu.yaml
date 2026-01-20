@@ -1,41 +1,41 @@
-# 商品閲覧テストフロー
-# 商品一覧の表示、検索、詳細ページへの遷移を確認する
+# Product Browsing Test Flow
+# Verify product listing display, search, and navigation to detail page
 
 env:
   BASE_URL: http://localhost:3060
 
 steps:
-  # トップページを開く
+  # Open top page
   - open: ${BASE_URL}
 
-  # ページタイトル「オンラインショップ」の表示確認
-  - assertVisible: オンラインショップ
+  # Verify page title "MAISON ÉLÉGANCE" is displayed
+  - assertVisible: MAISON ÉLÉGANCE
 
-  # 「商品一覧」見出しの表示確認
-  - assertVisible: 商品一覧
+  # Verify "Collection" heading is displayed
+  - assertVisible: Collection
 
-  # 商品が表示されていることを確認
-  - assertVisible: プレミアムコーヒー豆 500g
-  - assertVisible: 有機緑茶ティーバッグ 30包
+  # Verify products are displayed
+  - assertVisible: Cashmere Wool Cardigan
+  - assertVisible: Italian Leather Tote Bag
 
-  # 検索ボックスに「はちみつ」と入力（aria-label="商品を検索"を使用）
+  # Enter "Scarf" in search box (using aria-label="Search products")
   - fill:
-      selector: 商品を検索
-      value: はちみつ
+      selector: Search products
+      value: Scarf
 
-  # 検索ボタンをクリック
-  - click: 検索する
+  # Press Enter to search
+  - press: Enter
 
-  # 検索結果に「はちみつ」商品が表示されることを確認
-  - assertVisible: 北海道産はちみつ 300g
+  # Verify "Scarf" product appears in search results
+  - assertVisible: Silk Scarf Collection
 
-  # トップページに戻る
+  # Return to top page
   - open: ${BASE_URL}
 
-  # 商品の「詳細を見る」ボタンをクリック（プレミアムコーヒー豆の商品名をクリック）
-  - click: プレミアムコーヒー豆 500g
+  # Click on product name to go to detail page
+  - click: Cashmere Wool Cardigan
 
-  # 商品詳細ページの表示確認（商品名の見出しとカートボタンで確認）
+  # Verify product detail page is displayed (product description and cart button)
   - wait:
-      text: エチオピア産の高品質アラビカ種
-  - assertVisible: カートに追加
+      text: premium cashmere wool
+  - assertVisible: Add to Cart

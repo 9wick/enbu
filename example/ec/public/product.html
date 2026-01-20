@@ -1,62 +1,483 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>商品詳細 - オンラインショップ</title>
+  <title>Product Details — MAISON ÉLÉGANCE</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&family=Noto+Serif+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
-    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.5rem; }
-    header a { color: white; text-decoration: none; }
-    nav { display: flex; gap: 1rem; }
-    nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
-    .cart-link { background: #e74c3c; }
-    main { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    .breadcrumb { margin-bottom: 1.5rem; }
-    .breadcrumb a { color: #3498db; text-decoration: none; }
-    .breadcrumb span { color: #666; margin: 0 0.5rem; }
-    .product-detail { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-    @media (max-width: 600px) { .product-detail { grid-template-columns: 1fr; } }
-    .product-image-container { background: #f9f9f9; padding: 2rem; display: flex; align-items: center; justify-content: center; }
-    .product-image { max-width: 100%; height: auto; max-height: 300px; }
-    .product-info { padding: 2rem; }
-    .product-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; }
-    .product-price { color: #e74c3c; font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
-    .product-description { color: #666; line-height: 1.8; margin-bottom: 1.5rem; }
-    .product-stock { margin-bottom: 1.5rem; padding: 0.75rem; background: #e8f5e9; border-radius: 4px; color: #27ae60; }
-    .product-stock.low { background: #fff3e0; color: #e67e22; }
-    .product-stock.out { background: #ffebee; color: #e74c3c; }
-    .quantity-selector { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
-    .quantity-selector label { font-weight: bold; }
-    .quantity-selector select { padding: 0.5rem 1rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; }
-    .btn { padding: 1rem 2rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-    .btn-success { background: #27ae60; color: white; width: 100%; }
-    .btn-success:hover { background: #229954; }
-    .btn-success:disabled { background: #bdc3c7; cursor: not-allowed; }
-    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: #27ae60; color: white; border-radius: 4px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
-    .toast.show { opacity: 1; }
-    .loading { text-align: center; padding: 4rem; }
+    /* ==================== CSS Variable Definitions ==================== */
+    :root {
+      /* Color Palette */
+      --color-bg: #FAFAF8;
+      --color-card-bg: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-text-primary: #1A1A1A;
+      --color-text-secondary: #5C5C5C;
+      --color-accent: #C9A962;
+      --color-accent-hover: #B89852;
+
+      /* Typography */
+      --font-display: "Cormorant Garamond", "Noto Serif JP", serif;
+      --font-body: "DM Sans", "Noto Sans JP", sans-serif;
+
+      /* Spacing */
+      --spacing-xs: 0.5rem;
+      --spacing-sm: 1rem;
+      --spacing-md: 1.5rem;
+      --spacing-lg: 2rem;
+      --spacing-xl: 3rem;
+      --spacing-2xl: 4rem;
+
+      /* Transitions */
+      --transition-fast: 0.2s ease;
+      --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ==================== Reset & Base Styles ==================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      opacity: 0;
+      animation: fadeInPage 0.6s ease-out forwards;
+    }
+
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==================== Header ==================== */
+    header {
+      background: var(--color-card-bg);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--spacing-md) var(--spacing-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    header .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+    }
+
+    header h1 a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    nav {
+      display: flex;
+      gap: var(--spacing-lg);
+      align-items: center;
+    }
+
+    nav a {
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--color-text-primary);
+      text-decoration: none;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      transition: color var(--transition-fast);
+      position: relative;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 1px;
+      background: var(--color-accent);
+      transition: all var(--transition-smooth);
+      transform: translateX(-50%);
+    }
+
+    nav a:hover {
+      color: var(--color-accent);
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    .cart-link {
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    /* ==================== Main Content ==================== */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--spacing-2xl) var(--spacing-xl);
+    }
+
+    /* ==================== Breadcrumb ==================== */
+    .breadcrumb {
+      margin-bottom: var(--spacing-xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--color-border);
+      animation: fadeIn 0.6s ease-out 0.1s backwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .breadcrumb a {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color var(--transition-fast);
+    }
+
+    .breadcrumb a:hover {
+      color: var(--color-accent);
+    }
+
+    .breadcrumb span {
+      color: var(--color-border);
+      margin: 0 var(--spacing-sm);
+      font-weight: 300;
+    }
+
+    .breadcrumb .current {
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    /* ==================== Product Detail Container ==================== */
+    .product-detail {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-border);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+      animation: fadeInDetail 0.8s ease-out 0.2s backwards;
+    }
+
+    @keyframes fadeInDetail {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==================== Product Image Section ==================== */
+    .product-image-container {
+      background: var(--color-bg);
+      padding: var(--spacing-2xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-image {
+      max-width: 100%;
+      height: auto;
+      max-height: 600px;
+      object-fit: contain;
+      transition: transform var(--transition-smooth);
+    }
+
+    .product-image-container:hover .product-image {
+      transform: scale(1.05);
+    }
+
+    /* ==================== Product Information Section ==================== */
+    .product-info {
+      padding: var(--spacing-2xl);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .product-name {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--spacing-md);
+      color: var(--color-text-primary);
+      line-height: 1.3;
+    }
+
+    .product-price {
+      font-family: var(--font-body);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-xl);
+      letter-spacing: 0.05em;
+    }
+
+    .product-description {
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      line-height: 1.8;
+      margin-bottom: var(--spacing-xl);
+      letter-spacing: 0.02em;
+    }
+
+    /* ==================== Stock Status ==================== */
+    .product-stock {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-bottom: var(--spacing-xl);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text-secondary);
+      display: inline-block;
+    }
+
+    .product-stock.low {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: rgba(201, 169, 98, 0.05);
+    }
+
+    .product-stock.out {
+      border-color: #D4534F;
+      color: #D4534F;
+      background: rgba(212, 83, 79, 0.05);
+    }
+
+    /* ==================== Quantity Selector ==================== */
+    .quantity-selector {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .quantity-selector label {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-primary);
+    }
+
+    .quantity-selector select {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-card-bg);
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-width: 80px;
+    }
+
+    .quantity-selector select:hover {
+      border-color: var(--color-text-primary);
+    }
+
+    .quantity-selector select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+
+    /* ==================== Buttons ==================== */
+    .btn {
+      padding: var(--spacing-md) var(--spacing-xl);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      text-align: center;
+      transition: all var(--transition-fast);
+      background: transparent;
+      color: var(--color-text-primary);
+      width: 100%;
+      display: block;
+    }
+
+    .btn-success {
+      border-color: var(--color-text-primary);
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+    }
+
+    .btn-success:hover {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    .btn-success:disabled {
+      background: var(--color-border);
+      border-color: var(--color-border);
+      color: var(--color-text-secondary);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    /* ==================== Toast Notification ==================== */
+    .toast {
+      position: fixed;
+      bottom: var(--spacing-lg);
+      right: var(--spacing-lg);
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* ==================== Loading ==================== */
+    .loading {
+      text-align: center;
+      padding: var(--spacing-2xl);
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    /* ==================== Utilities ==================== */
+    .hidden {
+      display: none;
+    }
+
+    /* ==================== Responsive Design ==================== */
+    @media (max-width: 1024px) {
+      .product-detail {
+        grid-template-columns: 1fr;
+      }
+
+      .product-image-container {
+        min-height: 400px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: var(--spacing-sm) var(--spacing-md);
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+      }
+
+      nav {
+        gap: var(--spacing-sm);
+      }
+
+      nav a {
+        font-size: 0.75rem;
+        padding: var(--spacing-xs);
+      }
+
+      main {
+        padding: var(--spacing-lg) var(--spacing-md);
+      }
+
+      .product-info {
+        padding: var(--spacing-lg);
+      }
+
+      .product-name {
+        font-size: 1.75rem;
+      }
+
+      .product-price {
+        font-size: 1.25rem;
+      }
+
+      .product-image-container {
+        padding: var(--spacing-lg);
+        min-height: 300px;
+      }
+
+      .breadcrumb {
+        font-size: 0.75rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1><a href="index.html">オンラインショップ</a></h1>
-    <nav>
-      <a href="cart.html" class="cart-link">カート (<span id="cart-count">0</span>)</a>
-    </nav>
+    <div class="header-container">
+      <h1><a href="index.html">MAISON ÉLÉGANCE</a></h1>
+      <nav>
+        <a href="cart.html" class="cart-link">Shopping Bag (<span id="cart-count">0</span>)</a>
+      </nav>
+    </div>
   </header>
 
   <main>
     <div class="breadcrumb">
-      <a href="index.html">トップ</a>
-      <span>></span>
-      <span id="breadcrumb-name">商品詳細</span>
+      <a href="index.html">Home</a>
+      <span>—</span>
+      <span class="current" id="breadcrumb-name">Product Details</span>
     </div>
 
     <div id="product-container">
-      <div class="loading">読み込み中...</div>
+      <div class="loading">Loading...</div>
     </div>
   </main>
 
@@ -66,7 +487,7 @@
     let sessionId = localStorage.getItem('sessionId');
     let product = null;
 
-    /** セッションヘッダー付きfetch */
+    /** Fetch with session header */
     function fetchWithSession(url, options = {}) {
       const headers = { ...options.headers };
       if (sessionId) {
@@ -75,7 +496,7 @@
       return fetch(url, { ...options, headers });
     }
 
-    /** トースト表示 */
+    /** Display toast notification */
     function showToast(message) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -83,39 +504,39 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    /** 商品詳細を取得して表示 */
+    /** Load and display product details */
     async function loadProduct() {
       const params = new URLSearchParams(window.location.search);
       const productId = params.get('id');
 
       if (!productId) {
-        document.getElementById('product-container').innerHTML = '<p>商品IDが指定されていません</p>';
+        document.getElementById('product-container').innerHTML = '<p class="loading">Product ID not specified</p>';
         return;
       }
 
       try {
         const response = await fetchWithSession(`/api/products/${productId}`);
         if (!response.ok) {
-          document.getElementById('product-container').innerHTML = '<p>商品が見つかりません</p>';
+          document.getElementById('product-container').innerHTML = '<p class="loading">Product not found</p>';
           return;
         }
 
         product = await response.json();
         renderProduct(product);
         document.getElementById('breadcrumb-name').textContent = product.name;
-        document.title = `${product.name} - オンラインショップ`;
+        document.title = `${product.name} — MAISON ÉLÉGANCE`;
 
       } catch (error) {
-        document.getElementById('product-container').innerHTML = '<p>エラーが発生しました</p>';
+        document.getElementById('product-container').innerHTML = '<p class="loading">An error occurred</p>';
       }
     }
 
-    /** 商品を描画 */
+    /** Render product details */
     function renderProduct(product) {
       const stockClass = product.stock === 0 ? 'out' : product.stock < 10 ? 'low' : '';
-      const stockText = product.stock === 0 ? '在庫切れ' : `在庫: ${product.stock}点`;
+      const stockText = product.stock === 0 ? 'Out of Stock' : `In Stock: ${product.stock} Available`;
 
-      // 数量選択のオプションを生成（最大10個または在庫数のいずれか小さい方）
+      // Generate quantity selection options (maximum 10 or stock quantity, whichever is smaller)
       const maxQty = Math.min(10, product.stock);
       const qtyOptions = Array.from({ length: maxQty }, (_, i) =>
         `<option value="${i + 1}">${i + 1}</option>`
@@ -133,19 +554,19 @@
             <div class="product-stock ${stockClass}">${stockText}</div>
             ${product.stock > 0 ? `
               <div class="quantity-selector">
-                <label for="quantity">数量:</label>
+                <label for="quantity">Quantity:</label>
                 <select id="quantity">${qtyOptions}</select>
               </div>
-              <button class="btn btn-success" onclick="addToCart()">カートに追加</button>
+              <button class="btn btn-success" onclick="addToCart()">Add to Cart</button>
             ` : `
-              <button class="btn btn-success" disabled>在庫切れ</button>
+              <button class="btn btn-success" disabled>Out of Stock</button>
             `}
           </div>
         </div>
       `;
     }
 
-    /** カートに追加 */
+    /** Add to cart */
     async function addToCart() {
       const quantity = parseInt(document.getElementById('quantity').value, 10);
 
@@ -156,15 +577,15 @@
       });
 
       if (response.ok) {
-        showToast(`${product.name}をカートに追加しました`);
+        showToast(`${product.name} has been added to your cart`);
         updateCartCount();
       } else {
         const error = await response.json();
-        showToast(error.error || 'エラーが発生しました');
+        showToast(error.error || 'An error occurred');
       }
     }
 
-    /** カート数を更新 */
+    /** Update cart count */
     async function updateCartCount() {
       const response = await fetchWithSession('/api/cart');
       const cart = await response.json();
@@ -172,7 +593,7 @@
       document.getElementById('cart-count').textContent = count;
     }
 
-    // 初期化
+    // Initialize
     loadProduct();
     updateCartCount();
   </script>

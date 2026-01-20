@@ -1,10 +1,10 @@
 /**
- * ECサイトE2Eテスト用サーバー
+ * E-commerce E2E Test Server
  *
- * メモリのみで動作する簡易ECサイトサーバー。
- * enbuによるE2Eテストのデモ用途。
+ * Simple e-commerce site server that operates in-memory only.
+ * For demonstration purposes of E2E testing with enbu.
  *
- * ポート3060を使用
+ * Uses port 3060
  */
 import express, { Request, Response, NextFunction } from 'express';
 import { dirname, join } from 'node:path';
@@ -14,10 +14,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 // --------------------------------------------------
-// メモリDB（簡易データストア）
+// In-memory DB (simple data store)
 // --------------------------------------------------
 
-/** 商品データ型 */
+/** Product data type */
 interface Product {
   id: number;
   name: string;
@@ -27,13 +27,13 @@ interface Product {
   image: string;
 }
 
-/** カートアイテム型 */
+/** Cart item type */
 interface CartItem {
   productId: number;
   quantity: number;
 }
 
-/** ユーザー型 */
+/** User type */
 interface User {
   id: number;
   email: string;
@@ -41,7 +41,7 @@ interface User {
   name: string;
 }
 
-/** 注文型 */
+/** Order type */
 interface Order {
   id: number;
   userId: number;
@@ -50,86 +50,86 @@ interface Order {
   createdAt: string;
 }
 
-/** セッション型 */
+/** Session type */
 interface Session {
   userId: number | null;
   cart: CartItem[];
 }
 
-/** 商品マスタデータ */
+/** Product master data */
 const products: Product[] = [
   {
     id: 1,
-    name: 'プレミアムコーヒー豆 500g',
-    price: 2980,
-    description: 'エチオピア産の高品質アラビカ種。フルーティーな香りと深いコクが特徴です。',
+    name: 'Cashmere Wool Cardigan',
+    price: 45000,
+    description: 'Luxuriously soft cardigan crafted from premium cashmere wool. Features elegant draping and timeless silhouette.',
     stock: 50,
-    image: '/images/coffee.svg',
+    image: '/images/cardigan.png',
   },
   {
     id: 2,
-    name: '有機緑茶ティーバッグ 30包',
-    price: 1580,
-    description: '静岡県産の有機栽培茶葉を使用。手軽に本格的な緑茶が楽しめます。',
+    name: 'Italian Leather Tote Bag',
+    price: 68000,
+    description: 'Handcrafted in Florence from the finest full-grain leather. Spacious interior with signature hardware detailing.',
     stock: 100,
-    image: '/images/tea.svg',
+    image: '/images/bag.png',
   },
   {
     id: 3,
-    name: '北海道産はちみつ 300g',
-    price: 1980,
-    description: '北海道の大自然で採れた純粋はちみつ。パンやヨーグルトに最適。',
+    name: 'Silk Scarf Collection',
+    price: 29800,
+    description: 'Exquisite hand-rolled silk scarf featuring an exclusive artistic print. Made from 100% pure mulberry silk.',
     stock: 30,
-    image: '/images/honey.svg',
+    image: '/images/scarf.png',
   },
   {
     id: 4,
-    name: 'オーガニックチョコレート 100g',
-    price: 980,
-    description: 'フェアトレードのカカオを使用した濃厚なダークチョコレート。',
+    name: 'Premium Suede Loafers',
+    price: 38500,
+    description: 'Elegant Italian suede loafers with hand-stitched detailing. Leather sole and cushioned footbed for all-day comfort.',
     stock: 80,
-    image: '/images/chocolate.svg',
+    image: '/images/loafers.png',
   },
   {
     id: 5,
-    name: '天然塩 200g',
-    price: 680,
-    description: '沖縄の海水から作られた天然塩。ミネラル豊富で料理を引き立てます。',
+    name: 'Merino Wool Coat',
+    price: 89000,
+    description: 'Sophisticated double-breasted coat in ultra-fine merino wool. Clean lines and impeccable tailoring for a refined aesthetic.',
     stock: 200,
-    image: '/images/salt.svg',
+    image: '/images/coat.png',
   },
 ];
 
-/** テストユーザーデータ */
+/** Test user data */
 const users: User[] = [
   {
     id: 1,
     email: 'test@example.com',
     password: 'password123',
-    name: '山田太郎',
+    name: 'John Smith',
   },
 ];
 
-/** 注文履歴 */
+/** Order history */
 const orders: Order[] = [];
 let orderIdCounter = 1;
 
 /**
- * セッションストア（メモリ）
- * 簡易実装としてCookieのセッションIDをキーに保持
+ * Session store (in-memory)
+ * Simple implementation that stores sessions by Cookie session ID as key
  */
 const sessions: Map<string, Session> = new Map();
 
 // --------------------------------------------------
-// ミドルウェア
+// Middleware
 // --------------------------------------------------
 
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
 /**
- * セッション管理ミドルウェア
- * リクエストごとにセッションを取得または作成
+ * Session management middleware
+ * Retrieves or creates a session for each request
  */
 function sessionMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const sessionId = req.headers['x-session-id'] as string | undefined;
@@ -151,18 +151,18 @@ function sessionMiddleware(req: Request, _res: Response, next: NextFunction): vo
 app.use(sessionMiddleware);
 
 // --------------------------------------------------
-// APIエンドポイント
+// API Endpoints
 // --------------------------------------------------
 
 type RequestWithSession = Request & { session: Session; sessionId: string };
 
-/** ログインAPI */
+/** Login API */
 app.post('/api/login', (req: Request, res: Response) => {
   const { email, password } = req.body as { email?: string; password?: string };
   const user = users.find((u) => u.email === email && u.password === password);
 
   if (!user) {
-    res.status(401).json({ error: 'メールアドレスまたはパスワードが正しくありません' });
+    res.status(401).json({ error: 'Invalid email or password' });
     return;
   }
 
@@ -176,7 +176,7 @@ app.post('/api/login', (req: Request, res: Response) => {
   });
 });
 
-/** ログアウトAPI */
+/** Logout API */
 app.post('/api/logout', (req: Request, res: Response) => {
   const reqWithSession = req as RequestWithSession;
   reqWithSession.session.userId = null;
@@ -184,25 +184,25 @@ app.post('/api/logout', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-/** 商品一覧取得API */
+/** Get product list API */
 app.get('/api/products', (_req: Request, res: Response) => {
   res.json(products);
 });
 
-/** 商品詳細取得API */
+/** Get product details API */
 app.get('/api/products/:id', (req: Request, res: Response) => {
   const productId = parseInt(req.params.id as string, 10);
   const product = products.find((p) => p.id === productId);
 
   if (!product) {
-    res.status(404).json({ error: '商品が見つかりません' });
+    res.status(404).json({ error: 'Product not found' });
     return;
   }
 
   res.json(product);
 });
 
-/** 商品検索API */
+/** Product search API */
 app.get('/api/products/search/:query', (req: Request, res: Response) => {
   const query = (req.params.query as string).toLowerCase();
   const results = products.filter(
@@ -211,7 +211,7 @@ app.get('/api/products/search/:query', (req: Request, res: Response) => {
   res.json(results);
 });
 
-/** カート取得API */
+/** Get cart API */
 app.get('/api/cart', (req: Request, res: Response) => {
   const reqWithSession = req as RequestWithSession;
   const cart = reqWithSession.session.cart;
@@ -230,23 +230,23 @@ app.get('/api/cart', (req: Request, res: Response) => {
   res.json({ items: cartWithDetails, total });
 });
 
-/** カートに追加API */
+/** Add to cart API */
 app.post('/api/cart', (req: Request, res: Response) => {
   const { productId, quantity = 1 } = req.body as { productId?: number; quantity?: number };
 
   if (!productId) {
-    res.status(400).json({ error: '商品IDが必要です' });
+    res.status(400).json({ error: 'Product ID is required' });
     return;
   }
 
   const product = products.find((p) => p.id === productId);
   if (!product) {
-    res.status(404).json({ error: '商品が見つかりません' });
+    res.status(404).json({ error: 'Product not found' });
     return;
   }
 
   if (product.stock < quantity) {
-    res.status(400).json({ error: '在庫が不足しています' });
+    res.status(400).json({ error: 'Insufficient stock' });
     return;
   }
 
@@ -262,13 +262,13 @@ app.post('/api/cart', (req: Request, res: Response) => {
   res.json({ success: true, cart: reqWithSession.session.cart });
 });
 
-/** カート更新API */
+/** Update cart API */
 app.put('/api/cart/:productId', (req: Request, res: Response) => {
   const productId = parseInt(req.params.productId as string, 10);
   const { quantity } = req.body as { quantity?: number };
 
   if (quantity === undefined || quantity < 0) {
-    res.status(400).json({ error: '数量が正しくありません' });
+    res.status(400).json({ error: 'Invalid quantity' });
     return;
   }
 
@@ -276,7 +276,7 @@ app.put('/api/cart/:productId', (req: Request, res: Response) => {
   const itemIndex = reqWithSession.session.cart.findIndex((item) => item.productId === productId);
 
   if (itemIndex === -1) {
-    res.status(404).json({ error: 'カート内に商品が見つかりません' });
+    res.status(404).json({ error: 'Item not found in cart' });
     return;
   }
 
@@ -289,7 +289,7 @@ app.put('/api/cart/:productId', (req: Request, res: Response) => {
   res.json({ success: true, cart: reqWithSession.session.cart });
 });
 
-/** カートから削除API */
+/** Remove from cart API */
 app.delete('/api/cart/:productId', (req: Request, res: Response) => {
   const productId = parseInt(req.params.productId as string, 10);
   const reqWithSession = req as RequestWithSession;
@@ -297,7 +297,7 @@ app.delete('/api/cart/:productId', (req: Request, res: Response) => {
   const itemIndex = reqWithSession.session.cart.findIndex((item) => item.productId === productId);
 
   if (itemIndex === -1) {
-    res.status(404).json({ error: 'カート内に商品が見つかりません' });
+    res.status(404).json({ error: 'Item not found in cart' });
     return;
   }
 
@@ -305,36 +305,36 @@ app.delete('/api/cart/:productId', (req: Request, res: Response) => {
   res.json({ success: true, cart: reqWithSession.session.cart });
 });
 
-/** チェックアウト（注文確定）API */
+/** Checkout (order confirmation) API */
 app.post('/api/checkout', (req: Request, res: Response) => {
   const reqWithSession = req as RequestWithSession;
 
   if (!reqWithSession.session.userId) {
-    res.status(401).json({ error: 'ログインが必要です' });
+    res.status(401).json({ error: 'Please sign in to continue' });
     return;
   }
 
   if (reqWithSession.session.cart.length === 0) {
-    res.status(400).json({ error: 'カートが空です' });
+    res.status(400).json({ error: 'Your shopping bag is empty' });
     return;
   }
 
-  // 在庫チェックと合計計算
+  // Stock check and total calculation
   let total = 0;
   for (const item of reqWithSession.session.cart) {
     const product = products.find((p) => p.id === item.productId);
     if (!product) {
-      res.status(400).json({ error: `商品ID ${item.productId} が見つかりません` });
+      res.status(400).json({ error: `Product ID ${item.productId} not found` });
       return;
     }
     if (product.stock < item.quantity) {
-      res.status(400).json({ error: `「${product.name}」の在庫が不足しています` });
+      res.status(400).json({ error: `Insufficient stock for ${product.name}` });
       return;
     }
     total += product.price * item.quantity;
   }
 
-  // 在庫を減らす
+  // Reduce stock
   for (const item of reqWithSession.session.cart) {
     const product = products.find((p) => p.id === item.productId);
     if (product) {
@@ -342,7 +342,7 @@ app.post('/api/checkout', (req: Request, res: Response) => {
     }
   }
 
-  // 注文を作成
+  // Create order
   const order: Order = {
     id: orderIdCounter++,
     userId: reqWithSession.session.userId,
@@ -352,18 +352,18 @@ app.post('/api/checkout', (req: Request, res: Response) => {
   };
   orders.push(order);
 
-  // カートをクリア
+  // Clear cart
   reqWithSession.session.cart = [];
 
   res.json({ success: true, order });
 });
 
-/** 注文履歴取得API */
+/** Get order history API */
 app.get('/api/orders', (req: Request, res: Response) => {
   const reqWithSession = req as RequestWithSession;
 
   if (!reqWithSession.session.userId) {
-    res.status(401).json({ error: 'ログインが必要です' });
+    res.status(401).json({ error: 'Please sign in to continue' });
     return;
   }
 
@@ -372,9 +372,9 @@ app.get('/api/orders', (req: Request, res: Response) => {
 });
 
 // --------------------------------------------------
-// サーバー起動
+// Server startup
 // --------------------------------------------------
 
 app.listen(3060, () => {
-  console.log('ECサイトテストサーバー起動中: http://localhost:3060');
+  console.log('E-commerce test server running: http://localhost:3060');
 });

@@ -1,58 +1,58 @@
-# チェックアウトテストフロー
-# 購入完了までの流れを確認する
+# Checkout Test Flow
+# Verify the complete purchase flow
 
 env:
   BASE_URL: http://localhost:3060
 
 steps:
-  # ログインしてカートに商品を追加
+  # Login and add product to cart
   - open: ${BASE_URL}/login.html
   - fill:
-      selector: メールアドレス
+      selector: Email Address
       value: test@example.com
   - fill:
-      selector: パスワード
+      selector: Password
       value: password123
-  - click: ログインする
-  - assertVisible: ようこそ
+  - click: Sign In
+  - assertVisible: Welcome, John Smith
   - wait:
-      text: 山田太郎
-  # 商品一覧が表示されるまで待機
-  - assertVisible: 商品一覧
-  # 商品詳細ページへ移動
-  - click: プレミアムコーヒー豆 500g
-  # 商品詳細ページでカートに追加
-  - click: カートに追加
-  - assertVisible: カートに追加しました
-  # カートページへ移動（ヘッダーのカートリンクをクリック）
-  - click: カート (
+      text: John Smith
+  # Wait for product listing to be displayed
+  - assertVisible: Collection
+  # Navigate to product detail page
+  - click: Cashmere Wool Cardigan
+  # Add to cart on product detail page
+  - click: Add to Cart
+  - assertVisible: has been added to your cart
+  # Navigate to cart page (header cart link)
+  - click: Shopping Bag (
 
-  # レジに進む
-  - click: レジに進む
+  # Proceed to checkout
+  - click: Proceed to Checkout
 
-  # チェックアウトページの表示確認
-  - assertVisible: お支払い情報入力
-  - assertVisible: お届け先情報
+  # Verify checkout page is displayed
+  - assertVisible: Checkout
+  - assertVisible: Shipping Information
 
-  # 配送先情報を入力
+  # Enter shipping information
   - fill:
-      selector: 郵便番号
-      value: 123-4567
+      selector: Postal Code
+      value: "123-4567"
   - fill:
-      selector: 住所
-      value: 東京都渋谷区テスト町1-2-3
+      selector: Address
+      value: 123 Fifth Avenue, New York
   - fill:
-      selector: 電話番号
-      value: 090-1234-5678
+      selector: Phone Number
+      value: "555-123-4567"
 
-  # 支払い方法はデフォルトでクレジットカードが選択済み
+  # Payment method is Credit Card by default
 
-  # 注文内容が表示されていることを確認
-  - assertVisible: 注文内容
+  # Verify order contents are displayed
+  - assertVisible: Order Summary
 
-  # 注文確定
-  - click: 注文を確定する
+  # Place order
+  - click: Place Order
 
-  # 注文完了ページの表示確認
-  - assertVisible: ご注文ありがとうございます
-  - assertVisible: 注文番号
+  # Verify order completion page is displayed
+  - assertVisible: Thank You
+  - assertVisible: Order Number

@@ -1,52 +1,392 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ご注文完了 - オンラインショップ</title>
+  <title>Order Confirmed - MAISON ÉLÉGANCE</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
-    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.5rem; }
-    header a { color: white; text-decoration: none; }
-    main { max-width: 600px; margin: 3rem auto; padding: 0 1rem; }
-    .complete-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 2rem; text-align: center; }
-    .success-icon { width: 80px; height: 80px; background: #27ae60; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
-    .success-icon svg { width: 40px; height: 40px; fill: white; }
-    .complete-card h2 { color: #27ae60; margin-bottom: 1rem; }
-    .complete-card p { color: #666; margin-bottom: 1.5rem; line-height: 1.8; }
-    .order-details { background: #f9f9f9; border-radius: 4px; padding: 1.5rem; text-align: left; margin-bottom: 1.5rem; }
-    .order-details h3 { margin-bottom: 1rem; font-size: 1rem; }
-    .order-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
-    .order-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .order-total { font-weight: bold; font-size: 1.1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 2px solid #ddd; }
-    .order-total .price { color: #e74c3c; }
-    .order-number { background: #e8f5e9; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem; }
-    .order-number span { font-size: 1.5rem; font-weight: bold; color: #27ae60; }
-    .btn { display: inline-block; padding: 1rem 2rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; text-decoration: none; }
-    .btn-primary { background: #3498db; color: white; }
-    .btn-primary:hover { background: #2980b9; }
-    .no-order { padding: 2rem; text-align: center; }
-    .no-order a { color: #3498db; }
+    /* ===== CSS Variables ===== */
+    :root {
+      --color-bg: #FAFAF8;
+      --color-card: #FFFFFF;
+      --color-text-primary: #1A1A1A;
+      --color-text-secondary: #5C5C5C;
+      --color-accent-gold: #C9A962;
+      --color-border: #E8E6E3;
+      --color-success: #4A7C59;
+
+      --font-display: "Cormorant Garamond", "Noto Serif JP", serif;
+      --font-body: "DM Sans", "Noto Sans JP", sans-serif;
+
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ===== Reset & Base ===== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ===== Header ===== */
+    header {
+      background: var(--color-card);
+      border-bottom: 1px solid var(--color-border);
+      padding: 2rem 4rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    header .logo {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    header .logo a {
+      color: var(--color-text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    header .logo a:hover {
+      color: var(--color-accent-gold);
+    }
+
+    /* ===== Main Content ===== */
+    main {
+      flex: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      width: 100%;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ===== Complete Card ===== */
+    .complete-card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      padding: 4rem 3rem;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    /* ===== Success Icon ===== */
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--color-accent-gold) 0%, #B8984A 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 2rem;
+      position: relative;
+      animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+    }
+
+    @keyframes successPop {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.1);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .success-icon::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border: 2px solid var(--color-accent-gold);
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: pulse 2s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.1;
+      }
+    }
+
+    .success-icon svg {
+      width: 36px;
+      height: 36px;
+      fill: white;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+
+    /* ===== Typography ===== */
+    .complete-card h2 {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .complete-card > p {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+      font-weight: 400;
+      margin-bottom: 3rem;
+      line-height: 1.8;
+    }
+
+    /* ===== Order Number ===== */
+    .order-number {
+      background: linear-gradient(135deg, rgba(201, 169, 98, 0.08) 0%, rgba(201, 169, 98, 0.03) 100%);
+      border: 1px solid rgba(201, 169, 98, 0.2);
+      padding: 1.5rem 2rem;
+      margin-bottom: 2.5rem;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.03em;
+    }
+
+    .order-number span {
+      display: block;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--color-accent-gold);
+      margin-top: 0.5rem;
+      letter-spacing: 0.05em;
+      font-family: var(--font-display);
+    }
+
+    /* ===== Order Details ===== */
+    .order-details {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      padding: 2rem;
+      text-align: left;
+      margin-bottom: 2.5rem;
+    }
+
+    .order-details h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--color-text-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+    }
+
+    .order-row:last-child {
+      border-bottom: none;
+    }
+
+    .order-total {
+      margin-top: 1rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--color-text-primary);
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--color-text-primary);
+    }
+
+    .order-total .price {
+      color: var(--color-text-primary);
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    /* ===== Button ===== */
+    .btn {
+      display: inline-block;
+      padding: 1rem 3rem;
+      border: 2px solid var(--color-text-primary);
+      background: var(--color-text-primary);
+      color: white;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      transform: translateX(-100%);
+      transition: var(--transition);
+    }
+
+    .btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn:hover::before {
+      transform: translateX(0);
+    }
+
+    .btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    /* ===== No Order State ===== */
+    .no-order {
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .no-order p {
+      color: var(--color-text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+    }
+
+    .no-order a {
+      color: var(--color-accent-gold);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid var(--color-accent-gold);
+      transition: var(--transition);
+      padding-bottom: 2px;
+    }
+
+    .no-order a:hover {
+      color: var(--color-text-primary);
+      border-bottom-color: var(--color-text-primary);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      header {
+        padding: 1.5rem 2rem;
+      }
+
+      header .logo {
+        font-size: 1.25rem;
+      }
+
+      main {
+        padding: 3rem 1.5rem;
+      }
+
+      .complete-card {
+        padding: 3rem 2rem;
+      }
+
+      .complete-card h2 {
+        font-size: 2rem;
+      }
+
+      .order-number span {
+        font-size: 1.5rem;
+      }
+
+      .order-details {
+        padding: 1.5rem;
+      }
+
+      .btn {
+        padding: 0.9rem 2rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .complete-card h2 {
+        font-size: 1.75rem;
+      }
+
+      .order-number {
+        padding: 1.25rem 1.5rem;
+      }
+
+      .order-total .price {
+        font-size: 1.25rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1><a href="index.html">オンラインショップ</a></h1>
+    <div class="logo">
+      <a href="index.html">Maison Élégance</a>
+    </div>
   </header>
 
   <main>
     <div class="complete-card" id="complete-card">
       <div class="no-order">
-        <p>注文情報がありません</p>
-        <p><a href="index.html">商品一覧に戻る</a></p>
+        <p>No order information available</p>
+        <p><a href="index.html">Return to Collection</a></p>
       </div>
     </div>
   </main>
 
   <script>
-    /** 注文完了情報を表示 */
+    /** Display order completion information */
     function showOrderComplete() {
       const orderStr = localStorage.getItem('lastOrder');
       if (!orderStr) {
@@ -56,7 +396,7 @@
       const order = JSON.parse(orderStr);
       const itemsHtml = order.items.map(item => `
         <div class="order-row">
-          <span>商品ID: ${item.productId} × ${item.quantity}</span>
+          <span>Item ID: ${item.productId} × ${item.quantity}</span>
         </div>
       `).join('');
 
@@ -64,30 +404,31 @@
         <div class="success-icon">
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
-        <h2>ご注文ありがとうございます</h2>
-        <p>ご注文を承りました。<br>確認メールをお送りしましたのでご確認ください。</p>
+        <h2>Thank You</h2>
+        <p>Your order has been graciously received.<br>A confirmation email has been sent for your records.</p>
 
         <div class="order-number">
-          注文番号: <span>#${order.id.toString().padStart(8, '0')}</span>
+          Order Number
+          <span>#${order.id.toString().padStart(8, '0')}</span>
         </div>
 
         <div class="order-details">
-          <h3>注文内容</h3>
+          <h3>Order Details</h3>
           ${itemsHtml}
           <div class="order-row order-total">
-            <span>合計金額</span>
+            <span>Total Amount</span>
             <span class="price">¥${order.total.toLocaleString()}</span>
           </div>
         </div>
 
-        <a href="index.html" class="btn btn-primary">トップページに戻る</a>
+        <a href="index.html" class="btn"><span>Continue Shopping</span></a>
       `;
 
-      // 注文情報をクリア
+      // Clear order information
       localStorage.removeItem('lastOrder');
     }
 
-    // 初期化
+    // Initialize
     showOrderComplete();
   </script>
 </body>

@@ -1,43 +1,43 @@
-# カート操作テストフロー
-# カートへの追加、数量変更を確認する
+# Cart Operations Test Flow
+# Verify adding to cart and quantity changes
 
 env:
   BASE_URL: http://localhost:3060
 
 steps:
-  # ログインしてトップページへ
+  # Login and go to top page
   - open: ${BASE_URL}/login.html
   - fill:
-      selector: メールアドレス
+      selector: Email Address
       value: test@example.com
   - fill:
-      selector: パスワード
+      selector: Password
       value: password123
-  - click: ログインする
-  - assertVisible: ようこそ
+  - click: Sign In
+  - assertVisible: Welcome, John Smith
   - wait:
-      text: 山田太郎
+      text: John Smith
 
-  # 商品一覧が表示されるまで待機
-  - assertVisible: 商品一覧
+  # Wait for product listing to be displayed
+  - assertVisible: Collection
 
-  # 商品詳細ページへ移動
-  - click: プレミアムコーヒー豆 500g
+  # Navigate to product detail page
+  - click: Cashmere Wool Cardigan
 
-  # 商品詳細ページでカートに追加
-  - click: カートに追加
+  # Add to cart on product detail page
+  - click: Add to Cart
 
-  # カート追加完了のトースト表示確認
-  - assertVisible: カートに追加しました
+  # Verify cart addition toast is displayed
+  - assertVisible: has been added to your cart
 
-  # カートページへ移動（ヘッダーのカートリンク）
-  - click: カート (
+  # Navigate to cart page (header cart link)
+  - click: Shopping Bag (
 
-  # カートページの表示確認
-  - assertVisible: ショッピングカート
-  - assertVisible: プレミアムコーヒー豆 500g
-  - assertVisible: 注文概要
+  # Verify cart page is displayed
+  - assertVisible: Shopping Bag
+  - assertVisible: Cashmere Wool Cardigan
+  - assertVisible: Order Summary
 
-  # 数量を増やす
+  # Increase quantity
   - click: +
-  - assertVisible: 数量を更新しました
+  - assertVisible: Quantity updated

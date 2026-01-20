@@ -1,63 +1,433 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>カート - オンラインショップ</title>
+  <title>Shopping Bag - MAISON ÉLÉGANCE</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&family=Noto+Serif+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
-    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.5rem; }
-    header a { color: white; text-decoration: none; }
-    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-    h2 { margin-bottom: 1.5rem; }
-    .cart-container { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; }
-    @media (max-width: 768px) { .cart-container { grid-template-columns: 1fr; } }
-    .cart-items { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
-    .cart-item { display: grid; grid-template-columns: 80px 1fr auto; gap: 1rem; padding: 1rem; border-bottom: 1px solid #eee; align-items: center; }
-    .cart-item:last-child { border-bottom: none; }
-    .cart-item-image { width: 80px; height: 80px; object-fit: contain; background: #f9f9f9; border-radius: 4px; }
-    .cart-item-info { }
-    .cart-item-name { font-weight: bold; margin-bottom: 0.5rem; }
-    .cart-item-price { color: #666; }
-    .cart-item-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
-    .quantity-control { display: flex; align-items: center; gap: 0.5rem; }
-    .quantity-btn { width: 30px; height: 30px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-    .quantity-btn:hover { background: #f5f5f5; }
-    .quantity-btn:disabled { color: #ccc; cursor: not-allowed; }
-    .quantity-value { width: 40px; text-align: center; font-weight: bold; }
-    .cart-item-subtotal { font-weight: bold; color: #e74c3c; }
-    .remove-btn { color: #e74c3c; background: none; border: none; cursor: pointer; font-size: 0.875rem; }
-    .remove-btn:hover { text-decoration: underline; }
-    .cart-empty { padding: 3rem; text-align: center; color: #666; }
-    .cart-empty a { color: #3498db; }
-    .cart-summary { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; height: fit-content; position: sticky; top: 2rem; }
-    .cart-summary h3 { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
-    .summary-row { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
-    .summary-total { font-size: 1.25rem; font-weight: bold; padding-top: 1rem; border-top: 2px solid #eee; margin-top: 1rem; }
-    .summary-total .price { color: #e74c3c; }
-    .btn { width: 100%; padding: 1rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
-    .btn-primary { background: #3498db; color: white; }
-    .btn-primary:hover { background: #2980b9; }
-    .btn-primary:disabled { background: #bdc3c7; cursor: not-allowed; }
-    .btn-outline { background: white; color: #3498db; border: 2px solid #3498db; }
-    .btn-outline:hover { background: #f0f8ff; }
-    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: #27ae60; color: white; border-radius: 4px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
-    .toast.show { opacity: 1; }
-    .loading { text-align: center; padding: 3rem; }
+    /* CSS Variables: Color Palette */
+    :root {
+      --color-bg: #FAFAF8;
+      --color-card: #FFFFFF;
+      --color-text-primary: #1A1A1A;
+      --color-text-secondary: #5C5C5C;
+      --color-accent: #C9A962;
+      --color-border: #E8E6E3;
+      --font-display: "Cormorant Garamond", "Noto Serif JP", serif;
+      --font-body: "DM Sans", "Noto Sans JP", sans-serif;
+    }
+
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Base Styles */
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: 1.7;
+      letter-spacing: 0.02em;
+    }
+
+    /* Header */
+    header {
+      background: var(--color-card);
+      border-bottom: 1px solid var(--color-border);
+      padding: 1.5rem 3rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-align: center;
+    }
+
+    header a {
+      color: var(--color-text-primary);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    header a:hover {
+      color: var(--color-accent);
+    }
+
+    /* Main Content */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 4rem 2rem 6rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Page Title */
+    h2 {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      margin-bottom: 3rem;
+      text-align: center;
+      color: var(--color-text-primary);
+    }
+
+    /* Cart Container */
+    .cart-container {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    @media (max-width: 968px) {
+      .cart-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      main {
+        padding: 2rem 1rem 4rem;
+      }
+      h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+      }
+      header {
+        padding: 1rem 1.5rem;
+      }
+      header h1 {
+        font-size: 1.25rem;
+      }
+    }
+
+    /* Cart Items Area */
+    .cart-items {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 2rem;
+      padding: 2rem;
+      border-bottom: 1px solid var(--color-border);
+      transition: background 0.3s ease;
+    }
+
+    .cart-item:hover {
+      background: var(--color-bg);
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-image {
+      width: 140px;
+      height: 140px;
+      object-fit: cover;
+      border: 1px solid var(--color-border);
+    }
+
+    @media (max-width: 580px) {
+      .cart-item {
+        grid-template-columns: 100px 1fr;
+        gap: 1rem;
+        padding: 1.5rem;
+      }
+      .cart-item-image {
+        width: 100px;
+        height: 100px;
+      }
+    }
+
+    .cart-item-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .cart-item-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.5rem;
+      color: var(--color-text-primary);
+    }
+
+    .cart-item-price {
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .cart-item-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Quantity Control */
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid var(--color-border);
+      padding: 0.25rem 0.5rem;
+    }
+
+    .quantity-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: var(--color-text-primary);
+      transition: color 0.3s ease;
+      font-family: var(--font-body);
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+      color: var(--color-accent);
+    }
+
+    .quantity-btn:disabled {
+      color: var(--color-border);
+      cursor: not-allowed;
+    }
+
+    .quantity-value {
+      min-width: 30px;
+      text-align: center;
+      font-weight: 400;
+      font-size: 0.95rem;
+    }
+
+    .cart-item-subtotal {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      font-size: 1.1rem;
+    }
+
+    .remove-btn {
+      color: var(--color-text-secondary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 0.3s ease;
+      font-family: var(--font-body);
+    }
+
+    .remove-btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    /* Empty Cart */
+    .cart-empty {
+      padding: 6rem 3rem;
+      text-align: center;
+      color: var(--color-text-secondary);
+    }
+
+    .cart-empty p {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    .cart-empty p:first-child {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--color-text-primary);
+      margin-bottom: 2rem;
+    }
+
+    .cart-empty a {
+      color: var(--color-text-primary);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      transition: color 0.3s ease;
+    }
+
+    .cart-empty a:hover {
+      color: var(--color-accent);
+    }
+
+    /* Cart Summary */
+    .cart-summary {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      padding: 2.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 6rem;
+    }
+
+    .cart-summary h3 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      text-align: center;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+    }
+
+    .summary-row span:last-child {
+      color: var(--color-text-primary);
+      font-weight: 400;
+    }
+
+    .summary-total {
+      font-size: 1.35rem;
+      font-weight: 500;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-border);
+      margin-top: 1.5rem;
+      color: var(--color-text-primary);
+    }
+
+    .summary-total .price {
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 1.25rem;
+      border: none;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 1rem;
+      font-family: var(--font-body);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: var(--color-text-primary);
+      color: var(--color-card);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-accent);
+      color: var(--color-text-primary);
+    }
+
+    .btn-primary:disabled {
+      background: var(--color-border);
+      cursor: not-allowed;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn-outline:hover {
+      background: var(--color-bg);
+      border-color: var(--color-text-primary);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 3rem;
+      right: 3rem;
+      padding: 1.25rem 2rem;
+      background: var(--color-text-primary);
+      color: var(--color-card);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 1000;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .toast {
+        bottom: 2rem;
+        right: 1rem;
+        left: 1rem;
+        padding: 1rem 1.5rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 6rem 2rem;
+      color: var(--color-text-secondary);
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1><a href="index.html">オンラインショップ</a></h1>
+    <h1><a href="index.html">MAISON ÉLÉGANCE</a></h1>
   </header>
 
   <main>
-    <h2>ショッピングカート</h2>
+    <h2>Shopping Bag</h2>
 
     <div id="cart-container" class="cart-container">
-      <div class="loading">読み込み中...</div>
+      <div class="loading">Loading your selection...</div>
     </div>
   </main>
 
@@ -67,7 +437,7 @@
     let sessionId = localStorage.getItem('sessionId');
     let cartData = null;
 
-    /** セッションヘッダー付きfetch */
+    /** Fetch with session header */
     function fetchWithSession(url, options = {}) {
       const headers = { ...options.headers };
       if (sessionId) {
@@ -76,7 +446,7 @@
       return fetch(url, { ...options, headers });
     }
 
-    /** トースト表示 */
+    /** Display toast notification */
     function showToast(message) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -84,14 +454,14 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    /** カートを読み込み */
+    /** Load cart */
     async function loadCart() {
       const response = await fetchWithSession('/api/cart');
       cartData = await response.json();
       renderCart();
     }
 
-    /** カートを描画 */
+    /** Render cart */
     function renderCart() {
       const container = document.getElementById('cart-container');
 
@@ -99,8 +469,8 @@
         container.innerHTML = `
           <div class="cart-items">
             <div class="cart-empty">
-              <p>カートは空です</p>
-              <p><a href="index.html">商品一覧を見る</a></p>
+              <p>Your shopping bag is empty</p>
+              <p><a href="index.html">Continue Shopping</a></p>
             </div>
           </div>
         `;
@@ -113,15 +483,15 @@
           <div class="cart-item-info">
             <div class="cart-item-name">${item.product.name}</div>
             <div class="cart-item-price">¥${item.product.price.toLocaleString()} × ${item.quantity}</div>
-          </div>
-          <div class="cart-item-actions">
-            <div class="quantity-control">
-              <button class="quantity-btn" onclick="updateQuantity(${item.productId}, ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
-              <span class="quantity-value">${item.quantity}</span>
-              <button class="quantity-btn" onclick="updateQuantity(${item.productId}, ${item.quantity + 1})" ${item.quantity >= item.product.stock ? 'disabled' : ''}>+</button>
+            <div class="cart-item-actions">
+              <div class="quantity-control">
+                <button class="quantity-btn" onclick="updateQuantity(${item.productId}, ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+                <span class="quantity-value">${item.quantity}</span>
+                <button class="quantity-btn" onclick="updateQuantity(${item.productId}, ${item.quantity + 1})" ${item.quantity >= item.product.stock ? 'disabled' : ''}>+</button>
+              </div>
+              <div class="cart-item-subtotal">¥${item.subtotal.toLocaleString()}</div>
+              <button class="remove-btn" onclick="removeItem(${item.productId})">Remove</button>
             </div>
-            <div class="cart-item-subtotal">¥${item.subtotal.toLocaleString()}</div>
-            <button class="remove-btn" onclick="removeItem(${item.productId})">削除する</button>
           </div>
         </div>
       `).join('');
@@ -133,34 +503,34 @@
           ${itemsHtml}
         </div>
         <div class="cart-summary">
-          <h3>注文概要</h3>
+          <h3>Order Summary</h3>
           <div class="summary-row">
-            <span>商品数</span>
-            <span>${cartData.items.reduce((sum, item) => sum + item.quantity, 0)}点</span>
+            <span>Items</span>
+            <span>${cartData.items.reduce((sum, item) => sum + item.quantity, 0)} pieces</span>
           </div>
           <div class="summary-row">
-            <span>小計</span>
+            <span>Subtotal</span>
             <span>¥${cartData.total.toLocaleString()}</span>
           </div>
           <div class="summary-row">
-            <span>送料</span>
-            <span>${cartData.total >= 5000 ? '無料' : '¥500'}</span>
+            <span>Shipping</span>
+            <span>${cartData.total >= 5000 ? 'Free' : '¥500'}</span>
           </div>
           <div class="summary-row summary-total">
-            <span>合計</span>
+            <span>Total</span>
             <span class="price">¥${(cartData.total + (cartData.total >= 5000 ? 0 : 500)).toLocaleString()}</span>
           </div>
           ${currentUser ? `
-            <a href="checkout.html" class="btn btn-primary" style="display: block; text-decoration: none; text-align: center;">レジに進む</a>
+            <a href="checkout.html" class="btn btn-primary" style="display: block; text-decoration: none; text-align: center;">Proceed to Checkout</a>
           ` : `
-            <a href="login.html" class="btn btn-primary" style="display: block; text-decoration: none; text-align: center;">ログインして購入</a>
+            <a href="login.html" class="btn btn-primary" style="display: block; text-decoration: none; text-align: center;">Login to Purchase</a>
           `}
-          <a href="index.html" class="btn btn-outline" style="display: block; text-decoration: none; text-align: center;">買い物を続ける</a>
+          <a href="index.html" class="btn btn-outline" style="display: block; text-decoration: none; text-align: center;">Continue Shopping</a>
         </div>
       `;
     }
 
-    /** 数量を更新 */
+    /** Update quantity */
     async function updateQuantity(productId, quantity) {
       if (quantity <= 0) {
         await removeItem(productId);
@@ -175,14 +545,14 @@
 
       if (response.ok) {
         await loadCart();
-        showToast('数量を更新しました');
+        showToast('Quantity updated');
       } else {
         const error = await response.json();
-        showToast(error.error || 'エラーが発生しました');
+        showToast(error.error || 'An error occurred');
       }
     }
 
-    /** 商品を削除 */
+    /** Remove item */
     async function removeItem(productId) {
       const response = await fetchWithSession(`/api/cart/${productId}`, {
         method: 'DELETE'
@@ -190,14 +560,14 @@
 
       if (response.ok) {
         await loadCart();
-        showToast('商品を削除しました');
+        showToast('Item removed from bag');
       } else {
         const error = await response.json();
-        showToast(error.error || 'エラーが発生しました');
+        showToast(error.error || 'An error occurred');
       }
     }
 
-    // 初期化
+    // Initialize
     loadCart();
   </script>
 </body>

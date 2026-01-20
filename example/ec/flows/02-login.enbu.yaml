@@ -1,36 +1,36 @@
-# ログインテストフロー
-# ユーザー認証機能を確認する
+# Login Test Flow
+# Verify user authentication functionality
 
 env:
   BASE_URL: http://localhost:3060
 
 steps:
-  # ログインページへ移動
+  # Navigate to login page
   - open: ${BASE_URL}/login.html
 
-  # ログインフォームの表示確認（テスト用アカウント情報で確認）
-  - assertVisible: テスト用アカウント
-  - assertVisible: メールアドレス
+  # Verify login form is displayed (test account info)
+  - assertVisible: Test Account
+  - assertVisible: Email Address
 
-  # メールアドレスを入力
+  # Enter email address
   - fill:
-      selector: メールアドレス
+      selector: Email Address
       value: test@example.com
 
-  # パスワードを入力
+  # Enter password
   - fill:
-      selector: パスワード
+      selector: Password
       value: password123
 
-  # ログインボタンをクリック（type=submitのボタン）
-  - click: ログインする
+  # Click login button (type=submit button)
+  - click: Sign In
 
-  # ログイン成功メッセージの表示確認
-  - assertVisible: ようこそ
+  # Verify login success message is displayed
+  - assertVisible: Welcome, John Smith
 
-  # 自動リダイレクトを待機
+  # Wait for automatic redirect
   - wait:
-      text: 商品一覧
+      text: Collection
 
-  # ユーザー名が表示されていることを確認（ログイン状態）
-  - assertVisible: 山田太郎
+  # Verify user name is displayed (logged in state)
+  - assertVisible: John Smith

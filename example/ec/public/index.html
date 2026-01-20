@@ -1,75 +1,482 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>オンラインショップ</title>
+  <title>MAISON ÉLÉGANCE — Luxury Fashion</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&family=Noto+Serif+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f5f5; color: #333; }
-    header { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.5rem; }
-    nav { display: flex; gap: 1rem; align-items: center; }
-    nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; }
-    nav a:hover { background: rgba(255,255,255,0.1); }
-    .cart-link { background: #e74c3c; }
-    .cart-link:hover { background: #c0392b; }
-    .login-link { background: #3498db; }
-    .login-link:hover { background: #2980b9; }
-    main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-    .search-box { margin-bottom: 2rem; display: flex; gap: 0.5rem; }
-    .search-box input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; }
-    .search-box button { padding: 0.75rem 1.5rem; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-    .search-box button:hover { background: #2980b9; }
-    h2 { margin-bottom: 1.5rem; font-size: 1.5rem; }
-    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
-    .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
-    .product-card:hover { transform: translateY(-4px); }
-    .product-image { width: 100%; height: 150px; object-fit: contain; background: #f9f9f9; padding: 1rem; }
-    .product-info { padding: 1rem; }
-    .product-name { font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem; }
-    .product-price { color: #e74c3c; font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
-    .product-stock { color: #27ae60; font-size: 0.875rem; margin-bottom: 1rem; }
-    .product-stock.low { color: #e67e22; }
-    .product-actions { display: flex; gap: 0.5rem; }
-    .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; text-decoration: none; text-align: center; }
-    .btn-primary { background: #3498db; color: white; }
-    .btn-primary:hover { background: #2980b9; }
-    .btn-success { background: #27ae60; color: white; }
-    .btn-success:hover { background: #229954; }
-    .user-info { display: flex; align-items: center; gap: 0.5rem; }
-    .user-name { font-weight: bold; }
-    .logout-btn { background: transparent; border: 1px solid white; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
-    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: #27ae60; color: white; border-radius: 4px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
-    .toast.show { opacity: 1; }
-    .hidden { display: none; }
+    /* ==================== CSS Variable Definitions ==================== */
+    :root {
+      /* Color Palette */
+      --color-bg: #FAFAF8;
+      --color-card-bg: #FFFFFF;
+      --color-border: #E8E6E3;
+      --color-text-primary: #1A1A1A;
+      --color-text-secondary: #5C5C5C;
+      --color-accent: #C9A962;
+      --color-accent-hover: #B89852;
+
+      /* Typography */
+      --font-display: "Cormorant Garamond", "Noto Serif JP", serif;
+      --font-body: "DM Sans", "Noto Sans JP", sans-serif;
+
+      /* Spacing */
+      --spacing-xs: 0.5rem;
+      --spacing-sm: 1rem;
+      --spacing-md: 1.5rem;
+      --spacing-lg: 2rem;
+      --spacing-xl: 3rem;
+      --spacing-2xl: 4rem;
+
+      /* Transitions */
+      --transition-fast: 0.2s ease;
+      --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ==================== Reset & Base Styles ==================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      opacity: 0;
+      animation: fadeInPage 0.6s ease-out forwards;
+    }
+
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==================== Header ==================== */
+    header {
+      background: var(--color-card-bg);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--spacing-md) var(--spacing-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    header .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+    }
+
+    nav {
+      display: flex;
+      gap: var(--spacing-lg);
+      align-items: center;
+    }
+
+    nav a {
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--color-text-primary);
+      text-decoration: none;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      transition: color var(--transition-fast);
+      position: relative;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 1px;
+      background: var(--color-accent);
+      transition: all var(--transition-smooth);
+      transform: translateX(-50%);
+    }
+
+    nav a:hover {
+      color: var(--color-accent);
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    .cart-link {
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    .login-link {
+      color: var(--color-accent);
+      border: 1px solid var(--color-accent);
+      padding: 0.5rem 1.25rem;
+      transition: all var(--transition-fast);
+    }
+
+    .login-link::after {
+      display: none;
+    }
+
+    .login-link:hover {
+      background: var(--color-accent);
+      color: var(--color-card-bg);
+    }
+
+    /* ==================== User Information ==================== */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      padding: 0.375rem 0.875rem;
+      border-radius: 0;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: all var(--transition-fast);
+    }
+
+    .logout-btn:hover {
+      border-color: var(--color-text-primary);
+      color: var(--color-text-primary);
+    }
+
+    /* ==================== Main Content ==================== */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--spacing-2xl) var(--spacing-xl);
+    }
+
+    /* ==================== Search Box ==================== */
+    .search-box {
+      margin-bottom: var(--spacing-2xl);
+      display: flex;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+
+    .search-box input {
+      width: 100%;
+      max-width: 600px;
+      padding: var(--spacing-sm) 0;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--color-text-primary);
+      letter-spacing: 0.02em;
+      transition: border-color var(--transition-fast);
+    }
+
+    .search-box input::placeholder {
+      color: var(--color-text-secondary);
+      font-weight: 300;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-bottom-color: var(--color-accent);
+    }
+
+    .search-box button {
+      padding: var(--spacing-sm) var(--spacing-lg);
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: all var(--transition-fast);
+    }
+
+    .search-box button:hover {
+      background: var(--color-accent);
+    }
+
+    /* ==================== Section Titles ==================== */
+    h2 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-align: center;
+      margin-bottom: var(--spacing-xl);
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+    }
+
+    /* ==================== Product Grid ==================== */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: var(--spacing-xl);
+      animation: fadeInGrid 0.8s ease-out 0.2s backwards;
+    }
+
+    @keyframes fadeInGrid {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ==================== Product Cards ==================== */
+    .product-card {
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      transition: all var(--transition-smooth);
+      cursor: pointer;
+    }
+
+    .product-card:hover {
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+      transform: translateY(-4px);
+      border-color: var(--color-accent);
+    }
+
+    /* Product Image Container */
+    .product-card .image-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 125%;
+      background: var(--color-bg);
+      overflow: hidden;
+    }
+
+    .product-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform var(--transition-smooth);
+    }
+
+    .product-card:hover .product-image {
+      transform: scale(1.05);
+    }
+
+    /* Product Information */
+    .product-info {
+      padding: var(--spacing-md);
+    }
+
+    .product-name {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      margin-bottom: var(--spacing-xs);
+      color: var(--color-text-primary);
+      transition: color var(--transition-fast);
+    }
+
+    .product-name:hover {
+      color: var(--color-accent);
+    }
+
+    .product-price {
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-sm);
+      letter-spacing: 0.02em;
+    }
+
+    .product-stock {
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .product-stock.low {
+      color: var(--color-accent);
+    }
+
+    /* Product Actions */
+    .product-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+      flex-direction: column;
+    }
+
+    .btn {
+      padding: 0.875rem var(--spacing-md);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      text-align: center;
+      transition: all var(--transition-fast);
+      background: transparent;
+      color: var(--color-text-primary);
+    }
+
+    .btn-primary {
+      border-color: var(--color-text-primary);
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    .btn-success {
+      border-color: var(--color-text-primary);
+      color: var(--color-text-primary);
+    }
+
+    .btn-success:hover {
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+    }
+
+    /* ==================== Toast Notifications ==================== */
+    .toast {
+      position: fixed;
+      bottom: var(--spacing-lg);
+      right: var(--spacing-lg);
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--color-text-primary);
+      color: var(--color-card-bg);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* ==================== Utilities ==================== */
+    .hidden {
+      display: none;
+    }
+
+    /* ==================== Responsive Design ==================== */
+    @media (max-width: 768px) {
+      header {
+        padding: var(--spacing-sm) var(--spacing-md);
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+      }
+
+      nav {
+        gap: var(--spacing-sm);
+      }
+
+      nav a {
+        font-size: 0.75rem;
+        padding: var(--spacing-xs);
+      }
+
+      main {
+        padding: var(--spacing-lg) var(--spacing-md);
+      }
+
+      .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--spacing-md);
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>オンラインショップ</h1>
-    <nav>
-      <div id="guest-nav">
-        <a href="login.html" class="login-link">ログイン</a>
-      </div>
-      <div id="user-nav" class="hidden user-info">
-        <span class="user-name" id="user-name"></span>
-        <button class="logout-btn" onclick="logout()">ログアウト</button>
-      </div>
-      <a href="cart.html" class="cart-link">カート (<span id="cart-count">0</span>)</a>
-    </nav>
+    <div class="header-container">
+      <h1>MAISON ÉLÉGANCE</h1>
+      <nav>
+        <div id="guest-nav">
+          <a href="login.html" class="login-link">Sign In</a>
+        </div>
+        <div id="user-nav" class="hidden user-info">
+          <span class="user-name" id="user-name"></span>
+          <button class="logout-btn" onclick="logout()">Sign Out</button>
+        </div>
+        <a href="cart.html" class="cart-link">Shopping Bag (<span id="cart-count">0</span>)</a>
+      </nav>
+    </div>
   </header>
 
   <main>
     <div class="search-box">
-      <label for="search-input" class="hidden">商品を検索</label>
-      <input type="text" id="search-input" placeholder="商品を検索..." aria-label="商品を検索">
-      <button onclick="searchProducts()">検索する</button>
+      <label for="search-input" class="hidden">Search products</label>
+      <input type="text" id="search-input" placeholder="Search our collections..." aria-label="Search products">
+      <button id="search-button" onclick="searchProducts()">Search</button>
     </div>
 
-    <h2>商品一覧</h2>
+    <h2>New Arrivals</h2>
     <div class="product-grid" id="product-grid">
-      <!-- 商品カードがJavaScriptで挿入される -->
+      <!-- Product cards will be inserted by JavaScript -->
     </div>
   </main>
 
@@ -79,7 +486,7 @@
     let sessionId = localStorage.getItem('sessionId');
     let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
 
-    /** セッションヘッダー付きfetch */
+    /** Fetch with session header */
     function fetchWithSession(url, options = {}) {
       const headers = { ...options.headers };
       if (sessionId) {
@@ -88,7 +495,7 @@
       return fetch(url, { ...options, headers });
     }
 
-    /** トースト表示 */
+    /** Display toast notification */
     function showToast(message) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -96,7 +503,7 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    /** ログイン状態更新 */
+    /** Update login state */
     function updateLoginState() {
       const guestNav = document.getElementById('guest-nav');
       const userNav = document.getElementById('user-nav');
@@ -112,7 +519,7 @@
       }
     }
 
-    /** ログアウト */
+    /** Logout */
     async function logout() {
       await fetchWithSession('/api/logout', { method: 'POST' });
       localStorage.removeItem('sessionId');
@@ -120,38 +527,40 @@
       sessionId = null;
       currentUser = null;
       updateLoginState();
-      showToast('ログアウトしました');
+      showToast('You have been signed out');
     }
 
-    /** 商品一覧を取得して表示 */
+    /** Fetch and display product list */
     async function loadProducts() {
       const response = await fetchWithSession('/api/products');
       const products = await response.json();
       renderProducts(products);
     }
 
-    /** 商品を描画 */
+    /** Render products */
     function renderProducts(products) {
       const grid = document.getElementById('product-grid');
       grid.innerHTML = products.map(product => `
         <div class="product-card">
-          <img src="${product.image}" alt="${product.name}" class="product-image">
+          <div class="image-container">
+            <img src="${product.image}" alt="${product.name}" class="product-image">
+          </div>
           <div class="product-info">
             <a href="product.html?id=${product.id}" class="product-name" style="text-decoration: none; color: inherit; display: block;">${product.name}</a>
             <div class="product-price">¥${product.price.toLocaleString()}</div>
             <div class="product-stock ${product.stock < 10 ? 'low' : ''}">
-              在庫: ${product.stock}点
+              In Stock: ${product.stock} pieces
             </div>
             <div class="product-actions">
-              <a href="product.html?id=${product.id}" class="btn btn-primary">詳細を見る</a>
-              <button class="btn btn-success" onclick="addToCart(${product.id})">カートに追加</button>
+              <a href="product.html?id=${product.id}" class="btn btn-primary">View Details</a>
+              <button class="btn btn-success" onclick="addToCart(${product.id})">Add to Bag</button>
             </div>
           </div>
         </div>
       `).join('');
     }
 
-    /** カートに追加 */
+    /** Add to cart */
     async function addToCart(productId) {
       const response = await fetchWithSession('/api/cart', {
         method: 'POST',
@@ -160,15 +569,15 @@
       });
 
       if (response.ok) {
-        showToast('カートに追加しました');
+        showToast('Added to shopping bag');
         updateCartCount();
       } else {
         const error = await response.json();
-        showToast(error.error || 'エラーが発生しました');
+        showToast(error.error || 'An error occurred');
       }
     }
 
-    /** カート数を更新 */
+    /** Update cart count */
     async function updateCartCount() {
       const response = await fetchWithSession('/api/cart');
       const cart = await response.json();
@@ -176,7 +585,7 @@
       document.getElementById('cart-count').textContent = count;
     }
 
-    /** 商品検索 */
+    /** Search products */
     async function searchProducts() {
       const query = document.getElementById('search-input').value.trim();
       if (!query) {
@@ -189,14 +598,14 @@
       renderProducts(products);
     }
 
-    // Enterキーで検索
+    // Search on Enter key press
     document.getElementById('search-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         searchProducts();
       }
     });
 
-    // 初期化
+    // Initialize
     updateLoginState();
     loadProducts();
     updateCartCount();
