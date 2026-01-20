@@ -340,6 +340,66 @@ export class MockTextDocument {
 }
 
 /**
+ * MockTextEditorDecorationTypeクラス
+ *
+ * テキストエディタのデコレーションタイプを表現するモック。
+ * エディタ内のテキストをハイライトするためのスタイル情報を保持する。
+ */
+export class MockTextEditorDecorationType {
+  /**
+   * デコレーションタイプを破棄する
+   *
+   * 関連するリソースをクリーンアップし、このデコレーションタイプを無効化する。
+   */
+  dispose(): void {}
+}
+
+/**
+ * MockTextEditorクラス
+ *
+ * VSCodeのTextEditorをモックする。
+ * テキストドキュメントとそれに適用されたデコレーションを管理する。
+ */
+export class MockTextEditor {
+  /** エディタで開かれているテキストドキュメント */
+  readonly document: MockTextDocument;
+  /** デコレーションタイプごとに適用された範囲のマップ */
+  private decorations: Map<MockTextEditorDecorationType, Range[]> = new Map();
+
+  /**
+   * MockTextEditorを構築する
+   *
+   * @param document - エディタで表示するテキストドキュメント
+   */
+  constructor(document: MockTextDocument) {
+    this.document = document;
+  }
+
+  /**
+   * エディタの特定範囲にデコレーションを適用する
+   *
+   * 指定したデコレーションタイプで、指定した範囲にスタイルを適用する。
+   * 同じデコレーションタイプに対する以前の適用は上書きされる。
+   *
+   * @param decorationType - 適用するデコレーションタイプ
+   * @param ranges - デコレーションを適用する範囲の配列
+   */
+  setDecorations(decorationType: MockTextEditorDecorationType, ranges: Range[]): void {
+    this.decorations.set(decorationType, ranges);
+  }
+
+  /**
+   * 特定のデコレーションタイプが適用されている範囲を取得する
+   *
+   * @param decorationType - 取得対象のデコレーションタイプ
+   * @returns デコレーションが適用されている範囲の配列。適用されていない場合は空配列
+   */
+  getDecorations(decorationType: MockTextEditorDecorationType): Range[] {
+    return this.decorations.get(decorationType) ?? [];
+  }
+}
+
+/**
  * MockWorkspaceFolderクラス
  */
 export interface MockWorkspaceFolder {
@@ -376,10 +436,28 @@ export const workspace = {
 /**
  * vscode.window名前空間のモック
  */
+const visibleTextEditors: MockTextEditor[] = [];
 export const window = {
   showInformationMessage: vi.fn(),
   showErrorMessage: vi.fn(),
   showWarningMessage: vi.fn(),
+  /**
+   * 現在表示されているテキストエディタの配列
+   *
+   * VSCodeで開かれている全てのエディタを表現する。
+   * テストでは初期状態として空配列を持つ。
+   */
+  visibleTextEditors,
+  /**
+   * テキストエディタのデコレーションタイプを作成する
+   *
+   * エディタ内のテキストに視覚的なスタイル（背景色、枠線、アイコンなど）を
+   * 適用するためのデコレーションタイプを生成する。
+   *
+   * @param options - デコレーションの外観を定義するオプション
+   * @returns 作成されたデコレーションタイプのインスタンス
+   */
+  createTextEditorDecorationType: vi.fn(() => new MockTextEditorDecorationType()),
 };
 
 /**
@@ -399,6 +477,8 @@ export type TestRun = MockTestRun;
 export type CancellationToken = MockCancellationToken;
 export type TextDocument = MockTextDocument;
 export type TextLine = MockTextLine;
+export type TextEditor = MockTextEditor;
+export type TextEditorDecorationType = MockTextEditorDecorationType;
 export type WorkspaceFolder = MockWorkspaceFolder;
 /**
  * ExtensionContextの最小モック型

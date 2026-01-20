@@ -10,6 +10,7 @@ import { getStepLineNumbers } from '@packages/core';
 import { closeSession, type AgentBrowserError } from '@packages/agent-browser-adapter';
 import { FlowRunner } from './flowRunner';
 import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from './types';
+import { StepHighlighter } from './stepHighlighter';
 import {
   extractStepLabel,
   collectItemsFromInclude,
@@ -33,10 +34,12 @@ const fileStepItems = new WeakMap<vscode.TestItem, vscode.TestItem[]>();
  * Enbu Test Controllerを作成する
  *
  * @param context - 拡張機能コンテキスト
+ * @param stepHighlighter - ステップハイライター
  * @returns TestController
  */
 export const createEnbuTestController = (
   context: vscode.ExtensionContext,
+  stepHighlighter: StepHighlighter,
 ): vscode.TestController => {
   const controller = vscode.tests.createTestController('enbuTestController', 'Enbu Flow Tests');
   context.subscriptions.push(controller);
@@ -51,7 +54,7 @@ export const createEnbuTestController = (
   const runProfile = controller.createRunProfile(
     'Run Flow',
     vscode.TestRunProfileKind.Run,
-    (request, token) => runHandler(controller, request, token),
+    (request, token) => runHandler(controller, request, token, stepHighlighter),
     true, // デフォルトプロファイル
   );
   context.subscriptions.push(runProfile);
@@ -205,11 +208,13 @@ const collectVscodeItemsFromInclude = (include: readonly vscode.TestItem[]): vsc
  * @param controller - TestController
  * @param request - テスト実行リクエスト
  * @param token - キャンセルトークン
+ * @param stepHighlighter - ステップハイライター
  */
 const runHandler = async (
   controller: vscode.TestController,
   request: vscode.TestRunRequest,
   token: vscode.CancellationToken,
+  stepHighlighter: StepHighlighter,
 ): Promise<void> => {
   const run = controller.createTestRun(request);
 
@@ -226,7 +231,7 @@ const runHandler = async (
     if (token.isCancellationRequested) {
       break;
     }
-    await runFlowTest(run, fileItem, token);
+    await runFlowTest(run, fileItem, token, stepHighlighter);
   }
 
   run.end();
@@ -274,23 +279,38 @@ const setMessageLocation = (
  * @param run - TestRun
  * @param fileItem - ファイルTestItem
  * @param stepItems - ステップTestItem配列
+ * @param stepHighlighter - ステップハイライター
  */
 const setupRunnerEventListeners = (
   runner: FlowRunner,
   run: vscode.TestRun,
   fileItem: vscode.TestItem,
   stepItems: vscode.TestItem[],
+  stepHighlighter: StepHighlighter,
 ): void => {
   runner.on('step:start', (message: StepStartMessage) => {
     handleStepStart(run, stepItems, message);
+    // ハイライト適用
+    const stepItem = stepItems[message.stepIndex];
+    if (stepItem) {
+      stepHighlighter.highlightStep(stepItem);
+    }
   });
 
   runner.on('step:complete', (message: StepCompleteMessage) => {
     handleStepComplete(run, stepItems, message, createTestMessage, setMessageLocation);
+    // ハイライトクリア
+    const stepItem = stepItems[message.stepIndex];
+    if (stepItem) {
+      stepHighlighter.clearStepHighlight(stepItem);
+    }
   });
 
   runner.on('flow:complete', (message: FlowCompleteMessage) => {
     handleFlowComplete(run, fileItem, message, createTestMessage);
+
+    // すべてのハイライトをクリア（念のため）
+    stepHighlighter.clearAll();
 
     // フロー成功時のみセッションをクローズする
     // 失敗時はAIがデバッグできるようにセッションを残す
@@ -310,6 +330,8 @@ const setupRunnerEventListeners = (
 
   runner.on('error', (error: Error) => {
     run.errored(fileItem, createTestMessage(error.message));
+    // エラー時はすべてのハイライトをクリア
+    stepHighlighter.clearAll();
   });
 };
 
@@ -356,11 +378,13 @@ const getWorkspaceFolder = (uri: { fsPath: string }): { uri: { fsPath: string } 
  * @param run - TestRun
  * @param fileItem - ファイルのTestItem
  * @param token - キャンセルトークン
+ * @param stepHighlighter - ステップハイライター
  */
 const runFlowTest = async (
   run: vscode.TestRun,
   fileItem: vscode.TestItem,
   token: vscode.CancellationToken,
+  stepHighlighter: StepHighlighter,
 ): Promise<void> => {
   const params = validateFlowTestParams(fileItem, getWorkspaceFolder);
 
@@ -375,15 +399,19 @@ const runFlowTest = async (
   enqueueSteps(run, stepItems);
 
   const runner = new FlowRunner(params.filePath, params.workspaceRoot);
-  setupRunnerEventListeners(runner, run, fileItem, stepItems);
+  setupRunnerEventListeners(runner, run, fileItem, stepItems, stepHighlighter);
 
   try {
     const result = await executeFlowRunner(runner, token);
     if (result.cancelled) {
       handleCancellation(run, fileItem, stepItems);
+      // キャンセル時はすべてのハイライトをクリア
+      stepHighlighter.clearAll();
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     run.errored(fileItem, createTestMessage(message));
+    // エラー時はすべてのハイライトをクリア
+    stepHighlighter.clearAll();
   }
 };

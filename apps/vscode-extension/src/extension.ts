@@ -13,6 +13,7 @@
 
 import * as vscode from 'vscode';
 import { createEnbuTestController } from './testController';
+import { StepHighlighter } from './stepHighlighter';
 
 /**
  * 拡張機能のアクティベーション
@@ -25,8 +26,18 @@ import { createEnbuTestController } from './testController';
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Enbu VS Code extension is now active');
 
+  // ステップハイライト用のDecorationTypeを作成
+  const runningStepDecorationType = vscode.window.createTextEditorDecorationType({
+    isWholeLine: true,
+    backgroundColor: 'rgba(255, 255, 0, 0.15)', // 薄い黄色
+  });
+  context.subscriptions.push(runningStepDecorationType);
+
+  // StepHighlighterのインスタンスを作成
+  const stepHighlighter = new StepHighlighter(runningStepDecorationType);
+
   // Test Controllerを作成
-  createEnbuTestController(context);
+  createEnbuTestController(context, stepHighlighter);
 }
 
 /**

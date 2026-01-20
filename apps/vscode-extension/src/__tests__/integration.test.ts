@@ -24,6 +24,7 @@ import {
   MockTestRun,
   MockCancellationToken,
   MockTextDocument,
+  MockTextEditorDecorationType,
   Uri,
   workspace,
   tests,
@@ -31,6 +32,7 @@ import {
   type MockTestItem,
   type MockWorkspaceFolder,
 } from '../__mocks__/vscode';
+import { StepHighlighter } from '../stepHighlighter';
 
 // createEnbuTestControllerをインポート
 import { createEnbuTestController } from '../testController';
@@ -116,9 +118,14 @@ describe('VSCode拡張 E2Eテスト', () => {
       // ExtensionContextのモック
       const mockContext = createMockExtensionContext();
 
+      // StepHighlighterのモック
+      const mockDecorationType =
+        new MockTextEditorDecorationType() as unknown as import('vscode').TextEditorDecorationType;
+      const stepHighlighter = new StepHighlighter(mockDecorationType);
+
       // === 実行: TestControllerを作成 ===
       // @ts-expect-error - テスト実行時はvscodeモジュールがモックに置き換えられる
-      createEnbuTestController(mockContext);
+      createEnbuTestController(mockContext, stepHighlighter);
 
       // 非同期処理を待機（ファイル検出）
       await new Promise((resolve) => setTimeout(resolve, 50));
