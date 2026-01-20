@@ -22,12 +22,6 @@ const config: KnipConfig = {
         'src/index.ts',
       ],
     },
-    'apps/cli': {
-      ignoreBinaries: [
-        // tsdownはworkspace rootからhoistされる
-        'tsdown',
-      ],
-    },
   },
 };
 

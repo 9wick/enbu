@@ -38,7 +38,6 @@ export type {
   RawWaitCommand,
   ScreenshotCommand,
   ScrollCommand,
-  ScrollDirection,
   ScrollIntoViewCommand,
   SelectCommand,
   SelectorSpec,

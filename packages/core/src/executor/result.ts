@@ -36,7 +36,7 @@ export type AssertionFailedError = {
  *
  * AgentBrowserErrorとは別に、コマンド実行ロジックで発生するエラー。
  */
-export type CoreError = AssertionFailedError;
+type CoreError = AssertionFailedError;
 
 /**
  * コマンド実行で発生しうるすべてのエラー

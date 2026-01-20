@@ -13,8 +13,7 @@
     "test:headed": "node ../../apps/cli/dist/main.mjs --headed .enbuflow/*.enbu.yaml"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "neverthrow": "^8.2.0"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

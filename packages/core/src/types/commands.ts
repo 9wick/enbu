@@ -25,8 +25,8 @@ import type {
 } from '@packages/agent-browser-adapter';
 import type { UseDefault } from './utility-types';
 
-// LoadState, ScrollDirectionをre-export（後方互換のため）
-export type { LoadState, ScrollDirection } from '@packages/agent-browser-adapter';
+// LoadStateをre-export（後方互換のため）
+export type { LoadState } from '@packages/agent-browser-adapter';
 
 // ==========================================
 // セレクタ指定型（DDD準拠）

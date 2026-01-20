@@ -144,7 +144,7 @@ const extractRawSelectorSpec = (obj: Record<string, unknown>): RawSelectorSpec |
  * @param value - 検証対象の値
  * @returns 正規化されたOpenCommand、または不正な場合null
  */
-export const normalizeOpenCommand = (value: unknown): RawOpenCommand | null => {
+const normalizeOpenCommand = (value: unknown): RawOpenCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -228,7 +228,7 @@ const checkYamlClick = (obj: Record<string, unknown>): RawClickCommand | null =>
  * @param value - 検証対象の値
  * @returns 正規化されたClickCommand、または不正な場合null
  */
-export const normalizeClickCommand = (value: unknown): RawClickCommand | null => {
+const normalizeClickCommand = (value: unknown): RawClickCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -301,7 +301,7 @@ const checkYamlType = (obj: Record<string, unknown>): RawTypeCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたTypeCommand、または不正な場合null
  */
-export const normalizeTypeCommand = (value: unknown): RawTypeCommand | null => {
+const normalizeTypeCommand = (value: unknown): RawTypeCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -374,7 +374,7 @@ const checkYamlFill = (obj: Record<string, unknown>): RawFillCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたFillCommand、または不正な場合null
  */
-export const normalizeFillCommand = (value: unknown): RawFillCommand | null => {
+const normalizeFillCommand = (value: unknown): RawFillCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -397,7 +397,7 @@ export const normalizeFillCommand = (value: unknown): RawFillCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたPressCommand、または不正な場合null
  */
-export const normalizePressCommand = (value: unknown): RawPressCommand | null => {
+const normalizePressCommand = (value: unknown): RawPressCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -478,7 +478,7 @@ const checkYamlHover = (obj: Record<string, unknown>): RawHoverCommand | null =>
  * @param value - 検証対象の値
  * @returns 正規化されたHoverCommand、または不正な場合null
  */
-export const normalizeHoverCommand = (value: unknown): RawHoverCommand | null => {
+const normalizeHoverCommand = (value: unknown): RawHoverCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -551,7 +551,7 @@ const checkYamlSelect = (obj: Record<string, unknown>): RawSelectCommand | null 
  * @param value - 検証対象の値
  * @returns 正規化されたSelectCommand、または不正な場合null
  */
-export const normalizeSelectCommand = (value: unknown): RawSelectCommand | null => {
+const normalizeSelectCommand = (value: unknown): RawSelectCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -617,7 +617,7 @@ const checkYamlScroll = (obj: Record<string, unknown>): RawScrollCommand | null 
  * @param value - 検証対象の値
  * @returns 正規化されたScrollCommand、または不正な場合null
  */
-export const normalizeScrollCommand = (value: unknown): RawScrollCommand | null => {
+const normalizeScrollCommand = (value: unknown): RawScrollCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -697,7 +697,7 @@ const checkYamlScrollIntoView = (obj: Record<string, unknown>): RawScrollIntoVie
  * @param value - 検証対象の値
  * @returns 正規化されたScrollIntoViewCommand、または不正な場合null
  */
-export const normalizeScrollIntoViewCommand = (value: unknown): RawScrollIntoViewCommand | null => {
+const normalizeScrollIntoViewCommand = (value: unknown): RawScrollIntoViewCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -859,7 +859,7 @@ const checkYamlWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたWaitCommand、または不正な場合null
  */
-export const normalizeWaitCommand = (value: unknown): RawWaitCommand | null => {
+const normalizeWaitCommand = (value: unknown): RawWaitCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -921,7 +921,7 @@ const normalizeYamlScreenshot = (value: unknown): RawScreenshotCommand | null =>
  * @param value - 検証対象の値
  * @returns 正規化されたScreenshotCommand、または不正な場合null
  */
-export const normalizeScreenshotCommand = (value: unknown): RawScreenshotCommand | null => {
+const normalizeScreenshotCommand = (value: unknown): RawScreenshotCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -947,7 +947,7 @@ export const normalizeScreenshotCommand = (value: unknown): RawScreenshotCommand
  * @param value - 検証対象の値
  * @returns 正規化されたSnapshotCommand、または不正な場合null
  */
-export const normalizeSnapshotCommand = (value: unknown): RawSnapshotCommand | null => {
+const normalizeSnapshotCommand = (value: unknown): RawSnapshotCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -972,7 +972,7 @@ export const normalizeSnapshotCommand = (value: unknown): RawSnapshotCommand | n
  * @param value - 検証対象の値
  * @returns 正規化されたEvalCommand、または不正な場合null
  */
-export const normalizeEvalCommand = (value: unknown): RawEvalCommand | null => {
+const normalizeEvalCommand = (value: unknown): RawEvalCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -1055,7 +1055,7 @@ const checkYamlAssertVisible = (obj: Record<string, unknown>): RawAssertVisibleC
  * @param value - 検証対象の値
  * @returns 正規化されたAssertVisibleCommand、または不正な場合null
  */
-export const normalizeAssertVisibleCommand = (value: unknown): RawAssertVisibleCommand | null => {
+const normalizeAssertVisibleCommand = (value: unknown): RawAssertVisibleCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -1219,7 +1219,7 @@ const checkYamlAssertEnabled = (obj: Record<string, unknown>): RawAssertEnabledC
  * @param value - 検証対象の値
  * @returns 正規化されたAssertEnabledCommand、または不正な場合null
  */
-export const normalizeAssertEnabledCommand = (value: unknown): RawAssertEnabledCommand | null => {
+const normalizeAssertEnabledCommand = (value: unknown): RawAssertEnabledCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -1329,7 +1329,7 @@ const checkYamlAssertChecked = (obj: Record<string, unknown>): RawAssertCheckedC
  * @param value - 検証対象の値
  * @returns 正規化されたAssertCheckedCommand、または不正な場合null
  */
-export const normalizeAssertCheckedCommand = (value: unknown): RawAssertCheckedCommand | null => {
+const normalizeAssertCheckedCommand = (value: unknown): RawAssertCheckedCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;

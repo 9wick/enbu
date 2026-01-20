@@ -10,7 +10,7 @@
  *
  * フローの実行が開始されたときに送信される。
  */
-export type FlowStartMessage = {
+type FlowStartMessage = {
   type: 'flow:start';
   /** フロー名 */
   flowName: string;

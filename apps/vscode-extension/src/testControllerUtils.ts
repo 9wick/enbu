@@ -13,7 +13,7 @@ import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from 
  * vscode.TestItemの必要なプロパティのみを定義。
  * テスト用モックと互換性を持たせるため。
  */
-export interface TestItemLike {
+interface TestItemLike {
   id: string;
   label: string;
   uri?: { fsPath: string };
@@ -26,7 +26,7 @@ export interface TestItemLike {
  *
  * テスト用に最小限の型を定義。
  */
-export interface TestRunLike<T extends TestItemLike, M> {
+interface TestRunLike<T extends TestItemLike, M> {
   started: (item: T) => void;
   passed: (item: T, duration?: number) => void;
   failed: (item: T, message: M, duration?: number) => void;
@@ -38,7 +38,7 @@ export interface TestRunLike<T extends TestItemLike, M> {
 /**
  * TestControllerの最小インターフェース
  */
-export interface TestControllerLike<T extends TestItemLike> {
+interface TestControllerLike<T extends TestItemLike> {
   items: {
     forEach: (callback: (item: T) => void) => void;
   };
@@ -47,7 +47,7 @@ export interface TestControllerLike<T extends TestItemLike> {
 /**
  * WorkspaceFolderの最小インターフェース
  */
-export interface WorkspaceFolderLike {
+interface WorkspaceFolderLike {
   uri: { fsPath: string };
 }
 
@@ -280,7 +280,7 @@ export const handleCancellation = <T extends TestItemLike, M>(
 /**
  * フロー実行パラメータの検証結果型
  */
-export type ValidateFlowTestParamsResult =
+type ValidateFlowTestParamsResult =
   | { ok: true; filePath: string; workspaceRoot: string }
   | { ok: false; error: string };
 

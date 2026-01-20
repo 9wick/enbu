@@ -36,7 +36,7 @@ export type SelectorInput =
  * - resolved: 要素が見つかり、refに解決された
  * - skipped: セレクタがないため待機をスキップした
  */
-export type AutoWaitResult =
+type AutoWaitResult =
   | { readonly type: 'resolved'; readonly resolvedRef: string }
   | { readonly type: 'skipped' };
 

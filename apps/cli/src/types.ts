@@ -93,11 +93,3 @@ export type FlowExecutionResult = {
  * 通常メッセージはstdout、エラーメッセージはstderrに出力する。
  */
 export type OutputTarget = 'stdout' | 'stderr';
-
-/**
- * ログレベル
- *
- * ログメッセージの重要度を表す型。
- * verboseモード時にはdebugレベルのログも出力される。
- */
-export type LogLevel = 'info' | 'error' | 'debug';
