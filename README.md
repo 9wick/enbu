@@ -46,15 +46,15 @@ npx enbu init
 # ログインフローのテスト
 steps:
   - open: https://example.com/login
-  - click: "ログイン"
-  - type:
-      selector: "メールアドレス"
-      text: "user@example.com"
-  - type:
-      selector: "パスワード"
-      text: "password123"
-  - click: "送信"
-  - assertVisible: "ダッシュボード"
+  - click: ログイン
+  - fill:
+      selector: メールアドレス
+      value: user@example.com
+  - fill:
+      selector: パスワード
+      value: password123
+  - click: 送信
+  - assertVisible: ダッシュボード
 ```
 
 ### 3. テストの実行
@@ -81,20 +81,41 @@ steps:
 ```yaml
 steps:
   # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
-  - click: "ログイン"
+  - click: ログイン
 
   # CSSセレクタ
+  - click: "#submit-button"
+
+  # 同名要素が複数ある場合はインデックス指定
   - click:
-      selector: "#submit-button"
+      selector: 商品を見る
+      index: 0
 ```
 
 ### テキスト入力
 
 ```yaml
 steps:
+  # fill: 入力欄をクリアしてから入力
+  - fill:
+      selector: ユーザー名
+      value: 山田太郎
+
+  # type: 既存テキストに追記
   - type:
-      selector: "ユーザー名"
-      text: "山田太郎"
+      selector: 検索欄
+      value: 追加テキスト
+```
+
+### キー入力
+
+```yaml
+steps:
+  # Enterキーを押す
+  - press: Enter
+
+  # Tabキーを押す
+  - press: Tab
 ```
 
 ### アサーション
@@ -102,33 +123,87 @@ steps:
 ```yaml
 steps:
   # 要素が表示されていることを確認
-  - assertVisible: "ログイン成功"
+  - assertVisible: ログイン成功
 
   # 要素が表示されていないことを確認
-  - assertNotVisible: "エラー"
+  - assertNotVisible: エラー
+
+  # 要素が有効であることを確認
+  - assertEnabled: 送信ボタン
+
+  # チェックボックスがチェックされていることを確認
+  - assertChecked: 利用規約に同意
+
+  # チェックボックスがチェックされていないことを確認
+  - assertChecked:
+      selector: オプション
+      checked: false
 ```
 
 ### スクリーンショット
 
 ```yaml
 steps:
+  # 通常のスクリーンショット
   - screenshot: ./screenshots/result.png
+
+  # フルページスクリーンショット
+  - screenshot:
+      path: ./screenshots/fullpage.png
+      full: true
 ```
 
 ### スナップショット（デバッグ用）
 
 ```yaml
 steps:
-  - snapshot
+  - snapshot: {}
 ```
 
 現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
+
+### スクロール
+
+```yaml
+steps:
+  # 方向を指定してスクロール
+  - scroll:
+      direction: down
+      amount: 500
+
+  # 要素が見えるまでスクロール
+  - scrollIntoView: フッター
+```
+
+### 待機
+
+```yaml
+steps:
+  # ミリ秒で待機
+  - wait: 2000
+
+  # 要素が表示されるまで待機
+  - wait:
+      selector: "#loading-complete"
+
+  # テキストが表示されるまで待機
+  - wait:
+      text: 読み込み完了
+
+  # URLが変わるまで待機
+  - wait:
+      url: /dashboard
+
+  # ページ読み込み状態を待機
+  - wait:
+      load: networkidle
+```
 
 ### JavaScript実行
 
 ```yaml
 steps:
-  - eval: "document.title"
+  - eval: document.title
 
   # 複数行
   - eval: |
@@ -142,9 +217,9 @@ steps:
 
 ```yaml
 steps:
-  - type:
-      selector: "パスワード"
-      text: ${PASSWORD}
+  - fill:
+      selector: パスワード
+      value: ${PASSWORD}
 ```
 
 ### 環境変数の指定方法
@@ -236,8 +311,8 @@ jobs:
 | `click <selector>` | ✅ | `- click: <selector>` |
 | `dblclick <selector>` | ❌ | - |
 | `focus <selector>` | ❌ | - |
-| `type <selector> <text>` | ✅ | `- type: { selector: <selector>, value: <text> }` |
-| `fill <selector> <text>` | ✅ | `- fill: { selector: <selector>, value: <text> }` |
+| `type <selector> <text>` | ✅ | `- type: { selector: <selector>, value: <value> }` |
+| `fill <selector> <text>` | ✅ | `- fill: { selector: <selector>, value: <value> }` |
 | `press <key>` | ✅ | `- press: <key>` |
 | `keydown <key>` | ❌ | - |
 | `keyup <key>` | ❌ | - |
