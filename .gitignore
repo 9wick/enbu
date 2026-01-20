@@ -39,3 +39,4 @@ coverage
 
 # Screenshot command output (e.g., login-page.png from screenshot: login-page)
 login-page.png
+vscode-extension-test-screenshot.png

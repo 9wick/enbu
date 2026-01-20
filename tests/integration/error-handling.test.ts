@@ -1,45 +1,32 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { runCli } from '../utils/test-helpers';
-import * as adapter from '@packages/agent-browser-adapter';
-import { ok, err } from 'neverthrow';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 
 /**
  * エラーハンドリング統合テスト
  *
- * エラーハンドリングの統合を検証します。
- * 様々なエラーケースで適切なエラーメッセージが表示されることを確認します。
- */
-/**
- * 注: このテストスイートは実際のCLIプロセスを起動するため、
- * モック化が困難です。そのため、一部のテストはスキップしています。
- * 詳細な動作確認はE2Eテストで行ってください。
+ * CLIプロセスとしてのエラーハンドリングを検証します。
+ * 実際にCLIプロセスを起動し、各種エラーケースで適切なエラーメッセージと終了コードが返されることを確認します。
+ *
+ * 注: フロー実行時のエラー（タイムアウト、アサーション失敗など）はE2Eテスト（tests/e2e/error-cases.test.ts）で検証します。
+ * このテストは「CLIレイヤーでのエラーハンドリング」に焦点を当てています。
  */
 describe('Error Handling Integration Tests', () => {
-  beforeEach(() => {
-    // agent-browserのモックをリセット
-    vi.clearAllMocks();
-  });
-
   /**
-   * I-ERR-1: agent-browser未インストール
+   * I-ERR-1: 存在しないファイル
    *
-   * 前提条件: agent-browserが未インストールまたは利用不可
-   * 検証項目: 適切なエラーメッセージとインストール案内
-   *
-   * 注: 実際のCLIプロセスでは、agent-browserのインストール状態に依存します。
-   * このテストは、agent-browserがインストールされている環境ではスキップされます。
+   * 前提条件: 指定されたファイルが存在しない
+   * 検証項目: ファイルが見つからないエラーメッセージと非0終了コード
    */
-  it.skip('I-ERR-1: agent-browser未インストール時に適切なエラーメッセージを表示', async () => {
+  it('I-ERR-1: 存在しないファイルでエラーメッセージを表示', async () => {
     // Act
-    const result = await runCli(['tests/fixtures/flows/simple.enbu.yaml']);
+    const result = await runCli(['non-existent-file.enbu.yaml']);
 
     // Assert
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.exitCode).not.toBe(0);
-      expect(result.value.stderr).toContain('agent-browser');
-      expect(result.value.stderr).toContain('install');
+      expect(result.value.stderr).toContain('Failed to read file');
+      expect(result.value.stderr).toContain('non-existent-file.enbu.yaml');
     }
   });
 
@@ -58,7 +45,7 @@ describe('Error Handling Integration Tests', () => {
     if (result.isOk()) {
       // エラーコードが0以外であることを確認
       expect(result.value.exitCode).not.toBe(0);
-      expect(result.value.stderr).toContain('Failed to parse flow file');
+      expect(result.value.stderr).toContain('Failed to parse YAML');
       // YAMLのパースエラーには行番号が含まれる
       expect(result.value.stderr).toMatch(/line|Line/i);
     }
@@ -79,59 +66,82 @@ describe('Error Handling Integration Tests', () => {
     if (result.isOk()) {
       // エラーコードが0以外であることを確認
       expect(result.value.exitCode).not.toBe(0);
-      expect(result.value.stderr).toContain('Failed to parse flow file');
+      expect(result.value.stderr).toContain('Failed to parse YAML');
       // 不明なアクションに関するエラーメッセージ
       expect(result.value.stderr).toMatch(/unknown|Unknown|invalid|Invalid/i);
     }
   });
 
   /**
-   * I-ERR-4: タイムアウト
+   * I-ERR-4: 複数のエラーがある場合
    *
-   * 前提条件: なし
-   * 検証項目: タイムアウトエラーが適切に処理される
-   *
-   * 注: 実際のタイムアウトをテストするには長時間かかるため、スキップします。
-   * タイムアウト処理の詳細はE2Eテストで検証してください。
+   * 前提条件: 複数の存在しないファイルを指定
+   * 検証項目: 最初のエラーでエラーメッセージが表示され、非0終了コードが返される
    */
-  it.skip('I-ERR-4: タイムアウト時に再試行の案内を表示', async () => {
-    // このテストは実装が困難なためスキップ
+  it('I-ERR-4: 複数ファイル指定時に最初のエラーを表示', async () => {
+    // Act
+    const result = await runCli(['non-existent-1.enbu.yaml', 'non-existent-2.enbu.yaml']);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.exitCode).not.toBe(0);
+      // 少なくとも1つのファイル名がエラーメッセージに含まれる
+      expect(result.value.stderr).toMatch(/non-existent-1|non-existent-2/);
+    }
   });
 
   /**
-   * I-ERR-5: アサーション失敗
+   * I-ERR-5: --env 値なしでエラーを返す
    *
    * 前提条件: なし
-   * 検証項目: アサーション失敗時のエラー表示
-   *
-   * 注: 実際のアサーション失敗をテストするにはagent-browserの実行が必要なため、スキップします。
-   * アサーション失敗の処理はE2Eテストで検証してください。
+   * 検証項目: --env オプションに値を指定しない場合、エラーメッセージが表示される
    */
-  it.skip('I-ERR-5: アサーション失敗時に期待値と実際の値を表示', async () => {
-    // このテストは実装が困難なためスキップ
+  it('I-ERR-5: --env 値なしでエラーを返す', async () => {
+    // Act
+    const result = await runCli(['--env']);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('--env requires');
+    }
   });
 
   /**
-   * I-ERR-6: コマンド実行失敗の詳細表示
+   * I-ERR-6: --parallel 不正な値でエラーを返す
    *
    * 前提条件: なし
-   * 検証項目: コマンド実行失敗時のエラー表示
-   *
-   * 注: 実際のコマンド実行失敗をテストするにはagent-browserの実行が必要なため、スキップします。
+   * 検証項目: --parallel オプションに不正な値を指定した場合、エラーメッセージが表示される
    */
-  it.skip('I-ERR-6: コマンド実行失敗時に詳細なエラー情報を表示', async () => {
-    // このテストは実装が困難なためスキップ
+  it('I-ERR-6: --parallel 不正な値でエラーを返す', async () => {
+    // Act
+    const result = await runCli(['--parallel', '0']);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('positive integer');
+    }
   });
 
   /**
-   * I-ERR-7: パースエラー
+   * I-ERR-7: --timeout 不正な値でエラーを返す
    *
    * 前提条件: なし
-   * 検証項目: JSON出力のパースエラーが適切に表示される
-   *
-   * 注: 実際のパースエラーをテストするにはagent-browserの実行が必要なため、スキップします。
+   * 検証項目: --timeout オプションに不正な値を指定した場合、エラーメッセージが表示される
    */
-  it.skip('I-ERR-7: JSON出力のパースエラーが適切に表示される', async () => {
-    // このテストは実装が困難なためスキップ
+  it('I-ERR-7: --timeout 不正な値でエラーを返す', async () => {
+    // Act
+    const result = await runCli(['--timeout', 'invalid']);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('positive number');
+    }
   });
 });

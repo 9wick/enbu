@@ -5,6 +5,8 @@
  * 判別可能なユニオン型として定義する。
  */
 
+import type { NoInfo } from './utility-types';
+
 /**
  * フローパース時のエラー型
  */
@@ -13,14 +15,14 @@ export type ParseError =
       /** YAMLの構文エラー */
       type: 'yaml_syntax_error';
       message: string;
-      line?: number;
-      column?: number;
+      line: number | NoInfo;
+      column: number | NoInfo;
     }
   | {
       /** フロー構造が不正 */
       type: 'invalid_flow_structure';
       message: string;
-      details?: string;
+      details: string;
     }
   | {
       /** コマンド形式が不正 */
@@ -41,5 +43,5 @@ export type ParseError =
       type: 'file_read_error';
       message: string;
       filePath: string;
-      cause?: string;
+      cause: string;
     };

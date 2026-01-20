@@ -6,8 +6,9 @@
  */
 
 import * as vscode from 'vscode';
+import { P, match } from 'ts-pattern';
 import { getStepLineNumbers } from '@packages/core';
-import { closeSession, type AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserClose, type AgentBrowserError } from '@packages/agent-browser-adapter';
 import { FlowRunner } from './flowRunner';
 import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from './types';
 import { StepHighlighter } from './stepHighlighter';
@@ -203,7 +204,7 @@ const collectVscodeItemsFromInclude = (include: readonly vscode.TestItem[]): vsc
 /**
  * テスト実行ハンドラ
  *
- * 選択されたTestItem（ファイル）を実行し、各ステップの進捗を更新する。
+ * 選択されたTestItem（ファイル）を並列実行し、各ステップの進捗を更新する。
  *
  * @param controller - TestController
  * @param request - テスト実行リクエスト
@@ -226,7 +227,7 @@ const runHandler = async (
   // 除外されたアイテムをフィルタ
   const filteredItems = filterExcludedItems(itemsToRun, request.exclude);
 
-  // 各ファイルを順番に実行
+  // 各ファイルを順番に実行（stepHighlighterが単一のデコレーションを管理するため）
   for (const fileItem of filteredItems) {
     if (token.isCancellationRequested) {
       break;
@@ -248,11 +249,15 @@ const createTestMessage = (text: string): vscode.TestMessage => new vscode.TestM
 /**
  * rangeがvscode.Rangeかどうかを判定する型ガード
  *
+ * ts-patternでstartとendプロパティの存在をチェックする。
+ *
  * @param range - 判定対象
  * @returns vscode.Rangeの場合true
  */
 const isVscodeRange = (range: unknown): range is vscode.Range =>
-  range !== null && typeof range === 'object' && 'start' in range && 'end' in range;
+  match(range)
+    .with({ start: P._, end: P._ }, () => true)
+    .otherwise(() => false);
 
 /**
  * TestMessageにLocationを設定するヘルパー関数
@@ -316,10 +321,10 @@ const setupRunnerEventListeners = (
     // 失敗時はAIがデバッグできるようにセッションを残す
     if (message.status === 'passed') {
       const sessionName = runner.getSessionName();
-      // closeSessionは非同期だが、イベントハンドラーの処理をブロックしないため、
+      // browserCloseは非同期だが、イベントハンドラーの処理をブロックしないため、
       // void-returning async関数を即座に実行する
       void (async () => {
-        const closeResult = await closeSession(sessionName);
+        const closeResult = await browserClose(sessionName);
         closeResult.mapErr((error: AgentBrowserError) => {
           // セッションクローズ失敗はログのみ出力し、テストは失敗扱いにしない
           console.warn(`Failed to close session: ${error.type}`);

@@ -156,7 +156,16 @@ const parseInitArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, Cli
 const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliError> => {
   const files: string[] = [];
   const env: Record<string, string> = {};
-  const state = {
+  const state: {
+    files: string[];
+    env: Record<string, string>;
+    headed: boolean;
+    timeout: number;
+    screenshot: boolean;
+    session: string | undefined;
+    progressJson: boolean;
+    parallel: number | undefined;
+  } = {
     files,
     env,
     headed: false,
@@ -164,6 +173,7 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     screenshot: false,
     session: undefined,
     progressJson: false,
+    parallel: undefined,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -196,6 +206,7 @@ const parseRunArgs = (argv: string[], verbose: boolean): Result<ParsedArgs, CliE
     screenshot: state.screenshot,
     session: state.session,
     progressJson: state.progressJson,
+    parallel: state.parallel,
   });
 };
 
@@ -223,6 +234,7 @@ const processRunArg = (
     screenshot: boolean;
     session: string | undefined;
     progressJson: boolean;
+    parallel: number | undefined;
   },
 ): Result<number, CliError> => {
   // 値を取るオプション
@@ -233,6 +245,8 @@ const processRunArg = (
       return parseTimeoutOption(argv, currentIndex, state);
     case '--session':
       return parseSessionOption(argv, currentIndex, state);
+    case '--parallel':
+      return parseParallelOption(argv, currentIndex, state);
     default:
       // フラグオプション（値を取らない）
       return processFlagArg(arg, currentIndex, state);
@@ -405,6 +419,41 @@ const parseSessionOption = (
   }
 
   state.session = nextArg;
+  return ok(currentIndex + 1);
+};
+
+/**
+ * --parallel オプションをパースする
+ *
+ * 並列実行数を指定する。1以上の整数でなければならない。
+ *
+ * @param argv - 全引数配列
+ * @param currentIndex - 現在のインデックス
+ * @param state - パース状態を保持するオブジェクト
+ * @returns 成功時: 新しいインデックス、失敗時: エラー
+ */
+const parseParallelOption = (
+  argv: string[],
+  currentIndex: number,
+  state: { parallel: number | undefined },
+): Result<number, CliError> => {
+  const nextArg = argv[currentIndex + 1];
+  if (!nextArg) {
+    return err({
+      type: 'invalid_args',
+      message: '--parallel requires a number',
+    });
+  }
+
+  const parallelNum = Number.parseInt(nextArg, 10);
+  if (Number.isNaN(parallelNum) || parallelNum < 1) {
+    return err({
+      type: 'invalid_args',
+      message: `--parallel must be a positive integer, got: ${nextArg}`,
+    });
+  }
+
+  state.parallel = parallelNum;
   return ok(currentIndex + 1);
 };
 

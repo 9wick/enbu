@@ -5,8 +5,21 @@
  * 実際の値に展開する。
  */
 
-import { type Result, err, ok } from 'neverthrow';
-import type { Command, Flow, ParseError } from '../types';
+import { err, ok, type Result } from 'neverthrow';
+import type { FlowEnv, ParseError } from '../types';
+
+/**
+ * Raw Flow Data型
+ *
+ * 環境変数解決処理に使用する、生のフローデータ。
+ * Command型のバリデーション前の状態を表す。
+ */
+export type RawFlowData = {
+  /** 環境変数マップ */
+  env: FlowEnv;
+  /** ステップ配列（未検証） */
+  steps: unknown[];
+};
 
 /**
  * 環境変数マップを統合する
@@ -135,84 +148,87 @@ const resolveObjectVariables = (
 };
 
 /**
- * コマンド内の環境変数を解決する
+ * ステップ内の環境変数を解決する
  *
- * コマンドをディープクローンし、クローン先で環境変数を展開する。
- * structuredCloneにより型安全にクローンを作成し、その後mutableに変更する。
+ * 生のステップデータをディープクローンし、クローン先で環境変数を展開する。
+ * まだCommand型にはなっていないため、Symbolを含まない。
  *
- * @param command - 解決対象のコマンド
+ * @param step - 解決対象のステップ（未検証）
  * @param envMap - 環境変数マップ
- * @param commandIndex - コマンドのインデックス（エラー報告用）
- * @returns 成功時: 新しいCommandオブジェクト、失敗時: ParseError
+ * @param stepIndex - ステップのインデックス（エラー報告用）
+ * @returns 成功時: 新しいステップオブジェクト、失敗時: ParseError
  */
-const resolveCommandVariables = (
-  command: Command,
+const resolveStepVariables = (
+  step: unknown,
   envMap: Record<string, string>,
-  commandIndex: number,
-): Result<Command, ParseError> => {
-  // コマンドをディープクローン（型注釈により型を保持）
-  const cloned: Command = structuredClone(command);
+  stepIndex: number,
+): Result<unknown, ParseError> => {
+  // ステップをディープクローン（structuredCloneを使用、Symbolは存在しないため安全）
+  const cloned = structuredClone(step);
+
+  // オブジェクトでない場合はそのまま返す
+  if (!isRecord(cloned)) {
+    return ok(cloned);
+  }
 
   // 全てのプロパティを走査して文字列を解決
-  const location = `step[${commandIndex}]`;
+  const location = `step[${stepIndex}]`;
 
-  // clonedをRecord<string, unknown>として扱い、環境変数を解決
-  // 解決後もclonedの参照は変わらず、Command型として保持される
+  // clonedに対して環境変数を解決
   return resolveObjectVariables(cloned, envMap, location).map(() => cloned);
 };
 
 /**
- * フロー内の環境変数参照を解決する
+ * 生のフローデータ内の環境変数参照を解決する
  *
- * @param flow - パース済みのFlowオブジェクト
+ * @param rawFlow - パース済みの生フローデータ（Command型検証前）
  * @param processEnv - プロセス環境変数（process.env）
  * @param dotEnv - .envファイルから読み込んだ環境変数
- * @returns 成功時: 環境変数が展開されたFlow、失敗時: ParseError
+ * @returns 成功時: 環境変数が展開された生フローデータ、失敗時: ParseError
  *
  * @remarks
  * 環境変数の優先順位:
  * 1. processEnv（最優先）
  * 2. dotEnv
- * 3. flow.env（最後の選択肢）
+ * 3. rawFlow.env（最後の選択肢）
+ *
+ * 注意: この関数はCommand型の検証前に呼び出される。
+ * そのため、stepsはまだunknown[]であり、Symbolを含まない。
  *
  * @example
- * const flow: Flow = {
- *   name: 'login',
+ * const rawFlow: RawFlowData = {
  *   env: { BASE_URL: 'https://example.com' },
  *   steps: [
- *     { command: 'open', url: '${BASE_URL}' },
- *     { command: 'fill', selector: 'password', value: '${PASSWORD}' }
+ *     { open: '${BASE_URL}' },
+ *     { fill: { selector: 'password', value: '${PASSWORD}' } }
  *   ]
  * };
  *
  * const result = resolveEnvVariables(
- *   flow,
+ *   rawFlow,
  *   process.env,
  *   { PASSWORD: 'secret' }
  * );
  */
 export const resolveEnvVariables = (
-  flow: Flow,
+  rawFlow: RawFlowData,
   processEnv: Readonly<Record<string, string | undefined>>,
   dotEnv: Readonly<Record<string, string>>,
-): Result<Flow, ParseError> => {
-  // 1. 環境変数マップを統合（優先順位: processEnv > dotEnv > flow.env）
-  const envMap = mergeEnvMaps(processEnv, dotEnv, flow.env);
+): Result<RawFlowData, ParseError> => {
+  // 1. 環境変数マップを統合（優先順位: processEnv > dotEnv > rawFlow.env）
+  const envMap = mergeEnvMaps(processEnv, dotEnv, rawFlow.env);
 
-  // 2. 全てのコマンドを走査して環境変数を解決
-  return flow.steps
-    .reduce<Result<Command[], ParseError>>(
-      (acc, command, index) =>
-        acc.andThen((commands) =>
-          resolveCommandVariables(command, envMap, index).map((resolved) => [
-            ...commands,
-            resolved,
-          ]),
+  // 2. 全てのステップを走査して環境変数を解決
+  return rawFlow.steps
+    .reduce<Result<unknown[], ParseError>>(
+      (acc, step, index) =>
+        acc.andThen((steps) =>
+          resolveStepVariables(step, envMap, index).map((resolved) => [...steps, resolved]),
         ),
       ok([]),
     )
-    .map((resolvedCommands) => ({
-      ...flow,
-      steps: resolvedCommands,
+    .map((resolvedSteps) => ({
+      ...rawFlow,
+      steps: resolvedSteps,
     }));
 };

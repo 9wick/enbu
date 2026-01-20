@@ -1,30 +1,36 @@
-import { type ResultAsync, okAsync, errAsync } from 'neverthrow';
+import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
 import {
+  asSelector,
   browserClick,
-  browserType,
   browserFill,
   browserPress,
-  asSelector,
-  asKeyboardKey,
+  browserType,
 } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
-import type { ClickCommand, TypeCommand, FillCommand, PressCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import { errAsync, okAsync, type ResultAsync } from 'neverthrow';
+import type { ClickCommand, FillCommand, PressCommand, TypeCommand } from '../../types';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * セレクタを解決してResultAsyncに変換する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
  *
+ * resolvedRefState.refはstring型なので、asSelectorで検証が必要
+ *
  * @returns セレクタのResultAsync型。空文字列の場合はエラー。
  */
 const resolveSelectorAsync = (
-  originalSelector: string,
+  originalSelector: Selector,
   context: ExecutionContext,
-): ResultAsync<Selector, AgentBrowserError> =>
-  asSelector(context.resolvedRef ?? originalSelector).match(
-    (selector) => okAsync(selector),
-    (error) => errAsync(error),
-  );
+): ResultAsync<Selector, AgentBrowserError> => {
+  // resolvedRefがあればそれを検証して使用、なければ元のSelectorをそのまま使用
+  if (context.resolvedRefState.status === 'resolved') {
+    return asSelector(context.resolvedRefState.ref).match(
+      (selector) => okAsync(selector),
+      (error) => errAsync(error),
+    );
+  }
+  return okAsync(originalSelector);
+};
 
 /**
  * click コマンドのハンドラ
@@ -112,12 +118,9 @@ export const handlePress = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return asKeyboardKey(command.key).match(
-    (key) =>
-      browserPress(key, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  // command.key は既に KeyboardKey 型（Branded Type）なので、そのまま使用
+  return browserPress(command.key, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

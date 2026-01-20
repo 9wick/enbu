@@ -1,20 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { runCli } from '../utils/test-helpers';
-import * as adapter from '@packages/agent-browser-adapter';
-import { ok, err } from 'neverthrow';
 
 /**
  * CLI統合テスト
  *
- * CLIの基本機能を検証します。
- * agent-browserをモック化し、CLIとcoreモジュールの連携をテストします。
+ * CLIプロセスとしての基本機能を検証します。
+ * 実際にCLIプロセスを起動し、引数パース・エラー表示・終了コードが正しく動作することを確認します。
+ *
+ * 注: フロー実行の動作確認はE2Eテスト（tests/e2e/）で行います。
+ * このテストは「CLIとしての振る舞い」に焦点を当てています。
  */
 describe('CLI Integration Tests', () => {
-  beforeEach(() => {
-    // agent-browserのモックをリセット
-    vi.clearAllMocks();
-  });
-
   /**
    * I-CLI-1: ヘルプ表示
    *
@@ -40,12 +36,9 @@ describe('CLI Integration Tests', () => {
    * I-CLI-2: バージョン表示
    *
    * 前提条件: なし
-   * 検証項目: --version でバージョンが表示される
-   *
-   * 注: 現在の実装ではpackage.jsonからバージョンを取得する機能は未実装のため、
-   * このテストケースはスキップします。将来的に実装された際に有効化してください。
+   * 検証項目: --version でバージョンが表示される（セマンティックバージョン形式）
    */
-  it.skip('I-CLI-2: --version でバージョンが表示される', async () => {
+  it('I-CLI-2: --version でバージョンが表示される', async () => {
     // Arrange & Act
     const result = await runCli(['--version']);
 
@@ -58,27 +51,20 @@ describe('CLI Integration Tests', () => {
   });
 
   /**
-   * I-CLI-3: フローファイル実行
+   * I-CLI-3: 不正なオプションでエラーを返す
    *
-   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
-   * 検証項目: CLIが正常に起動し、フローファイルを読み込もうとする
-   *
-   * 注: 実際のagent-browser実行が必要なため、このテストはスキップします。
-   * 完全な動作確認はE2Eテストで行ってください。
+   * 前提条件: なし
+   * 検証項目: 存在しないオプションを指定した場合、エラーメッセージと非0終了コードが返される
    */
-  it.skip('I-CLI-3: フローファイル指定でCLIが起動する', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
-
+  it('I-CLI-3: 不正なオプションでエラーを返す', async () => {
     // Act
-    const result = await runCli([flowPath]);
+    const result = await runCli(['--invalid-option']);
 
     // Assert
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      // CLIが起動し、フローファイル名が表示されることを確認
-      expect(result.value.stdout).toContain('simple.enbu.yaml');
-      // agent-browserのチェックが行われることを確認
-      expect(result.value.stdout).toContain('agent-browser');
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('Unknown option');
     }
   });
 
@@ -104,72 +90,56 @@ describe('CLI Integration Tests', () => {
   });
 
   /**
-   * I-CLI-5: セッション指定
+   * I-CLI-5: --session 値なしでエラーを返す
    *
-   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
-   * 検証項目: --session オプションが引数として受け入れられる
-   *
-   * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
-   * 実際の動作はE2Eテストで検証してください。
+   * 前提条件: なし
+   * 検証項目: --session オプションに値を指定しない場合、エラーメッセージが表示される
    */
-  it.skip('I-CLI-5: --session オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
-    const sessionName = 'test-session-123';
-
+  it('I-CLI-5: --session 値なしでエラーを返す', async () => {
     // Act
-    const result = await runCli([flowPath, '--session', sessionName]);
+    const result = await runCli(['--session']);
 
     // Assert
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      // CLI が起動し、agent-browser チェックまで到達することを確認
-      expect(result.value.stdout).toContain('agent-browser');
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('--session requires');
     }
   });
 
   /**
-   * I-CLI-6: ヘッドレスモード指定
+   * I-CLI-6: --timeout 値なしでエラーを返す
    *
-   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
-   * 検証項目: --headed オプションが引数として受け入れられる
-   *
-   * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
-   * 実際の動作はE2Eテストで検証してください。
+   * 前提条件: なし
+   * 検証項目: --timeout オプションに値を指定しない場合、エラーメッセージが表示される
    */
-  it.skip('I-CLI-6: --headed オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
-
+  it('I-CLI-6: --timeout 値なしでエラーを返す', async () => {
     // Act
-    const result = await runCli([flowPath, '--headed']);
+    const result = await runCli(['--timeout']);
 
     // Assert
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      // CLI が起動し、agent-browser チェックまで到達することを確認
-      expect(result.value.stdout).toContain('agent-browser');
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('--timeout requires');
     }
   });
 
   /**
-   * I-CLI-7: スクリーンショット出力
+   * I-CLI-7: --env 不正な形式でエラーを返す
    *
-   * 前提条件: tests/fixtures/flows/simple.enbu.yaml が存在
-   * 検証項目: --screenshot オプションが引数として受け入れられる
-   *
-   * 注: agent-browserの実行が必要なため、オプションの受け入れのみを確認します。
-   * 実際の動作はE2Eテストで検証してください。
+   * 前提条件: なし
+   * 検証項目: --env オプションにKEY=VALUE形式でない値を指定した場合、エラーメッセージが表示される
    */
-  it.skip('I-CLI-7: --screenshot オプションが引数として受け入れられる', async () => {
-    const flowPath = 'tests/fixtures/flows/simple.enbu.yaml';
-
+  it('I-CLI-7: --env 不正な形式でエラーを返す', async () => {
     // Act
-    const result = await runCli([flowPath, '--screenshot']);
+    const result = await runCli(['--env', 'INVALID_FORMAT']);
 
     // Assert
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
-      // CLI が起動し、agent-browser チェックまで到達することを確認
-      expect(result.value.stdout).toContain('agent-browser');
+      expect(result.value.exitCode).not.toBe(0);
+      expect(result.value.stderr).toContain('KEY=VALUE format');
     }
   });
 });

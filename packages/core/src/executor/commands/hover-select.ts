@@ -1,9 +1,9 @@
-import { type ResultAsync, errAsync } from 'neverthrow';
-import type { Result } from 'neverthrow';
-import { browserHover, browserSelect, asSelector } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
+import { asSelector, browserHover, browserSelect } from '@packages/agent-browser-adapter';
+import type { Result } from 'neverthrow';
+import { errAsync, type ResultAsync } from 'neverthrow';
 import type { HoverCommand, SelectCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * セレクタを解決する
@@ -15,7 +15,11 @@ const resolveSelector = (
   originalSelector: string,
   context: ExecutionContext,
 ): Result<Selector, AgentBrowserError> => {
-  return asSelector(context.resolvedRef ?? originalSelector);
+  const selectorString =
+    context.resolvedRefState.status === 'resolved'
+      ? context.resolvedRefState.ref
+      : originalSelector;
+  return asSelector(selectorString);
 };
 
 /**

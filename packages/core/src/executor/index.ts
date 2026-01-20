@@ -6,25 +6,30 @@
 
 // 関数
 export { executeFlow } from './flow-executor';
-
-// 型ガード関数
-export {
-  isPassedStepResult,
-  isFailedStepResult,
-  isPassedFlowResult,
-  isFailedFlowResult,
-} from './result';
-
 // 型
 export type {
-  FlowResult,
-  PassedFlowResult,
+  ExecutionErrorType,
   FailedFlowResult,
-  StepResult,
-  PassedStepResult,
   FailedStepResult,
   FlowExecutionOptions,
-  ExecutionErrorType,
+  FlowResult,
+  NoCallback,
+  PassedFlowResult,
+  PassedStepResult,
+  StepCompletedProgress,
   StepProgress,
   StepProgressCallback,
+  StepResult,
+  StepStartedProgress,
 } from './result';
+// 定数
+export { NO_CALLBACK } from './result';
+// 型ガード関数
+export {
+  isFailedFlowResult,
+  isFailedStepResult,
+  isPassedFlowResult,
+  isPassedStepResult,
+} from './result';
+// ScreenshotResult型
+export type { ScreenshotResult } from './result';

@@ -2,8 +2,8 @@
  * executor の型定義
  */
 
-import type { ResultAsync } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { Command, Flow } from '../types';
 
 // ==========================================
@@ -46,6 +46,32 @@ export type CoreError = AssertionFailedError;
 export type ExecutorError = AgentBrowserError | CoreError;
 
 /**
+ * エラー時スクリーンショットの撮影結果
+ *
+ * スクリーンショット撮影の3つの状態を型で明示的に表現する:
+ * - captured: 撮影成功（パスを含む）
+ * - failed: 撮影失敗（失敗理由を含む）
+ * - disabled: 撮影が無効化されている（オプションでOFFの場合）
+ */
+export type ScreenshotResult =
+  | {
+      /** 撮影状態: 成功 */
+      status: 'captured';
+      /** スクリーンショットのファイルパス */
+      path: string;
+    }
+  | {
+      /** 撮影状態: 失敗 */
+      status: 'failed';
+      /** 撮影失敗の理由 */
+      reason: string;
+    }
+  | {
+      /** 撮影状態: 無効 */
+      status: 'disabled';
+    };
+
+/**
  * 実行エラーの種別
  *
  * StepResultのerror.typeで使用される。
@@ -61,18 +87,39 @@ export type ExecutionErrorType =
   | 'brand_validation_error'; // Brand型の検証に失敗（空文字列など）
 
 /**
- * ステップ進捗コールバックに渡される情報
+ * ステップ開始時の進捗情報
  */
-export type StepProgress = {
+export type StepStartedProgress = {
   /** ステップのインデックス（0始まり） */
   stepIndex: number;
   /** 全ステップ数 */
   stepTotal: number;
-  /** 進捗ステータス */
-  status: 'started' | 'completed';
-  /** ステップ結果（completedの場合のみ） */
-  stepResult?: StepResult;
+  /** 進捗ステータス: 開始 */
+  status: 'started';
 };
+
+/**
+ * ステップ完了時の進捗情報
+ */
+export type StepCompletedProgress = {
+  /** ステップのインデックス（0始まり） */
+  stepIndex: number;
+  /** 全ステップ数 */
+  stepTotal: number;
+  /** 進捗ステータス: 完了 */
+  status: 'completed';
+  /** ステップ結果（完了時は必須） */
+  stepResult: StepResult;
+};
+
+/**
+ * ステップ進捗コールバックに渡される情報
+ *
+ * タグ付きユニオン型: statusの値によってstepResultの存在が決定される。
+ * - status='started': stepResultは存在しない
+ * - status='completed': stepResultは必須
+ */
+export type StepProgress = StepStartedProgress | StepCompletedProgress;
 
 /**
  * ステップ進捗コールバック関数の型
@@ -83,29 +130,45 @@ export type StepProgress = {
 export type StepProgressCallback = (progress: StepProgress) => void | Promise<void>;
 
 /**
+ * コールバックなし定数
+ *
+ * onStepProgressが不要な場合に使用する。
+ * 型と値を同時に定義することで、as による型アサーションを回避する。
+ */
+export const NO_CALLBACK = { _brand: 'NoCallback' } as const;
+
+/**
+ * コールバックなしを示す型
+ */
+export type NoCallback = typeof NO_CALLBACK;
+
+/**
  * フロー実行時のオプション
+ *
+ * Domain層では全てのオプションを必須とし、曖昧さを排除する。
+ * デフォルト値の補完はUsecase層（CLI、VSCode拡張など）で行う。
  */
 export type FlowExecutionOptions = {
   /** セッション名 */
   sessionName: string;
-  /** ヘッドモードで実行するか（デフォルト: false） */
-  headed?: boolean;
+  /** ヘッドモードで実行するか */
+  headed: boolean;
   /** 環境変数のマップ */
-  env?: Record<string, string>;
+  env: Record<string, string>;
   /** 自動待機のタイムアウト時間（ミリ秒） */
-  autoWaitTimeoutMs?: number;
+  autoWaitTimeoutMs: number;
   /** 自動待機のポーリング間隔（ミリ秒） */
-  autoWaitIntervalMs?: number;
+  autoWaitIntervalMs: number;
   /** コマンド実行のタイムアウト時間（ミリ秒） */
-  commandTimeoutMs?: number;
+  commandTimeoutMs: number;
   /** 作業ディレクトリ */
-  cwd?: string;
-  /** スクリーンショットを撮影するか（デフォルト: false） */
-  screenshot?: boolean;
-  /** エラー時に即座に停止するか（デフォルト: true） */
-  bail?: boolean;
+  cwd: string;
+  /** スクリーンショットを撮影するか */
+  screenshot: boolean;
+  /** エラー時に即座に停止するか */
+  bail: boolean;
   /** ステップ進捗コールバック（各ステップの開始・完了時に呼び出される） */
-  onStepProgress?: StepProgressCallback;
+  onStepProgress: StepProgressCallback | NoCallback;
 };
 
 /**
@@ -120,8 +183,8 @@ export type PassedStepResult = {
   status: 'passed';
   /** 実行時間（ミリ秒） */
   duration: number;
-  /** 標準出力（コマンドが出力を返す場合） */
-  stdout?: string;
+  /** コマンドの標準出力（JSON文字列） */
+  stdout: string;
 };
 
 /**
@@ -142,8 +205,8 @@ export type FailedStepResult = {
     message: string;
     /** エラーの種別 */
     type: ExecutionErrorType;
-    /** スクリーンショットのパス（撮影された場合） */
-    screenshot?: string;
+    /** スクリーンショット撮影結果 */
+    screenshot: ScreenshotResult;
   };
 };
 
@@ -192,8 +255,8 @@ export type FailedFlowResult = {
     message: string;
     /** エラーが発生したステップのインデックス */
     stepIndex: number;
-    /** スクリーンショットのパス（撮影された場合） */
-    screenshot?: string;
+    /** スクリーンショット撮影結果 */
+    screenshot: ScreenshotResult;
   };
 };
 
@@ -205,6 +268,25 @@ export type FailedFlowResult = {
  * status='failed'の場合はerrorフィールドが必須となる。
  */
 export type FlowResult = PassedFlowResult | FailedFlowResult;
+
+/**
+ * ref解決の状態を表すタグ付きユニオン型
+ *
+ * autoWaitによる要素の解決状態を型安全に表現する。
+ * - resolved: autoWaitで要素が見つかり、@ref形式に解決済み
+ * - notApplied: autoWaitが未実行、またはスキップされた状態
+ */
+export type ResolvedRefState =
+  | {
+      /** ref解決状態: 解決済み */
+      readonly status: 'resolved';
+      /** 解決されたref形式のセレクタ（例: "@e1"） */
+      readonly ref: string;
+    }
+  | {
+      /** ref解決状態: 未適用 */
+      readonly status: 'notApplied';
+    };
 
 /**
  * コマンド実行のコンテキスト（内部使用）
@@ -224,7 +306,7 @@ export type ExecutionContext = {
     /** タイムアウト時間（ミリ秒） */
     timeoutMs: number;
     /** 作業ディレクトリ */
-    cwd?: string;
+    cwd: string;
   };
   /** 環境変数のマップ */
   env: Record<string, string>;
@@ -233,11 +315,12 @@ export type ExecutionContext = {
   /** 自動待機のポーリング間隔（ミリ秒） */
   autoWaitIntervalMs: number;
   /**
-   * autoWaitで解決されたref形式のセレクタ（例: "@e1"）
-   * テキストセレクタをagent-browser内部のref形式に変換したもの。
-   * コマンドハンドラはセレクタを使用する際、このrefを優先して使用すべき。
+   * autoWaitによる要素解決の状態
+   *
+   * テキストセレクタをagent-browser内部のref形式に変換した状態を保持する。
+   * コマンドハンドラはセレクタを使用する際、この状態を確認してrefを優先使用すべき。
    */
-  resolvedRef?: string;
+  resolvedRefState: ResolvedRefState;
 };
 
 /**

@@ -1,8 +1,9 @@
-import { type ResultAsync, errAsync } from 'neverthrow';
-import { browserScreenshot, browserSnapshot, asFilePath } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserScreenshot, browserSnapshot } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { ScreenshotCommand, SnapshotCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import { UseDefault } from '../../types/utility-types';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * screenshot コマンドのハンドラ
@@ -20,18 +21,17 @@ export const handleScreenshot = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // ファイルパス検証とブラウザ操作実行
-  return asFilePath(command.path).match(
-    (filePath) =>
-      browserScreenshot(filePath, {
-        ...context.executeOptions,
-        fullPage: command.fullPage,
-      }).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  // UseDefaultの場合はデフォルト値（fullPage=false、つまりundefinedを渡す）を使用
+  const fullPage = command.full === UseDefault ? undefined : command.full;
+
+  // command.path は既に FilePath 型（Branded Type）なので、そのまま使用
+  return browserScreenshot(command.path, {
+    ...context.executeOptions,
+    fullPage,
+  }).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**

@@ -5,13 +5,26 @@
  * パースして環境変数を解決する。
  */
 
-import { ResultAsync, okAsync, errAsync } from 'neverthrow';
-import { readFile, readdir } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { parse as parseDotenv } from 'dotenv';
-import type { Flow, ParseError } from '../types';
+import { errAsync, okAsync, ResultAsync } from 'neverthrow';
+import { match } from 'ts-pattern';
 import { parseFlowYaml } from '../parser/yaml-parser';
-import { resolveEnvVariables } from '../parser/env-resolver';
+import type { Flow, ParseError } from '../types';
+
+/**
+ * ENOENT エラーかどうかを判定する
+ *
+ * ts-pattern で構造的にマッチングし、型安全にエラーを判定する。
+ *
+ * @param error - 判定対象のエラー
+ * @returns ENOENT の場合 true
+ */
+const isEnoentError = (error: unknown): boolean =>
+  match(error)
+    .with({ code: 'ENOENT' }, () => true)
+    .otherwise(() => false);
 
 /**
  * ディレクトリから*.enbu.yamlファイルを検索する
@@ -36,20 +49,25 @@ const findFlowFiles = (dirPath: string): ResultAsync<readonly string[], ParseErr
   );
 
 /**
- * YAMLをパースして環境変数を解決する
+ * YAMLをパースする（環境変数解決を含む）
+ *
+ * @remarks
+ * parseFlowYaml内部で環境変数解決が行われる。
+ * 処理順序:
+ * 1. YAMLパース
+ * 2. 環境変数解決（文字列レベル）
+ * 3. Command型検証
  */
-const parseAndResolveEnv = (
+const parseYaml = (
   yamlContent: string,
   fileName: string,
   processEnv: Readonly<Record<string, string | undefined>>,
   dotEnv: Readonly<Record<string, string>>,
 ): ResultAsync<Flow, ParseError> =>
-  parseFlowYaml(yamlContent, fileName)
-    .andThen((flow) => resolveEnvVariables(flow, processEnv, dotEnv))
-    .match(
-      (flow) => okAsync(flow),
-      (error) => errAsync(error),
-    );
+  parseFlowYaml(yamlContent, fileName, processEnv, dotEnv).match(
+    (flow) => okAsync(flow),
+    (error) => errAsync(error),
+  );
 
 /**
  * 単一のフローファイルを読み込んでパースする
@@ -74,7 +92,7 @@ const loadSingleFlow = (
       filePath,
       cause: error instanceof Error ? error.message : String(error),
     }),
-  ).andThen((yamlContent) => parseAndResolveEnv(yamlContent, fileName, processEnv, dotEnv));
+  ).andThen((yamlContent) => parseYaml(yamlContent, fileName, processEnv, dotEnv));
 };
 
 /**
@@ -96,7 +114,7 @@ const loadDotEnv = (dotEnvPath: string): ResultAsync<Record<string, string>, Par
     readFile(dotEnvPath, 'utf-8').then((content) => parseDotenv(content)),
     (error): ParseError | undefined => {
       // ENOENT（ファイルが存在しない）の場合は空オブジェクトを返す
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      if (isEnoentError(error)) {
         return undefined; // これによりorElseで処理される
       }
 

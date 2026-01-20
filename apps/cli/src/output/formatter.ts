@@ -246,6 +246,7 @@ OPTIONS:
   --screenshot      Save screenshot on failure
   --bail            Stop on first failure
   --session <name>  Set agent-browser session name
+  --parallel <N>    Run N flows in parallel
 
 EXAMPLES:
   npx enbu init
@@ -254,6 +255,7 @@ EXAMPLES:
   npx enbu login.flow.yaml
   npx enbu --headed --env USER=test login.flow.yaml
   npx enbu --bail login.flow.yaml checkout.flow.yaml
+  npx enbu --parallel 4 flows/*.enbu.yaml
 
 For more information, visit: https://github.com/9wick/enbu
 `;
@@ -273,7 +275,11 @@ For more information, visit: https://github.com/9wick/enbu
  * ビルド時にpackage.jsonのバージョン情報で置換されます。
  * これにより、実行時のファイル読み込みオーバーヘッドがなく、
  * ビルド構造の変更にも影響を受けません。
+ *
+ * 注: tsxで直接実行する場合（統合テストなど）は__VERSION__が定義されないため、
+ * フォールバック値として'0.0.0-dev'を使用します。
  */
 export const showVersion = (): void => {
-  process.stdout.write(`${__VERSION__}\n`);
+  const version = typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0-dev';
+  process.stdout.write(`${version}\n`);
 };

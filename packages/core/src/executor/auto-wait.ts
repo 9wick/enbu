@@ -6,9 +6,10 @@
  * 要素が見つかるまでポーリングを行う。
  */
 
-import { type Result, ResultAsync, ok, err, okAsync, errAsync } from 'neverthrow';
-import { browserSnapshot } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError, SnapshotRefs } from '@packages/agent-browser-adapter';
+import { browserSnapshot } from '@packages/agent-browser-adapter';
+import { err, errAsync, ok, okAsync, type Result, ResultAsync } from 'neverthrow';
+import { P, match } from 'ts-pattern';
 import type { ExecutionContext } from './result';
 
 // デバッグログ用（stderrに出力してno-consoleルールを回避）
@@ -18,12 +19,31 @@ const debugLog = (msg: string, ...args: unknown[]) => {
 };
 
 /**
- * autoWaitの結果
- * resolvedRef: agent-browserで使用可能な@ref形式のセレクタ
+ * autoWaitの入力セレクタ
+ *
+ * タグ付きユニオンで「セレクタあり」と「セレクタなし」を明示的に表現する。
+ * - hasSelector: セレクタが存在する場合（click, typeなど）
+ * - noSelector: セレクタが不要な場合（open, press, scrollなど）
  */
-export type AutoWaitResult = {
-  resolvedRef: string;
-};
+export type SelectorInput =
+  | { readonly type: 'hasSelector'; readonly selector: string }
+  | { readonly type: 'noSelector' };
+
+/**
+ * autoWaitの結果
+ *
+ * タグ付きユニオンで「待機成功」と「待機スキップ」を明示的に表現する。
+ * - resolved: 要素が見つかり、refに解決された
+ * - skipped: セレクタがないため待機をスキップした
+ */
+export type AutoWaitResult =
+  | { readonly type: 'resolved'; readonly resolvedRef: string }
+  | { readonly type: 'skipped' };
+
+/**
+ * 内部用: 解決されたref情報
+ */
+type ResolvedRef = { resolvedRef: string };
 
 /**
  * ポーリングの結果型（内部使用）
@@ -32,7 +52,7 @@ export type AutoWaitResult = {
  */
 type PollResult =
   | { type: 'continue' }
-  | { type: 'done'; result: Result<AutoWaitResult, AgentBrowserError> };
+  | { type: 'done'; result: Result<ResolvedRef, AgentBrowserError> };
 
 /**
  * スナップショット取得結果を処理し、refsを取得する
@@ -62,9 +82,10 @@ const processSnapshotResult = (
  */
 const handleMatchResult = (matchResult: MatchResult, selector: string): PollResult => {
   if (matchResult.type === 'found') {
+    const resolved: ResolvedRef = { resolvedRef: `@${matchResult.refId}` };
     return {
       type: 'done',
-      result: ok({ resolvedRef: `@${matchResult.refId}` }),
+      result: ok(resolved),
     };
   }
   if (matchResult.type === 'multiple') {
@@ -173,14 +194,14 @@ const executePollIteration = (
  * @param context - 実行コンテキスト
  * @param startTime - 処理開始時刻
  * @param pollCount - 現在のポーリング回数
- * @returns AutoWaitResultを含むResultAsync
+ * @returns ResolvedRefを含むResultAsync
  */
 const sleepAndPollNext = (
   selector: string,
   context: ExecutionContext,
   startTime: number,
   pollCount: number,
-): ResultAsync<AutoWaitResult, AgentBrowserError> =>
+): ResultAsync<ResolvedRef, AgentBrowserError> =>
   ResultAsync.fromSafePromise(sleep(context.autoWaitIntervalMs)).andThen(() =>
     pollRecursively(selector, context, startTime, pollCount + 1),
   );
@@ -192,14 +213,14 @@ const sleepAndPollNext = (
  * @param context - 実行コンテキスト
  * @param startTime - 処理開始時刻
  * @param pollCount - 現在のポーリング回数
- * @returns AutoWaitResultを含むResultAsync
+ * @returns ResolvedRefを含むResultAsync
  */
 const pollRecursively = (
   selector: string,
   context: ExecutionContext,
   startTime: number,
   pollCount: number,
-): ResultAsync<AutoWaitResult, AgentBrowserError> =>
+): ResultAsync<ResolvedRef, AgentBrowserError> =>
   executePollIteration(selector, context, startTime, pollCount).andThen((pollResult) => {
     if (pollResult.type === 'done') {
       // 成功または失敗で終了
@@ -219,28 +240,29 @@ const pollRecursively = (
  * セレクタに一致する要素がブラウザ内に出現するまで、指定された間隔でポーリングを行う。
  * タイムアウト時間内に要素が見つからない場合はエラーを返す。
  *
- * セレクタがundefinedの場合は待機をスキップする（待機不要なコマンドの場合）。
- *
- * @param selector - 待機する要素のセレクタ（@e1形式の参照ID、またはテキスト/ロール名）
+ * @param input - セレクタ入力（hasSelector: 待機が必要、noSelector: スキップ）
  * @param context - 実行コンテキスト（タイムアウト時間、ポーリング間隔などを含む）
- * @returns 成功時: 解決されたrefを含む結果、失敗時: AgentBrowserError
+ * @returns 成功時: 解決されたrefを含む結果またはスキップ、失敗時: AgentBrowserError
  */
 export const autoWait = (
-  selector: string | undefined,
+  input: SelectorInput,
   context: ExecutionContext,
-): ResultAsync<AutoWaitResult | undefined, AgentBrowserError> => {
-  debugLog(`autoWait start: selector=${selector}`);
-
+): ResultAsync<AutoWaitResult, AgentBrowserError> => {
   // セレクタがない場合はスキップ
-  if (!selector) {
+  if (input.type === 'noSelector') {
     debugLog('no selector, skipping');
-    return okAsync(undefined);
+    return okAsync({ type: 'skipped' });
   }
+
+  const { selector } = input;
+  debugLog(`autoWait start: selector=${selector}`);
 
   const startTime = Date.now();
   debugLog(`timeout=${context.autoWaitTimeoutMs}ms, interval=${context.autoWaitIntervalMs}ms`);
 
-  return pollRecursively(selector, context, startTime, 1);
+  return pollRecursively(selector, context, startTime, 1).map(
+    (resolved): AutoWaitResult => ({ type: 'resolved', resolvedRef: resolved.resolvedRef }),
+  );
 };
 
 /**
@@ -258,13 +280,19 @@ type MatchResult =
 /**
  * @ref形式のセレクタを検索する
  *
+ * ts-patternで型安全にrefsオブジェクトをチェックする。
+ *
  * @param selector - @e1形式のセレクタ
  * @param refs - snapshotから取得した要素参照マップ
  * @returns マッチ結果
  */
 const findRefSelector = (selector: string, refs: SnapshotRefs): MatchResult => {
   const refId = selector.slice(1);
-  return refId in refs ? { type: 'found', refId } : { type: 'not_found' };
+  // refs[refId] の値をチェック（undefinedでなければ存在する）
+  return match(refs[refId])
+    .with(P.nullish, () => ({ type: 'not_found' as const }))
+    .with({ name: P.string, role: P.string }, () => ({ type: 'found' as const, refId }))
+    .exhaustive();
 };
 
 /**

@@ -25,11 +25,16 @@
   "dependencies": {
     "@packages/agent-browser-adapter": "workspace:*",
     "dotenv": "^17.2.3",
+    "glob": "^11.1.0",
     "neverthrow": "^8.2.0",
+    "p-limit": "^7.2.0",
+    "ts-pattern": "^5.9.0",
+    "valibot": "^1.2.0",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@packages/config": "workspace:*",
-    "@types/node": "^22.14.1"
+    "@types/node": "^22.14.1",
+    "@valibot/to-json-schema": "^1.5.0"
   }
 }

@@ -1,8 +1,8 @@
-import { type ResultAsync, errAsync } from 'neverthrow';
-import { browserEval, asJsExpression } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserEval } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { EvalCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * eval コマンドのハンドラ
@@ -20,13 +20,9 @@ export const handleEval = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // JavaScript式検証とブラウザ操作実行
-  return asJsExpression(command.script).match(
-    (script) =>
-      browserEval(script, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  // command.script は既に JsExpression 型（Branded Type）なので、そのまま使用
+  return browserEval(command.script, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

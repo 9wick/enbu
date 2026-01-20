@@ -9,26 +9,39 @@
  * このモジュールに渡されるFlowは既に環境変数が解決済みである前提。
  */
 
-import { type Result, ResultAsync, ok, okAsync, errAsync } from 'neverthrow';
-import type { Flow } from '../types';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { errAsync, ok, okAsync, type Result, ResultAsync } from 'neverthrow';
+import type { Flow } from '../types';
+import { executeStep } from './execute-step';
 import type {
-  FlowResult,
-  PassedFlowResult,
-  FailedFlowResult,
-  FlowExecutionOptions,
-  StepResult,
-  FailedStepResult,
   ExecutionContext,
+  FailedFlowResult,
+  FailedStepResult,
+  FlowExecutionOptions,
+  FlowResult,
+  NoCallback,
+  PassedFlowResult,
   StepProgressCallback,
+  StepResult,
 } from './result';
 import { isFailedStepResult } from './result';
-import { executeStep } from './execute-step';
 
 // デバッグログ用（stderrに出力してno-consoleルールを回避）
 const DEBUG = process.env.DEBUG_FLOW === '1';
 const debugLog = (msg: string, ...args: unknown[]) => {
   if (DEBUG) process.stderr.write(`[flow-executor] ${msg} ${args.map(String).join(' ')}\n`);
+};
+
+/**
+ * NoCallbackかどうかを判定する型ガード関数
+ *
+ * @param callback - 判定対象のコールバック
+ * @returns NoCallbackの場合はfalse、StepProgressCallbackの場合はtrue
+ */
+const isStepProgressCallback = (
+  callback: StepProgressCallback | NoCallback,
+): callback is StepProgressCallback => {
+  return typeof callback === 'function';
 };
 
 /**
@@ -106,15 +119,47 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
     sessionName: options.sessionName,
     executeOptions: {
       sessionName: options.sessionName,
-      headed: options.headed ?? false,
-      timeoutMs: options.commandTimeoutMs ?? 30000,
+      headed: options.headed,
+      timeoutMs: options.commandTimeoutMs,
       cwd: options.cwd,
     },
     env: mergedEnv,
-    autoWaitTimeoutMs: options.autoWaitTimeoutMs ?? 30000,
-    autoWaitIntervalMs: options.autoWaitIntervalMs ?? 100,
+    autoWaitTimeoutMs: options.autoWaitTimeoutMs,
+    autoWaitIntervalMs: options.autoWaitIntervalMs,
+    resolvedRefState: { status: 'notApplied' },
   };
 };
+
+/**
+ * 早期終了（bailで失敗）した場合の実行結果
+ */
+type EarlyExitResult = {
+  readonly kind: 'earlyExit';
+  readonly result: Result<FlowResult, AgentBrowserError>;
+  readonly steps: StepResult[];
+  readonly hasFailure: true;
+  readonly firstFailureIndex: number;
+};
+
+/**
+ * 最後まで実行した場合の実行結果
+ */
+type CompletedAllSteps = {
+  readonly kind: 'completed';
+  readonly steps: StepResult[];
+  readonly hasFailure: boolean;
+  readonly firstFailureIndex: number;
+};
+
+/**
+ * executeAllStepsの実行結果
+ *
+ * @remarks
+ * タグ付きユニオンでステップ実行の終了状態を表現する：
+ * - earlyExit: bail=trueで失敗した場合（早期終了）
+ * - completed: 最後まで実行した場合（失敗を含む可能性あり）
+ */
+type ExecuteAllStepsResult = EarlyExitResult | CompletedAllSteps;
 
 /**
  * 全ステップを実行する
@@ -124,8 +169,8 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
  * @param screenshot - スクリーンショットを撮影するか
  * @param bail - エラー時に即座に停止するか
  * @param startTime - 実行開始時刻
- * @param onStepProgress - ステップ進捗コールバック（オプション）
- * @returns ステップの実行結果とフロー結果（bailの場合のみ）
+ * @param onStepProgress - ステップ進捗コールバック
+ * @returns タグ付きユニオンによる実行結果（earlyExit または completed）
  */
 const executeAllSteps = async (
   expandedFlow: Flow,
@@ -133,13 +178,8 @@ const executeAllSteps = async (
   screenshot: boolean,
   bail: boolean,
   startTime: number,
-  onStepProgress?: StepProgressCallback,
-): Promise<{
-  steps: StepResult[];
-  hasFailure: boolean;
-  firstFailureIndex: number;
-  earlyResult?: Result<FlowResult, AgentBrowserError>;
-}> => {
+  onStepProgress: StepProgressCallback | NoCallback,
+): Promise<ExecuteAllStepsResult> => {
   debugLog('executeAllSteps start', { stepCount: expandedFlow.steps.length, bail, screenshot });
   const steps: StepResult[] = [];
   let hasFailure = false;
@@ -151,7 +191,7 @@ const executeAllSteps = async (
     debugLog(`step ${i + 1}/${expandedFlow.steps.length} start:`, command);
 
     // ステップ開始を通知
-    if (onStepProgress) {
+    if (isStepProgressCallback(onStepProgress)) {
       await onStepProgress({ stepIndex: i, stepTotal, status: 'started' });
     }
 
@@ -160,7 +200,7 @@ const executeAllSteps = async (
     steps.push(stepResult);
 
     // ステップ完了を通知
-    if (onStepProgress) {
+    if (isStepProgressCallback(onStepProgress)) {
       await onStepProgress({ stepIndex: i, stepTotal, status: 'completed', stepResult });
     }
 
@@ -173,10 +213,8 @@ const executeAllSteps = async (
       if (bail) {
         const duration = Date.now() - startTime;
         return {
-          steps,
-          hasFailure,
-          firstFailureIndex,
-          earlyResult: ok(
+          kind: 'earlyExit' as const,
+          result: ok(
             buildFailedFlowResult(
               expandedFlow,
               context.sessionName,
@@ -186,12 +224,20 @@ const executeAllSteps = async (
               i,
             ),
           ),
+          steps,
+          hasFailure: true,
+          firstFailureIndex,
         };
       }
     }
   }
 
-  return { steps, hasFailure, firstFailureIndex };
+  return {
+    kind: 'completed' as const,
+    steps,
+    hasFailure,
+    firstFailureIndex,
+  };
 };
 
 /**
@@ -236,8 +282,8 @@ export const executeFlow = (
   options: FlowExecutionOptions,
 ): ResultAsync<FlowResult, AgentBrowserError> => {
   const context = buildExecutionContext(options, flow);
-  const bail = options.bail ?? true;
-  const screenshot = options.screenshot ?? true;
+  const bail = options.bail;
+  const screenshot = options.screenshot;
   const startTime = Date.now();
 
   return ResultAsync.fromPromise(
@@ -248,14 +294,17 @@ export const executeFlow = (
       command: 'executeFlow',
       rawError: String(error),
     }),
-  ).andThen(({ steps, hasFailure, firstFailureIndex, earlyResult }) => {
-    if (earlyResult) {
-      return earlyResult.match(
+  ).andThen((result) => {
+    // タグ付きユニオンで分岐
+    if (result.kind === 'earlyExit') {
+      return result.result.match(
         (value) => okAsync(value),
         (error) => errAsync(error),
       );
     }
 
+    // kind === 'completed' の場合
+    const { steps, hasFailure, firstFailureIndex } = result;
     const duration = Date.now() - startTime;
 
     if (hasFailure) {

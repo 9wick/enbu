@@ -1,8 +1,8 @@
-import { type ResultAsync, errAsync } from 'neverthrow';
-import { browserOpen, asUrl } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserOpen } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { OpenCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * open コマンドのハンドラ
@@ -20,12 +20,9 @@ export const handleOpen = (
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return asUrl(command.url).match(
-    (url) =>
-      browserOpen(url, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      })),
-    (error) => errAsync(error),
-  );
+  // command.url は既に Url 型（Branded Type）なので、そのまま使用
+  return browserOpen(command.url, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

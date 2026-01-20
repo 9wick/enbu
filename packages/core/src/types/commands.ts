@@ -4,7 +4,24 @@
  * 全てのコマンドを判別可能なユニオン型として定義する。
  * 各コマンドは共通の `command` フィールドで判別され、
  * コマンド固有のプロパティがフラットな構造で定義される。
+ *
+ * 全てのフィールドはparser層で検証済みのBranded Typeを使用する。
+ * executor層では再検証不要で、型安全に操作可能。
  */
+
+import type {
+  FilePath,
+  JsExpression,
+  KeyboardKey,
+  LoadState,
+  ScrollDirection,
+  Selector,
+  Url,
+} from '@packages/agent-browser-adapter';
+import type { UseDefault } from './utility-types';
+
+// LoadState, ScrollDirectionをre-export（後方互換のため）
+export type { LoadState, ScrollDirection } from '@packages/agent-browser-adapter';
 
 /**
  * ページを開く
@@ -15,7 +32,7 @@
  */
 export type OpenCommand = {
   command: 'open';
-  url: string;
+  url: Url;
 };
 
 /**
@@ -27,7 +44,7 @@ export type OpenCommand = {
  */
 export type ClickCommand = {
   command: 'click';
-  selector: string;
+  selector: Selector;
 };
 
 /**
@@ -42,7 +59,7 @@ export type ClickCommand = {
  */
 export type TypeCommand = {
   command: 'type';
-  selector: string;
+  selector: Selector;
   value: string;
 };
 
@@ -58,7 +75,7 @@ export type TypeCommand = {
  */
 export type FillCommand = {
   command: 'fill';
-  selector: string;
+  selector: Selector;
   value: string;
 };
 
@@ -71,7 +88,7 @@ export type FillCommand = {
  */
 export type PressCommand = {
   command: 'press';
-  key: string;
+  key: KeyboardKey;
 };
 
 /**
@@ -83,7 +100,7 @@ export type PressCommand = {
  */
 export type HoverCommand = {
   command: 'hover';
-  selector: string;
+  selector: Selector;
 };
 
 /**
@@ -98,7 +115,7 @@ export type HoverCommand = {
  */
 export type SelectCommand = {
   command: 'select';
-  selector: string;
+  selector: Selector;
   value: string;
 };
 
@@ -114,7 +131,7 @@ export type SelectCommand = {
  */
 export type ScrollCommand = {
   command: 'scroll';
-  direction: 'up' | 'down' | 'left' | 'right';
+  direction: ScrollDirection;
   amount: number;
 };
 
@@ -127,18 +144,8 @@ export type ScrollCommand = {
  */
 export type ScrollIntoViewCommand = {
   command: 'scrollIntoView';
-  selector: string;
+  selector: Selector;
 };
-
-/**
- * ロード状態の種類
- *
- * agent-browserのwait --loadオプションで指定可能な状態:
- * - load: DOMContentLoadedとonloadイベントが発火した状態
- * - domcontentloaded: DOMが完全に読み込まれて解析された状態
- * - networkidle: ネットワークアイドル状態（少なくとも500ms間、アクティブな接続が2つ以下）
- */
-export type LoadState = 'load' | 'domcontentloaded' | 'networkidle';
 
 /**
  * 待機コマンド
@@ -187,11 +194,11 @@ export type WaitCommand = {
   command: 'wait';
 } & (
   | { ms: number }
-  | { selector: string }
+  | { selector: Selector }
   | { text: string }
   | { load: LoadState }
   | { url: string }
-  | { fn: string }
+  | { fn: JsExpression }
 );
 
 /**
@@ -210,9 +217,9 @@ export type WaitCommand = {
  */
 export type ScreenshotCommand = {
   command: 'screenshot';
-  path: string;
-  /** ページ全体のスクリーンショットを撮影（デフォルト: false）。agent-browserの--fullオプションに対応。 */
-  full?: boolean;
+  path: FilePath;
+  /** ページ全体のスクリーンショットを撮影。未指定時はUseDefaultを設定。agent-browserの--fullオプションに対応。 */
+  full: boolean | UseDefault;
 };
 
 /**
@@ -235,7 +242,7 @@ export type SnapshotCommand = {
  */
 export type EvalCommand = {
   command: 'eval';
-  script: string;
+  script: JsExpression;
 };
 
 /**
@@ -247,7 +254,7 @@ export type EvalCommand = {
  */
 export type AssertVisibleCommand = {
   command: 'assertVisible';
-  selector: string;
+  selector: Selector;
 };
 
 /**
@@ -259,7 +266,7 @@ export type AssertVisibleCommand = {
  */
 export type AssertNotVisibleCommand = {
   command: 'assertNotVisible';
-  selector: string;
+  selector: Selector;
 };
 
 /**
@@ -271,7 +278,7 @@ export type AssertNotVisibleCommand = {
  */
 export type AssertEnabledCommand = {
   command: 'assertEnabled';
-  selector: string;
+  selector: Selector;
 };
 
 /**
@@ -290,9 +297,9 @@ export type AssertEnabledCommand = {
  */
 export type AssertCheckedCommand = {
   command: 'assertChecked';
-  selector: string;
-  /** 期待されるチェック状態（デフォルト: true） */
-  checked?: boolean;
+  selector: Selector;
+  /** 期待されるチェック状態。未指定時はUseDefaultを設定。 */
+  checked: boolean | UseDefault;
 };
 
 /**
@@ -316,3 +323,146 @@ export type Command =
   | AssertNotVisibleCommand
   | AssertEnabledCommand
   | AssertCheckedCommand;
+
+// ==========================================
+// Raw型定義（YAMLパース直後の未検証型）
+// parser層でvalidation後にBranded型に変換される
+// ==========================================
+
+/** 未検証のOpenCommand */
+export type RawOpenCommand = {
+  command: 'open';
+  url: string;
+};
+
+/** 未検証のClickCommand */
+export type RawClickCommand = {
+  command: 'click';
+  selector: string;
+};
+
+/** 未検証のTypeCommand */
+export type RawTypeCommand = {
+  command: 'type';
+  selector: string;
+  value: string;
+};
+
+/** 未検証のFillCommand */
+export type RawFillCommand = {
+  command: 'fill';
+  selector: string;
+  value: string;
+};
+
+/** 未検証のPressCommand */
+export type RawPressCommand = {
+  command: 'press';
+  key: string;
+};
+
+/** 未検証のHoverCommand */
+export type RawHoverCommand = {
+  command: 'hover';
+  selector: string;
+};
+
+/** 未検証のSelectCommand */
+export type RawSelectCommand = {
+  command: 'select';
+  selector: string;
+  value: string;
+};
+
+/** 未検証のScrollCommand */
+export type RawScrollCommand = {
+  command: 'scroll';
+  direction: 'up' | 'down' | 'left' | 'right';
+  amount: number;
+};
+
+/** 未検証のScrollIntoViewCommand */
+export type RawScrollIntoViewCommand = {
+  command: 'scrollIntoView';
+  selector: string;
+};
+
+/** 未検証のWaitCommand */
+export type RawWaitCommand = {
+  command: 'wait';
+} & (
+  | { ms: number }
+  | { selector: string }
+  | { text: string }
+  | { load: LoadState }
+  | { url: string }
+  | { fn: string }
+);
+
+/** 未検証のScreenshotCommand */
+export type RawScreenshotCommand = {
+  command: 'screenshot';
+  path: string;
+  full: boolean | UseDefault;
+};
+
+/** 未検証のSnapshotCommand */
+export type RawSnapshotCommand = {
+  command: 'snapshot';
+};
+
+/** 未検証のEvalCommand */
+export type RawEvalCommand = {
+  command: 'eval';
+  script: string;
+};
+
+/** 未検証のAssertVisibleCommand */
+export type RawAssertVisibleCommand = {
+  command: 'assertVisible';
+  selector: string;
+};
+
+/** 未検証のAssertNotVisibleCommand */
+export type RawAssertNotVisibleCommand = {
+  command: 'assertNotVisible';
+  selector: string;
+};
+
+/** 未検証のAssertEnabledCommand */
+export type RawAssertEnabledCommand = {
+  command: 'assertEnabled';
+  selector: string;
+};
+
+/** 未検証のAssertCheckedCommand */
+export type RawAssertCheckedCommand = {
+  command: 'assertChecked';
+  selector: string;
+  checked: boolean | UseDefault;
+};
+
+/**
+ * 未検証コマンド型のユニオン（parser層で使用）
+ *
+ * YAMLパース後、Branded Type検証前の状態を表す。
+ * command-validatorでBranded Typeに変換される。
+ */
+export type RawCommand =
+  | RawOpenCommand
+  | RawClickCommand
+  | RawTypeCommand
+  | RawFillCommand
+  | RawPressCommand
+  | RawHoverCommand
+  | RawSelectCommand
+  | RawScrollCommand
+  | RawScrollIntoViewCommand
+  | RawWaitCommand
+  | RawScreenshotCommand
+  | RawSnapshotCommand
+  | RawEvalCommand
+  | RawAssertVisibleCommand
+  | RawAssertNotVisibleCommand
+  | RawAssertEnabledCommand
+  | RawAssertCheckedCommand;

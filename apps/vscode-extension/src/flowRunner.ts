@@ -8,6 +8,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { EventEmitter } from 'node:events';
+import { P, match } from 'ts-pattern';
 import type { ProgressMessage } from './types';
 
 /**
@@ -199,11 +200,16 @@ export class FlowRunner extends EventEmitter {
   /**
    * オブジェクトがtype文字列フィールドを持つかチェックする型ガード
    *
+   * ts-patternで型安全にtypeフィールドの存在をチェックする。
+   *
    * @param value - チェック対象の値
    * @returns typeフィールドを持つ場合true
    */
   private hasTypeField(value: unknown): value is { type: unknown } {
-    return typeof value === 'object' && value !== null && 'type' in value;
+    // ts-pattern: オブジェクトで type プロパティがある場合にマッチ
+    return match(value)
+      .with({ type: P._ }, () => true)
+      .otherwise(() => false);
   }
 
   /**

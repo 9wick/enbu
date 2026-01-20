@@ -62,7 +62,8 @@ const products: Product[] = [
     id: 1,
     name: 'Cashmere Wool Cardigan',
     price: 45000,
-    description: 'Luxuriously soft cardigan crafted from premium cashmere wool. Features elegant draping and timeless silhouette.',
+    description:
+      'Luxuriously soft cardigan crafted from premium cashmere wool. Features elegant draping and timeless silhouette.',
     stock: 50,
     image: '/images/cardigan.png',
   },
@@ -70,7 +71,8 @@ const products: Product[] = [
     id: 2,
     name: 'Italian Leather Tote Bag',
     price: 68000,
-    description: 'Handcrafted in Florence from the finest full-grain leather. Spacious interior with signature hardware detailing.',
+    description:
+      'Handcrafted in Florence from the finest full-grain leather. Spacious interior with signature hardware detailing.',
     stock: 100,
     image: '/images/bag.png',
   },
@@ -78,7 +80,8 @@ const products: Product[] = [
     id: 3,
     name: 'Silk Scarf Collection',
     price: 29800,
-    description: 'Exquisite hand-rolled silk scarf featuring an exclusive artistic print. Made from 100% pure mulberry silk.',
+    description:
+      'Exquisite hand-rolled silk scarf featuring an exclusive artistic print. Made from 100% pure mulberry silk.',
     stock: 30,
     image: '/images/scarf.png',
   },
@@ -86,7 +89,8 @@ const products: Product[] = [
     id: 4,
     name: 'Premium Suede Loafers',
     price: 38500,
-    description: 'Elegant Italian suede loafers with hand-stitched detailing. Leather sole and cushioned footbed for all-day comfort.',
+    description:
+      'Elegant Italian suede loafers with hand-stitched detailing. Leather sole and cushioned footbed for all-day comfort.',
     stock: 80,
     image: '/images/loafers.png',
   },
@@ -94,7 +98,8 @@ const products: Product[] = [
     id: 5,
     name: 'Merino Wool Coat',
     price: 89000,
-    description: 'Sophisticated double-breasted coat in ultra-fine merino wool. Clean lines and impeccable tailoring for a refined aesthetic.',
+    description:
+      'Sophisticated double-breasted coat in ultra-fine merino wool. Clean lines and impeccable tailoring for a refined aesthetic.',
     stock: 200,
     image: '/images/coat.png',
   },
@@ -369,6 +374,20 @@ app.get('/api/orders', (req: Request, res: Response) => {
 
   const userOrders = orders.filter((o) => o.userId === reqWithSession.session.userId);
   res.json(userOrders);
+});
+
+// --------------------------------------------------
+// Health check endpoint
+// --------------------------------------------------
+
+/**
+ * ヘルスチェックエンドポイント
+ *
+ * start-server-and-testがサーバーの準備完了を確認するために使用する。
+ * サーバーが完全に初期化され、リクエストを処理できる状態であることを示す。
+ */
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 // --------------------------------------------------
