@@ -29,18 +29,16 @@ export const captureErrorScreenshot = async (
   const timestamp = Date.now();
   const screenshotPath = path.join(os.tmpdir(), `flow-error-${timestamp}.png`);
 
-  // ファイルパス検証
-  const filePathResult = asFilePath(screenshotPath);
-  if (filePathResult.isErr()) {
-    return undefined;
-  }
-
-  // ブラウザ操作実行
-  const result = await browserScreenshot(filePathResult.value, context.executeOptions);
-
-  // 撮影失敗時は undefined を返す
-  return result.match(
-    () => screenshotPath,
-    () => undefined,
+  // ファイルパス検証 → ブラウザ操作実行
+  return asFilePath(screenshotPath).match(
+    async (validPath) => {
+      const result = await browserScreenshot(validPath, context.executeOptions);
+      // 撮影失敗時は undefined を返す
+      return result.match(
+        () => screenshotPath,
+        () => undefined,
+      );
+    },
+    async () => undefined,
   );
 };

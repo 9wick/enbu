@@ -6,11 +6,9 @@
  * エラー時のスクリーンショット撮影を含む実行フローを管理する。
  */
 
-import type { Result } from 'neverthrow';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command } from '../types';
 import type { StepResult, ExecutionContext, ExecutorError } from './result';
-import { autoWait, type AutoWaitResult } from './auto-wait';
+import { autoWait } from './auto-wait';
 import { getCommandHandler } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
 
@@ -143,39 +141,37 @@ const processAutoWait = async (
   }
 
   const selector = getSelectorFromCommand(command);
-  const waitResult: Result<AutoWaitResult | undefined, AgentBrowserError> = await autoWait(
-    selector,
-    context,
-  );
+  const waitResult = await autoWait(selector, context);
 
-  // 自動待機失敗
-  if (waitResult.isErr()) {
-    const duration = Date.now() - startTime;
-    const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
+  return waitResult.match<Promise<AutoWaitProcessResult>>(
+    async (autoWaitResult) => {
+      // autoWaitで解決されたrefをcontextに設定
+      const contextWithRef = autoWaitResult
+        ? { ...context, resolvedRef: autoWaitResult.resolvedRef }
+        : context;
+      return { success: true, contextWithRef };
+    },
+    async (error) => {
+      // 自動待機失敗
+      const duration = Date.now() - startTime;
+      const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
 
-    return {
-      success: false,
-      failedResult: {
-        index,
-        command,
-        status: 'failed',
-        duration,
-        error: {
-          message: `Auto-wait timeout: ${getErrorMessage(waitResult.error)}`,
-          type: waitResult.error.type,
-          screenshot,
+      return {
+        success: false,
+        failedResult: {
+          index,
+          command,
+          status: 'failed' as const,
+          duration,
+          error: {
+            message: `Auto-wait timeout: ${getErrorMessage(error)}`,
+            type: error.type,
+            screenshot,
+          },
         },
-      },
-    };
-  }
-
-  // autoWaitで解決されたrefをcontextに設定
-  const autoWaitResult = waitResult.value;
-  const contextWithRef = autoWaitResult
-    ? { ...context, resolvedRef: autoWaitResult.resolvedRef }
-    : context;
-
-  return { success: true, contextWithRef };
+      };
+    },
+  );
 };
 
 /**

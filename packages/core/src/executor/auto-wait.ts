@@ -128,42 +128,41 @@ const executePollIteration = (
   return browserSnapshot(context.executeOptions).andThen((snapshotOutput) => {
     debugLog(`poll #${pollCount}: snapshot done`);
 
-    const refsResult = processSnapshotResult(ok(snapshotOutput));
-    if (refsResult.isErr()) {
-      debugLog(`poll #${pollCount}: error`, refsResult.error);
-      return errAsync(refsResult.error);
-    }
+    return processSnapshotResult(ok(snapshotOutput)).match(
+      (refs) => {
+        debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
 
-    const refs = refsResult.value;
-    debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
+        // セレクタに一致する要素を検索
+        const matchResult = findMatchingRefId(selector, refs);
 
-    // セレクタに一致する要素を検索
-    const matchResult = findMatchingRefId(selector, refs);
+        // マッチング結果を処理
+        const pollResult = handleMatchResult(matchResult, selector);
+        if (pollResult.type === 'done') {
+          pollResult.result.match(
+            (value) =>
+              debugLog(`poll #${pollCount}: element found! resolvedRef=${value.resolvedRef}`),
+            () => debugLog(`poll #${pollCount}: multiple elements matched!`),
+          );
+          return okAsync(pollResult);
+        }
 
-    // マッチング結果を処理
-    const pollResult = handleMatchResult(matchResult, selector);
-    if (pollResult.type === 'done') {
-      if (pollResult.result.isOk()) {
-        debugLog(
-          `poll #${pollCount}: element found! resolvedRef=${pollResult.result.value.resolvedRef}`,
-        );
-      } else {
-        debugLog(`poll #${pollCount}: multiple elements matched!`);
-      }
-      return okAsync(pollResult);
-    }
+        // タイムアウトチェック
+        debugLog(`poll #${pollCount}: not found, elapsed=${Date.now() - startTime}ms`);
+        const timeoutResult = checkTimeout(startTime, context.autoWaitTimeoutMs, selector);
+        if (timeoutResult.type === 'done') {
+          debugLog(`poll #${pollCount}: TIMEOUT`);
+          return okAsync(timeoutResult);
+        }
 
-    // タイムアウトチェック
-    debugLog(`poll #${pollCount}: not found, elapsed=${Date.now() - startTime}ms`);
-    const timeoutResult = checkTimeout(startTime, context.autoWaitTimeoutMs, selector);
-    if (timeoutResult.type === 'done') {
-      debugLog(`poll #${pollCount}: TIMEOUT`);
-      return okAsync(timeoutResult);
-    }
-
-    debugLog(`poll #${pollCount}: will continue...`);
-    const continueResult: PollResult = { type: 'continue' };
-    return okAsync(continueResult);
+        debugLog(`poll #${pollCount}: will continue...`);
+        const continueResult: PollResult = { type: 'continue' };
+        return okAsync(continueResult);
+      },
+      (error) => {
+        debugLog(`poll #${pollCount}: error`, error);
+        return errAsync(error);
+      },
+    );
   });
 };
 

@@ -18,6 +18,7 @@ import {
 } from '@packages/agent-browser-adapter';
 import {
   parseFlowYaml,
+  resolveEnvVariables,
   type Flow,
   executeFlow,
   type FlowResult,
@@ -153,27 +154,19 @@ const resolveFlowFiles = (files: string[]): ResultAsync<string[], CliError> => {
 };
 
 /**
- * ファイルパスからフローを読み込んでパースする
+ * YAMLコンテンツをパースして環境変数を解決する
  *
- * @param filePath - フローファイルのパス
+ * @param yamlContent - YAMLファイルの内容
+ * @param fileName - ファイル名
  * @returns 成功時: Flowオブジェクト、失敗時: CliError
  */
-const loadFlowFromFile = (filePath: string): ResultAsync<Flow, CliError> => {
-  // ファイル読み込み
-  return ResultAsync.fromPromise<string, CliError>(
-    readFile(filePath, 'utf-8'),
-    (error): CliError => ({
-      type: 'execution_error' as const,
-      message: `Failed to read file: ${filePath}`,
-      cause: error,
-    }),
-  ).andThen((yamlContent) => {
-    // ファイル名を抽出（拡張子付き）
-    const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
-
-    // YAMLをパース
-    const parseResult = parseFlowYaml(yamlContent, fileName);
-    return parseResult.match(
+const parseAndResolveFlow = (
+  yamlContent: string,
+  fileName: string,
+): ResultAsync<Flow, CliError> => {
+  return parseFlowYaml(yamlContent, fileName)
+    .andThen((flow) => resolveEnvVariables(flow, process.env, {}))
+    .match(
       (flow) => okAsync(flow),
       (parseError): ResultAsync<Flow, CliError> =>
         errAsync({
@@ -182,7 +175,33 @@ const loadFlowFromFile = (filePath: string): ResultAsync<Flow, CliError> => {
           cause: parseError,
         }),
     );
-  });
+};
+
+/**
+ * ファイルパスからフローを読み込んでパースする
+ *
+ * @param filePath - フローファイルのパス
+ * @returns 成功時: Flowオブジェクト、失敗時: CliError
+ *
+ * @remarks
+ * フロー読み込みの流れ:
+ * 1. ファイルを読み込む
+ * 2. YAMLをパースする
+ * 3. 環境変数を解決する（${VAR}形式のプレースホルダーを置換）
+ */
+const loadFlowFromFile = (filePath: string): ResultAsync<Flow, CliError> => {
+  // ファイル名を抽出（拡張子付き）
+  const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
+
+  // ファイル読み込み
+  return ResultAsync.fromPromise<string, CliError>(
+    readFile(filePath, 'utf-8'),
+    (error): CliError => ({
+      type: 'execution_error' as const,
+      message: `Failed to read file: ${filePath}`,
+      cause: error,
+    }),
+  ).andThen((yamlContent) => parseAndResolveFlow(yamlContent, fileName));
 };
 
 /**
@@ -336,13 +355,17 @@ const outputStepStartJson = (progress: StepProgress): void => {
  * @param progress - ステップ進捗情報
  */
 const outputStepCompleteJson = (progress: StepProgress): void => {
+  const stepResult = progress.stepResult;
+  const errorMessage =
+    stepResult && stepResult.status === 'failed' ? stepResult.error.message : undefined;
+
   outputProgressJson({
     type: 'step:complete',
     stepIndex: progress.stepIndex,
     stepTotal: progress.stepTotal,
-    status: progress.stepResult?.status ?? 'failed',
-    duration: progress.stepResult?.duration ?? 0,
-    error: progress.stepResult?.error?.message,
+    status: stepResult?.status ?? 'failed',
+    duration: stepResult?.duration ?? 0,
+    error: errorMessage,
   });
 };
 
@@ -408,7 +431,7 @@ const displayStepResults = (steps: FlowResult['steps'], formatter: OutputFormatt
     const stepDesc = formatCommandDescription(step.command);
     const statusIcon = step.status === 'passed' ? '✓' : '✗';
     formatter.indent(`${statusIcon} Step ${step.index + 1}: ${stepDesc} (${step.duration}ms)`, 2);
-    if (step.error) {
+    if (step.status === 'failed') {
       formatter.indent(`Error: ${step.error.message}`, 3);
     }
   }

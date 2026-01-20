@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { runFlowCommand } from '../../commands/run';
 import { OutputFormatter } from '../../output/formatter';
 import { checkAgentBrowser, browserClose } from '@packages/agent-browser-adapter';
-import { executeFlow, parseFlowYaml } from '@packages/core';
+import { executeFlow, parseFlowYaml, resolveEnvVariables } from '@packages/core';
 import { ok, okAsync, errAsync } from 'neverthrow';
 import type { Flow, FlowResult } from '@packages/core';
 
@@ -43,6 +43,10 @@ describe('runFlowCommand', () => {
     // デフォルトのモック動作
     vi.mocked(checkAgentBrowser).mockReturnValue(okAsync('agent-browser is installed') as never);
     vi.mocked(browserClose).mockReturnValue(okAsync(undefined) as never);
+
+    // resolveEnvVariablesはデフォルトでflowをそのまま返す
+    // parseFlowYamlの後に呼ばれ、環境変数展開済みのflowを返す
+    vi.mocked(resolveEnvVariables).mockImplementation((flow) => ok(flow));
   });
 
   /**

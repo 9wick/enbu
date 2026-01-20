@@ -2,7 +2,11 @@
  * フロー実行エンジン
  *
  * このモジュールはYAMLフロー定義に基づいて、複数のステップを順次実行する機能を提供する。
- * 環境変数の展開、エラー時の処理（bail、スクリーンショット）、実行結果の集約を担当する。
+ * エラー時の処理（bail、スクリーンショット）、実行結果の集約を担当する。
+ *
+ * @remarks
+ * 環境変数の展開はParser層（env-resolver）で行われるため、
+ * このモジュールに渡されるFlowは既に環境変数が解決済みである前提。
  */
 
 import { type Result, ResultAsync, ok, okAsync, errAsync } from 'neverthrow';
@@ -10,13 +14,16 @@ import type { Flow } from '../types';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type {
   FlowResult,
+  PassedFlowResult,
+  FailedFlowResult,
   FlowExecutionOptions,
   StepResult,
+  FailedStepResult,
   ExecutionContext,
   StepProgressCallback,
 } from './result';
+import { isFailedStepResult } from './result';
 import { executeStep } from './execute-step';
-import { expandEnvVars } from './env-expander';
 
 // デバッグログ用（stderrに出力してno-consoleルールを回避）
 const DEBUG = process.env.DEBUG_FLOW === '1';
@@ -31,7 +38,7 @@ const debugLog = (msg: string, ...args: unknown[]) => {
  * @param sessionName - セッション名
  * @param duration - 全体の実行時間（ミリ秒）
  * @param steps - 実行済みのステップ結果の配列
- * @param firstFailureStep - 最初に失敗したステップの結果
+ * @param firstFailureStep - 最初に失敗したステップの結果（必ずfailedステータス）
  * @param firstFailureIndex - 最初に失敗したステップのインデックス
  * @returns 失敗したフロー結果
  */
@@ -40,9 +47,9 @@ const buildFailedFlowResult = (
   sessionName: string,
   duration: number,
   steps: StepResult[],
-  firstFailureStep: StepResult,
+  firstFailureStep: FailedStepResult,
   firstFailureIndex: number,
-): FlowResult => {
+): FailedFlowResult => {
   return {
     flow: expandedFlow,
     sessionName,
@@ -50,9 +57,9 @@ const buildFailedFlowResult = (
     duration,
     steps,
     error: {
-      message: firstFailureStep.error!.message,
+      message: firstFailureStep.error.message,
       stepIndex: firstFailureIndex,
-      screenshot: firstFailureStep.error!.screenshot,
+      screenshot: firstFailureStep.error.screenshot,
     },
   };
 };
@@ -71,7 +78,7 @@ const buildSuccessFlowResult = (
   sessionName: string,
   duration: number,
   steps: StepResult[],
-): FlowResult => {
+): PassedFlowResult => {
   return {
     flow: expandedFlow,
     sessionName,
@@ -192,58 +199,49 @@ const executeAllSteps = async (
  *
  * フロー実行の処理フローは以下の通り:
  * 1. オプションのデフォルト値を設定
- * 2. 実行コンテキストを構築（Flow.envとoptions.envをマージ）
- * 3. フロー内の環境変数を展開（未定義変数はエラー）
- * 4. 各ステップを順次実行
- * 5. エラー発生時の処理:
+ * 2. 実行コンテキストを構築
+ * 3. 各ステップを順次実行
+ * 4. エラー発生時の処理:
  *    - `bail: true`（デフォルト）: 最初の失敗で即座に停止
  *    - `bail: false`: 失敗ステップをスキップして続行
- * 6. スクリーンショット撮影:
+ * 5. スクリーンショット撮影:
  *    - `screenshot: true`（デフォルト）: 失敗時にスクリーンショットを撮影
  *    - `screenshot: false`: スクリーンショットを撮影しない
- * 7. 実行結果を集約して返す
+ * 6. 実行結果を集約して返す
  *
- * @param flow - 実行するフロー定義（YAMLから読み込んだもの）
- * @param options - 実行時のオプション（セッション名、タイムアウト、環境変数など）
+ * @param flow - 実行するフロー定義（環境変数は解決済みである前提）
+ * @param options - 実行時のオプション（セッション名、タイムアウトなど）
  * @returns フロー実行結果（成功時）、またはエラー（失敗時）
  *
  * @remarks
+ * ## 前提条件
+ * - 環境変数の展開はParser層（env-resolver）で既に完了している前提
+ * - flowに含まれる${VAR}形式の変数は全て解決済み
+ *
  * ## エラーハンドリングの設計
  * - 個別のステップエラーは StepResult 内に格納される
  * - フロー全体のエラーは FlowResult.error に格納される
  * - executeFlow自体がerrを返すのは以下のケース:
  *   - agent-browserが起動できない場合
- *   - 環境変数の展開に失敗した場合（未定義変数など）
+ *   - 予期しない内部エラーが発生した場合
  * - ステップの失敗は正常な実行結果として扱われ、okで返される
  *
  * ## bail オプションの動作
  * - bail: true の場合、最初の失敗で即座に FlowResult を返す
  * - bail: false の場合、全てのステップを実行し、最後に FlowResult を返す
  * - いずれの場合も、失敗があれば status: 'failed' となる
- *
- * ## 環境変数のマージ
- * - Flow.envとoptions.envをマージして使用
- * - 優先順位: options.env > Flow.env（実行時オプションが優先）
  */
 export const executeFlow = (
   flow: Flow,
   options: FlowExecutionOptions,
 ): ResultAsync<FlowResult, AgentBrowserError> => {
-  // 環境変数を展開（未定義変数がある場合はエラーを返す）
   const context = buildExecutionContext(options, flow);
-  const expandResult = expandEnvVars(flow, context.env);
-
-  if (expandResult.isErr()) {
-    return errAsync(expandResult.error);
-  }
-
-  const expandedFlow = expandResult.value;
-  const startTime = Date.now();
   const bail = options.bail ?? true;
   const screenshot = options.screenshot ?? true;
+  const startTime = Date.now();
 
   return ResultAsync.fromPromise(
-    executeAllSteps(expandedFlow, context, screenshot, bail, startTime, options.onStepProgress),
+    executeAllSteps(flow, context, screenshot, bail, startTime, options.onStepProgress),
     (error): AgentBrowserError => ({
       type: 'command_execution_failed',
       message: 'executeFlow internal error',
@@ -262,9 +260,21 @@ export const executeFlow = (
 
     if (hasFailure) {
       const firstFailureStep = steps[firstFailureIndex];
+      // hasFailure=trueの場合、firstFailureStepは必ずFailedStepResult
+      // 型ガードを使用して型を絞り込む
+      if (!isFailedStepResult(firstFailureStep)) {
+        // 論理的にこのパスには到達しないが、型安全性のため
+        const error: AgentBrowserError = {
+          type: 'command_execution_failed',
+          message: 'Internal error: firstFailureStep must have failed status',
+          command: 'executeFlow',
+          rawError: 'hasFailure is true but step status is not failed',
+        };
+        return errAsync(error);
+      }
       return okAsync(
         buildFailedFlowResult(
-          expandedFlow,
+          flow,
           context.sessionName,
           duration,
           steps,
@@ -274,6 +284,6 @@ export const executeFlow = (
       );
     }
 
-    return okAsync(buildSuccessFlowResult(expandedFlow, context.sessionName, duration, steps));
+    return okAsync(buildSuccessFlowResult(flow, context.sessionName, duration, steps));
   });
 };

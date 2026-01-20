@@ -3,6 +3,7 @@ import { ok, okAsync, errAsync } from 'neverthrow';
 import { executeFlow } from '../flow-executor';
 import type { Flow } from '../../types';
 import type { FlowExecutionOptions } from '../result';
+import { isPassedFlowResult } from '../result';
 
 // モック設定
 vi.mock('@packages/agent-browser-adapter', () => ({
@@ -81,7 +82,8 @@ describe('executeFlow', () => {
         expect(flowResult.steps[0].command.command).toBe('open');
         expect(flowResult.steps[1].status).toBe('passed');
         expect(flowResult.steps[1].command.command).toBe('click');
-        expect(flowResult.error).toBeUndefined();
+        // status='passed'の場合、errorフィールドは存在しない
+        expect(isPassedFlowResult(flowResult)).toBe(true);
       },
       () => {
         throw new Error('Expected ok result');
@@ -90,28 +92,29 @@ describe('executeFlow', () => {
   });
 
   /**
-   * FE-3: 環境変数が正しく展開される
+   * FE-3: 環境変数が展開済みのフローを正しく実行できる
    *
-   * 前提条件: フローに ${BASE_URL} と ${USER_EMAIL} を含む
-   * 検証項目: 実行されるコマンドで環境変数が置換されている
+   * 前提条件: 環境変数が解決済みのフロー（Parser層で展開済み）
+   * 検証項目: 実行されるコマンドが期待通りの値を持つ
+   *
+   * @remarks
+   * 環境変数の展開はParser層（env-resolver）で行われるため、
+   * executeFlowには展開済みのフローが渡される前提。
    */
-  it('FE-3: 環境変数が正しく展開される', async () => {
+  it('FE-3: 環境変数が展開済みのフローを正しく実行できる', async () => {
     // Arrange
+    // 環境変数は既にParser層で展開済みの状態
     const flow: Flow = {
       name: 'パラメータ化フロー',
       env: {},
       steps: [
-        { command: 'open', url: '${BASE_URL}/login' },
-        { command: 'fill', selector: 'email', value: '${USER_EMAIL}' },
+        { command: 'open', url: 'https://example.com/login' },
+        { command: 'fill', selector: 'email', value: 'test@example.com' },
       ],
     };
 
     const options: FlowExecutionOptions = {
       sessionName: 'test-session',
-      env: {
-        BASE_URL: 'https://example.com',
-        USER_EMAIL: 'test@example.com',
-      },
     };
 
     // open コマンドのモック
@@ -132,7 +135,7 @@ describe('executeFlow', () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (flowResult) => {
-        // 展開後のコマンドを確認
+        // 展開済みのコマンドが正しく実行されていることを確認
         // biome-ignore lint/suspicious/noExplicitAny: テスト用の動的プロパティアクセス
         expect((flowResult.steps[0].command as any).url).toBe('https://example.com/login');
         // biome-ignore lint/suspicious/noExplicitAny: テスト用の動的プロパティアクセス
@@ -140,45 +143,6 @@ describe('executeFlow', () => {
       },
       () => {
         throw new Error('Expected ok result');
-      },
-    );
-  });
-
-  /**
-   * FE-4: 存在しない環境変数はエラー
-   *
-   * 前提条件: ${UNDEFINED_VAR} を含むフロー
-   * 検証項目: command_execution_failedが返される
-   */
-  it('FE-4: 存在しない環境変数はエラーになる', async () => {
-    // Arrange
-    const flow: Flow = {
-      name: 'テストフロー',
-      env: {},
-      steps: [{ command: 'open', url: '${UNDEFINED_VAR}/path' }],
-    };
-
-    const options: FlowExecutionOptions = {
-      sessionName: 'test-session',
-      env: {},
-    };
-
-    // Act
-    const result = await executeFlow(flow, options);
-
-    // Assert
-    // 環境変数展開エラーはerrを返す
-    expect(result.isErr()).toBe(true);
-    result.match(
-      () => {
-        throw new Error('Expected err result');
-      },
-      (error) => {
-        expect(error.type).toBe('command_execution_failed');
-        if (error.type === 'command_execution_failed') {
-          expect(error.message).toContain('環境変数');
-          expect(error.message).toContain('${UNDEFINED_VAR}');
-        }
       },
     );
   });
@@ -247,8 +211,11 @@ describe('executeFlow', () => {
     result.match(
       (flowResult) => {
         expect(flowResult.status).toBe('failed');
-        expect(flowResult.steps[0].status).toBe('failed');
-        expect(flowResult.steps[0].error?.type).toBe('not_installed');
+        const step0 = flowResult.steps[0];
+        expect(step0.status).toBe('failed');
+        if (step0.status === 'failed') {
+          expect(step0.error.type).toBe('not_installed');
+        }
       },
       () => {
         throw new Error('Expected ok result');
@@ -335,7 +302,10 @@ describe('executeFlow', () => {
     result.match(
       (flowResult) => {
         expect(flowResult.status).toBe('failed');
-        expect(flowResult.steps[0].error?.screenshot).toBeUndefined();
+        const step0 = flowResult.steps[0];
+        if (step0.status === 'failed') {
+          expect(step0.error.screenshot).toBeUndefined();
+        }
       },
       () => {
         throw new Error('Expected ok result');

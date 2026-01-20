@@ -109,21 +109,35 @@ export type FlowExecutionOptions = {
 };
 
 /**
- * 各ステップの実行結果
+ * 成功したステップの実行結果
  */
-export type StepResult = {
+export type PassedStepResult = {
   /** ステップのインデックス（0始まり） */
   index: number;
   /** 実行したコマンド */
   command: Command;
-  /** 実行ステータス */
-  status: 'passed' | 'failed';
+  /** 実行ステータス: 成功 */
+  status: 'passed';
   /** 実行時間（ミリ秒） */
   duration: number;
   /** 標準出力（コマンドが出力を返す場合） */
   stdout?: string;
-  /** エラー情報（失敗時のみ） */
-  error?: {
+};
+
+/**
+ * 失敗したステップの実行結果
+ */
+export type FailedStepResult = {
+  /** ステップのインデックス（0始まり） */
+  index: number;
+  /** 実行したコマンド */
+  command: Command;
+  /** 実行ステータス: 失敗 */
+  status: 'failed';
+  /** 実行時間（ミリ秒） */
+  duration: number;
+  /** エラー情報（失敗時は必須） */
+  error: {
     /** エラーメッセージ */
     message: string;
     /** エラーの種別 */
@@ -134,21 +148,46 @@ export type StepResult = {
 };
 
 /**
- * フロー全体の実行結果
+ * 各ステップの実行結果
+ *
+ * PassedStepResultまたはFailedStepResultのいずれかの型を持つ。
+ * status='passed'の場合はerrorフィールドは存在せず、
+ * status='failed'の場合はerrorフィールドが必須となる。
  */
-export type FlowResult = {
+export type StepResult = PassedStepResult | FailedStepResult;
+
+/**
+ * 成功したフロー全体の実行結果
+ */
+export type PassedFlowResult = {
   /** 実行したフロー */
   flow: Flow;
   /** セッション名 */
   sessionName: string;
-  /** 全体の実行ステータス */
-  status: 'passed' | 'failed';
+  /** 全体の実行ステータス: 成功 */
+  status: 'passed';
   /** 全体の実行時間（ミリ秒） */
   duration: number;
   /** 各ステップの実行結果 */
   steps: StepResult[];
-  /** エラー情報（失敗時のみ） */
-  error?: {
+};
+
+/**
+ * 失敗したフロー全体の実行結果
+ */
+export type FailedFlowResult = {
+  /** 実行したフロー */
+  flow: Flow;
+  /** セッション名 */
+  sessionName: string;
+  /** 全体の実行ステータス: 失敗 */
+  status: 'failed';
+  /** 全体の実行時間（ミリ秒） */
+  duration: number;
+  /** 各ステップの実行結果 */
+  steps: StepResult[];
+  /** エラー情報（失敗時は必須） */
+  error: {
     /** エラーメッセージ */
     message: string;
     /** エラーが発生したステップのインデックス */
@@ -157,6 +196,15 @@ export type FlowResult = {
     screenshot?: string;
   };
 };
+
+/**
+ * フロー全体の実行結果
+ *
+ * PassedFlowResultまたはFailedFlowResultのいずれかの型を持つ。
+ * status='passed'の場合はerrorフィールドは存在せず、
+ * status='failed'の場合はerrorフィールドが必須となる。
+ */
+export type FlowResult = PassedFlowResult | FailedFlowResult;
 
 /**
  * コマンド実行のコンテキスト（内部使用）
@@ -218,3 +266,79 @@ export type CommandHandler<T extends Command> = (
   command: T,
   context: ExecutionContext,
 ) => ResultAsync<CommandResult, ExecutorError>;
+
+// ==========================================
+// 型ガード関数
+// ==========================================
+
+/**
+ * StepResultが成功したステップかどうかを判定する型ガード関数
+ *
+ * @param result - 判定対象のStepResult
+ * @returns 成功したステップの場合はtrue、失敗したステップの場合はfalse
+ *
+ * @example
+ * ```typescript
+ * if (isPassedStepResult(stepResult)) {
+ *   // stepResult.errorは存在しない
+ *   console.log(stepResult.stdout);
+ * }
+ * ```
+ */
+export const isPassedStepResult = (result: StepResult): result is PassedStepResult => {
+  return result.status === 'passed';
+};
+
+/**
+ * StepResultが失敗したステップかどうかを判定する型ガード関数
+ *
+ * @param result - 判定対象のStepResult
+ * @returns 失敗したステップの場合はtrue、成功したステップの場合はfalse
+ *
+ * @example
+ * ```typescript
+ * if (isFailedStepResult(stepResult)) {
+ *   // stepResult.errorは必ず存在する
+ *   console.log(stepResult.error.message);
+ * }
+ * ```
+ */
+export const isFailedStepResult = (result: StepResult): result is FailedStepResult => {
+  return result.status === 'failed';
+};
+
+/**
+ * FlowResultが成功したフローかどうかを判定する型ガード関数
+ *
+ * @param result - 判定対象のFlowResult
+ * @returns 成功したフローの場合はtrue、失敗したフローの場合はfalse
+ *
+ * @example
+ * ```typescript
+ * if (isPassedFlowResult(flowResult)) {
+ *   // flowResult.errorは存在しない
+ *   console.log(`All ${flowResult.steps.length} steps passed`);
+ * }
+ * ```
+ */
+export const isPassedFlowResult = (result: FlowResult): result is PassedFlowResult => {
+  return result.status === 'passed';
+};
+
+/**
+ * FlowResultが失敗したフローかどうかを判定する型ガード関数
+ *
+ * @param result - 判定対象のFlowResult
+ * @returns 失敗したフローの場合はtrue、成功したフローの場合はfalse
+ *
+ * @example
+ * ```typescript
+ * if (isFailedFlowResult(flowResult)) {
+ *   // flowResult.errorは必ず存在する
+ *   console.log(`Failed at step ${flowResult.error.stepIndex}: ${flowResult.error.message}`);
+ * }
+ * ```
+ */
+export const isFailedFlowResult = (result: FlowResult): result is FailedFlowResult => {
+  return result.status === 'failed';
+};

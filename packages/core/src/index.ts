@@ -31,7 +31,11 @@ export type {
 // Executor型
 export type {
   FlowResult,
+  PassedFlowResult,
+  FailedFlowResult,
   StepResult,
+  PassedStepResult,
+  FailedStepResult,
   FlowExecutionOptions,
   ExecutionErrorType,
   StepProgress,
@@ -41,4 +45,10 @@ export type {
 // 関数
 export { parseFlowYaml, resolveEnvVariables, getStepLineNumbers } from './parser';
 export { loadFlows } from './loader';
-export { executeFlow } from './executor';
+export {
+  executeFlow,
+  isPassedStepResult,
+  isFailedStepResult,
+  isPassedFlowResult,
+  isFailedFlowResult,
+} from './executor';
