@@ -1,4 +1,5 @@
 import { type Result, err, fromThrowable, ok } from 'neverthrow';
+import { P, match } from 'ts-pattern';
 import type { AgentBrowserError, AgentBrowserJsonOutput, SnapshotRefs } from './types';
 
 /**
@@ -32,13 +33,13 @@ const safeJsonParse = fromThrowable(
 
 /**
  * AgentBrowserJsonOutputの型ガード
+ *
+ * ts-patternでsuccess, data, errorプロパティの存在をチェックする。
  */
-const isAgentBrowserJsonOutput = (value: unknown): value is AgentBrowserJsonOutput => {
-  if (!isRecord(value)) {
-    return false;
-  }
-  return typeof value.success === 'boolean' && 'data' in value && 'error' in value;
-};
+const isAgentBrowserJsonOutput = (value: unknown): value is AgentBrowserJsonOutput =>
+  match(value)
+    .with({ success: P.boolean, data: P._, error: P._ }, () => true)
+    .otherwise(() => false);
 
 /**
  * agent-browserの--json出力をパースする

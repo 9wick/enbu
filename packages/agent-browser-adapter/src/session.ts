@@ -1,4 +1,4 @@
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import { executeCommand } from './executor';
 import type { AgentBrowserError } from './types';
 
@@ -11,9 +11,5 @@ import type { AgentBrowserError } from './types';
  * @param sessionName - クローズするセッションの名前
  * @returns 成功時: void、失敗時: AgentBrowserError
  */
-export const closeSession = async (
-  sessionName: string,
-): Promise<Result<void, AgentBrowserError>> => {
-  const result = await executeCommand('close', [], { sessionName });
-  return result.map(() => undefined);
-};
+export const closeSession = (sessionName: string): ResultAsync<void, AgentBrowserError> =>
+  executeCommand('close', [], { sessionName }).map(() => undefined);

@@ -1,8 +1,9 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserScreenshot, browserSnapshot } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { ScreenshotCommand, SnapshotCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import { UseDefault } from '../../types/utility-types';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * screenshot コマンドのハンドラ
@@ -14,24 +15,23 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScreenshot = async (
+export const handleScreenshot = (
   command: ScreenshotCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  const args = [command.path];
-  if (command.full) {
-    args.push('--full');
-  }
-  args.push('--json');
+  // UseDefaultの場合はデフォルト値（fullPage=false、つまりundefinedを渡す）を使用
+  const fullPage = command.full === UseDefault ? undefined : command.full;
 
-  return (await executeCommand('screenshot', args, context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  // command.path は既に FilePath 型（Branded Type）なので、そのまま使用
+  return browserScreenshot(command.path, {
+    ...context.executeOptions,
+    fullPage,
+  }).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**
@@ -44,16 +44,14 @@ export const handleScreenshot = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleSnapshot = async (
+export const handleSnapshot = (
   command: SnapshotCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return (await executeCommand('snapshot', ['--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return browserSnapshot(context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { Result, ok } from 'neverthrow';
+import { ResultAsync, okAsync } from 'neverthrow';
 import { join } from 'node:path';
 import { writeFile, unlink, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -17,6 +17,35 @@ export type CliResult = {
 };
 
 /**
+ * テスト用セッション名のプレフィックス
+ *
+ * このプレフィックスを使用することで、テスト終了後に
+ * テスト用セッションだけをクリーンアップできる。
+ *
+ * 注意: CLIのrun.tsでセッション名に`enbu-`プレフィックスが追加されるため、
+ * 最終的なセッション名は`enbu-e2e-xxx`形式になる。
+ * 例: npx agent-browser session list | grep enbu-e2e-
+ */
+export const TEST_SESSION_PREFIX = 'enbu-e2e-';
+
+/**
+ * テスト用の一意なセッション名を生成する
+ *
+ * 並列実行時にagent-browserセッションが競合しないよう、
+ * タイムスタンプとランダム値を組み合わせた一意な名前を生成する。
+ *
+ * 注意: CLIのrun.tsで`enbu-`プレフィックスが追加されるため、
+ * ここでは`e2e-`で始める。最終的なセッション名は`enbu-e2e-xxx`形式になる。
+ *
+ * @returns 一意なセッション名（e2e-xxxx-xxxx形式）
+ */
+const generateUniqueSessionName = (): string => {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 6);
+  return `e2e-${timestamp}-${random}`;
+};
+
+/**
  * CLIを実行するヘルパー関数
  *
  * このヘルパー関数は統合テストおよびE2Eテストで使用するために、
@@ -26,8 +55,10 @@ export type CliResult = {
  * 実行が完了するまで待機し、標準出力・標準エラー出力・終了コードを返します。
  * 副作用として子プロセスの起動と終了を伴います。
  *
+ * 注意: 並列実行をサポートするため、自動的に一意なセッション名が付与されます。
+ *
  * @param args - CLIに渡すコマンドライン引数の配列
- * @returns CLIの実行結果を含むPromise<Result>
+ * @returns CLIの実行結果を含むResultAsync
  *
  * @example
  * ```typescript
@@ -40,55 +71,55 @@ export type CliResult = {
  * console.log(result2.value.exitCode); // 0（成功）
  * ```
  */
-export const runCli = async (args: string[]): Promise<Result<CliResult, never>> => {
-  return new Promise((resolve) => {
-    // CLIのエントリーポイントのパスを解決
-    const cliEntryPoint = join(process.cwd(), 'apps', 'cli', 'src', 'main.ts');
+export const runCli = (args: string[]): ResultAsync<CliResult, never> =>
+  ResultAsync.fromSafePromise(
+    new Promise<CliResult>((resolve) => {
+      // CLIのエントリーポイントのパスを解決
+      const cliEntryPoint = join(process.cwd(), 'apps', 'cli', 'src', 'main.ts');
 
-    // tsxを使ってTypeScriptファイルを直接実行
-    // 本番環境ではビルド済みのJSファイルを使用することを想定
-    const proc = spawn('tsx', [cliEntryPoint, ...args], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      cwd: process.cwd(),
-      env: process.env,
-    });
+      // 並列実行時のセッション競合を避けるため、一意なセッション名を自動付与
+      const sessionArgs = ['--session', generateUniqueSessionName()];
 
-    let stdout = '';
-    let stderr = '';
+      // tsxを使ってTypeScriptファイルを直接実行
+      // 本番環境ではビルド済みのJSファイルを使用することを想定
+      const proc = spawn('tsx', [cliEntryPoint, ...sessionArgs, ...args], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: process.cwd(),
+        env: process.env,
+      });
 
-    // 標準出力を収集
-    proc.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
+      let stdout = '';
+      let stderr = '';
 
-    // 標準エラー出力を収集
-    proc.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
+      // 標準出力を収集
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
 
-    // プロセス終了時に結果を返す
-    proc.on('close', (exitCode: number | null) => {
-      resolve(
-        ok({
+      // 標準エラー出力を収集
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      // プロセス終了時に結果を返す
+      proc.on('close', (exitCode: number | null) => {
+        resolve({
           exitCode: exitCode ?? 1,
           stdout,
           stderr,
-        }),
-      );
-    });
+        });
+      });
 
-    // プロセスエラー時も終了コード1として扱う
-    proc.on('error', () => {
-      resolve(
-        ok({
+      // プロセスエラー時も終了コード1として扱う
+      proc.on('error', () => {
+        resolve({
           exitCode: 1,
           stdout,
           stderr: stderr || 'プロセスの起動に失敗しました',
-        }),
-      );
-    });
-  });
-};
+        });
+      });
+    }),
+  );
 
 /**
  * テスト用の一時フローファイルを作成する

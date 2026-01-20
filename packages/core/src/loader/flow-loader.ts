@@ -5,13 +5,26 @@
  * パースして環境変数を解決する。
  */
 
-import { Result, ok, err } from 'neverthrow';
-import { readFile, readdir } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { parse as parseDotenv } from 'dotenv';
-import type { Flow, ParseError } from '../types';
+import { errAsync, okAsync, ResultAsync } from 'neverthrow';
+import { match } from 'ts-pattern';
 import { parseFlowYaml } from '../parser/yaml-parser';
-import { resolveEnvVariables } from '../parser/env-resolver';
+import type { Flow, ParseError } from '../types';
+
+/**
+ * ENOENT エラーかどうかを判定する
+ *
+ * ts-pattern で構造的にマッチングし、型安全にエラーを判定する。
+ *
+ * @param error - 判定対象のエラー
+ * @returns ENOENT の場合 true
+ */
+const isEnoentError = (error: unknown): boolean =>
+  match(error)
+    .with({ code: 'ENOENT' }, () => true)
+    .otherwise(() => false);
 
 /**
  * ディレクトリから*.enbu.yamlファイルを検索する
@@ -19,27 +32,42 @@ import { resolveEnvVariables } from '../parser/env-resolver';
  * @param dirPath - 検索するディレクトリのパス
  * @returns 成功時: ファイルパスの配列（ソート済み）、失敗時: ParseError
  */
-const findFlowFiles = async (dirPath: string): Promise<Result<readonly string[], ParseError>> => {
-  try {
-    // ディレクトリ内のファイルを取得
-    const entries = await readdir(dirPath, { withFileTypes: true });
-
-    // *.enbu.yamlにマッチするファイルをフィルター
-    const flowFiles = entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.enbu.yaml'))
-      .map((entry) => join(dirPath, entry.name))
-      .sort(); // ファイル名順にソート
-
-    return ok(flowFiles);
-  } catch (error) {
-    return err({
+const findFlowFiles = (dirPath: string): ResultAsync<readonly string[], ParseError> =>
+  ResultAsync.fromPromise(
+    readdir(dirPath, { withFileTypes: true }).then((entries) =>
+      entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.enbu.yaml'))
+        .map((entry) => join(dirPath, entry.name))
+        .sort(),
+    ),
+    (error): ParseError => ({
       type: 'file_read_error' as const,
       message: `Failed to read directory: ${dirPath}`,
       filePath: dirPath,
       cause: error instanceof Error ? error.message : String(error),
-    });
-  }
-};
+    }),
+  );
+
+/**
+ * YAMLをパースする（環境変数解決を含む）
+ *
+ * @remarks
+ * parseFlowYaml内部で環境変数解決が行われる。
+ * 処理順序:
+ * 1. YAMLパース
+ * 2. 環境変数解決（文字列レベル）
+ * 3. Command型検証
+ */
+const parseYaml = (
+  yamlContent: string,
+  fileName: string,
+  processEnv: Readonly<Record<string, string | undefined>>,
+  dotEnv: Readonly<Record<string, string>>,
+): ResultAsync<Flow, ParseError> =>
+  parseFlowYaml(yamlContent, fileName, processEnv, dotEnv).match(
+    (flow) => okAsync(flow),
+    (error) => errAsync(error),
+  );
 
 /**
  * 単一のフローファイルを読み込んでパースする
@@ -49,31 +77,22 @@ const findFlowFiles = async (dirPath: string): Promise<Result<readonly string[],
  * @param dotEnv - .envファイルから読み込んだ環境変数
  * @returns 成功時: Flowオブジェクト、失敗時: ParseError
  */
-const loadSingleFlow = async (
+const loadSingleFlow = (
   filePath: string,
   processEnv: Readonly<Record<string, string | undefined>>,
   dotEnv: Readonly<Record<string, string>>,
-): Promise<Result<Flow, ParseError>> => {
-  // 1. ファイル読み込み
-  let yamlContent: string;
-  try {
-    yamlContent = await readFile(filePath, 'utf-8');
-  } catch (error) {
-    return err({
+): ResultAsync<Flow, ParseError> => {
+  const fileName = basename(filePath);
+
+  return ResultAsync.fromPromise(
+    readFile(filePath, 'utf-8'),
+    (error): ParseError => ({
       type: 'file_read_error' as const,
       message: `Failed to read file: ${filePath}`,
       filePath,
       cause: error instanceof Error ? error.message : String(error),
-    });
-  }
-
-  // 2. ファイル名を抽出
-  const fileName = basename(filePath);
-
-  // 3. YAMLをパース & 4. 環境変数を解決
-  return parseFlowYaml(yamlContent, fileName).andThen((flow) =>
-    resolveEnvVariables(flow, processEnv, dotEnv),
-  );
+    }),
+  ).andThen((yamlContent) => parseYaml(yamlContent, fileName, processEnv, dotEnv));
 };
 
 /**
@@ -90,52 +109,24 @@ const loadSingleFlow = async (
  * - ENOENT（ファイルが存在しない）: 空オブジェクトを返す（正常系）
  * - その他のエラー（EACCES、EIOなど）: エラーを伝播させる
  */
-const loadDotEnv = async (
-  dotEnvPath: string,
-): Promise<Result<Record<string, string>, ParseError>> => {
-  try {
-    const content = await readFile(dotEnvPath, 'utf-8');
-    return ok(parseDotenv(content));
-  } catch (error) {
-    // ENOENT（ファイルが存在しない）の場合は空オブジェクトを返す
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      return ok({});
-    }
+const loadDotEnv = (dotEnvPath: string): ResultAsync<Record<string, string>, ParseError> =>
+  ResultAsync.fromPromise(
+    readFile(dotEnvPath, 'utf-8').then((content) => parseDotenv(content)),
+    (error): ParseError | undefined => {
+      // ENOENT（ファイルが存在しない）の場合は空オブジェクトを返す
+      if (isEnoentError(error)) {
+        return undefined; // これによりorElseで処理される
+      }
 
-    // その他のエラー（パーミッションエラー、I/Oエラーなど）は伝播
-    return err({
-      type: 'file_read_error' as const,
-      message: `Failed to read .env file: ${dotEnvPath}`,
-      filePath: dotEnvPath,
-      cause: error instanceof Error ? error.message : String(error),
-    });
-  }
-};
-
-/**
- * 非同期reduceでフローファイルを順次読み込む
- *
- * @param acc - 累積されたResultオブジェクト（Promise）
- * @param filePath - 読み込むフローファイルのパス
- * @param processEnv - プロセス環境変数
- * @param dotEnv - .envファイルから読み込んだ環境変数
- * @returns 成功時: 更新されたFlow配列、失敗時: ParseError
- */
-const reduceLoadFlow = async (
-  acc: Promise<Result<Flow[], ParseError>>,
-  filePath: string,
-  processEnv: Readonly<Record<string, string | undefined>>,
-  dotEnv: Readonly<Record<string, string>>,
-): Promise<Result<Flow[], ParseError>> => {
-  const accumulated = await acc;
-  return accumulated.match(
-    async (flows) => {
-      const loadResult = await loadSingleFlow(filePath, processEnv, dotEnv);
-      return loadResult.map((flow) => [...flows, flow]);
+      // その他のエラー（パーミッションエラー、I/Oエラーなど）は伝播
+      return {
+        type: 'file_read_error' as const,
+        message: `Failed to read .env file: ${dotEnvPath}`,
+        filePath: dotEnvPath,
+        cause: error instanceof Error ? error.message : String(error),
+      };
     },
-    (error) => err(error),
-  );
-};
+  ).orElse((error) => (error === undefined ? okAsync({}) : errAsync(error)));
 
 /**
  * 全てのフローファイルを順次読み込む
@@ -149,12 +140,23 @@ const loadAllFlows = (
   flowFiles: readonly string[],
   processEnv: Readonly<Record<string, string | undefined>>,
   dotEnv: Readonly<Record<string, string>>,
-): Promise<Result<readonly Flow[], ParseError>> => {
-  return flowFiles.reduce<Promise<Result<Flow[], ParseError>>>(
-    (acc, filePath) => reduceLoadFlow(acc, filePath, processEnv, dotEnv),
-    Promise.resolve(ok([])),
-  );
+): ResultAsync<readonly Flow[], ParseError> => {
+  // 各ファイルをResultAsyncに変換
+  const loadResults = flowFiles.map((filePath) => loadSingleFlow(filePath, processEnv, dotEnv));
+
+  // ResultAsync.combineで全てを結合（最初のエラーで停止）
+  return ResultAsync.combine(loadResults);
 };
+
+/**
+ * フローファイルを検索して読み込む
+ */
+const findAndLoadFlows = (
+  dirPath: string,
+  processEnv: Readonly<Record<string, string | undefined>>,
+  dotEnv: Readonly<Record<string, string>>,
+): ResultAsync<readonly Flow[], ParseError> =>
+  findFlowFiles(dirPath).andThen((files) => loadAllFlows(files, processEnv, dotEnv));
 
 /**
  * ディレクトリから全てのフローファイルを読み込む
@@ -184,7 +186,7 @@ const loadAllFlows = (
  *   (error) => console.error(error)
  * );
  */
-export const loadFlows = async (
+export const loadFlows = (
   dirPath: string,
   options?: {
     /** プロセス環境変数（デフォルト: process.env） */
@@ -192,23 +194,9 @@ export const loadFlows = async (
     /** .envファイルのパス（デフォルト: .env） */
     dotEnvPath?: string;
   },
-): Promise<Result<readonly Flow[], ParseError>> => {
+): ResultAsync<readonly Flow[], ParseError> => {
   const processEnv = options?.processEnv ?? process.env;
   const dotEnvPath = options?.dotEnvPath ?? '.env';
 
-  // 1. .envファイルを読み込み
-  const dotEnvResult = await loadDotEnv(dotEnvPath);
-
-  // 2. ディレクトリから*.enbu.yamlファイルを検索
-  const findResult = await findFlowFiles(dirPath);
-
-  // 3. 全てのフローファイルを読み込み（エラーの場合は即座にエラーResultを返す）
-  return dotEnvResult.match(
-    (dotEnv) =>
-      findResult.match(
-        (files) => loadAllFlows(files, processEnv, dotEnv),
-        (error) => Promise.resolve(err(error)),
-      ),
-    (error) => Promise.resolve(err(error)),
-  );
+  return loadDotEnv(dotEnvPath).andThen((dotEnv) => findAndLoadFlows(dirPath, processEnv, dotEnv));
 };

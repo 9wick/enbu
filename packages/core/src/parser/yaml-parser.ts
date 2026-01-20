@@ -17,10 +17,49 @@
  * - 旧形式（配列形式や`---`区切り）はサポートしない
  */
 
-import { Result, ok, err, fromThrowable } from 'neverthrow';
+import { err, fromThrowable, ok, type Result } from 'neverthrow';
+import { P, match } from 'ts-pattern';
 import * as yaml from 'yaml';
-import type { Flow, FlowEnv, Command, ParseError } from '../types';
+import type { Command, Flow, FlowEnv, ParseError } from '../types';
+import { NoInfo } from '../types/utility-types';
+import { type RawFlowData, resolveEnvVariables } from './env-resolver';
 import { validateCommand } from './validators/command-validator';
+
+/**
+ * YAMLParseErrorから位置情報を抽出する
+ *
+ * @param error - YAMLParseError
+ * @returns line, column情報を含むオブジェクト
+ */
+const extractYamlErrorPosition = (
+  error: yaml.YAMLParseError,
+): { line: number | NoInfo; column: number | NoInfo } => ({
+  line: error.linePos?.[0]?.line ?? NoInfo,
+  column: error.linePos?.[0]?.col ?? NoInfo,
+});
+
+/**
+ * YAMLパースエラーをParseErrorに変換する
+ *
+ * @param error - YAMLパース時に発生したエラー
+ * @returns ParseError形式のエラー
+ */
+const convertYamlParseError = (error: unknown): ParseError => {
+  if (error instanceof yaml.YAMLParseError) {
+    const position = extractYamlErrorPosition(error);
+    return {
+      type: 'yaml_syntax_error' as const,
+      message: error.message,
+      ...position,
+    };
+  }
+  return {
+    type: 'yaml_syntax_error' as const,
+    message: error instanceof Error ? error.message : 'Unknown YAML parse error',
+    line: NoInfo,
+    column: NoInfo,
+  };
+};
 
 /**
  * YAMLパースをResult型でラップ
@@ -30,23 +69,7 @@ import { validateCommand } from './validators/command-validator';
  * @remarks
  * 新形式では単一ドキュメントのみをサポートするため、parseAllDocumentsではなくparseを使用
  */
-const safeYamlParse = fromThrowable(
-  (text: string) => yaml.parse(text),
-  (error): ParseError => {
-    if (error instanceof yaml.YAMLParseError) {
-      return {
-        type: 'yaml_syntax_error' as const,
-        message: error.message,
-        line: error.linePos?.[0]?.line,
-        column: error.linePos?.[0]?.col,
-      };
-    }
-    return {
-      type: 'yaml_syntax_error' as const,
-      message: error instanceof Error ? error.message : 'Unknown YAML parse error',
-    };
-  },
-);
+const safeYamlParse = fromThrowable((text: string) => yaml.parse(text), convertYamlParseError);
 
 /**
  * 値がRecord型かどうかを判定する型ガード
@@ -89,25 +112,23 @@ const validateRootStructure = (root: unknown): Result<Record<string, unknown>, P
     });
   }
 
-  // stepsキーがない場合はエラー
-  if (!('steps' in root)) {
-    return err({
-      type: 'invalid_flow_structure' as const,
-      message: "Missing required 'steps' key in flow",
-      details: 'Flow object must have a steps key containing an array of commands',
-    });
-  }
-
-  // stepsが配列でない場合はエラー
-  if (!Array.isArray(root.steps)) {
-    return err({
-      type: 'invalid_flow_structure' as const,
-      message: "'steps' must be an array",
-      details: 'The steps key must contain an array of command objects',
-    });
-  }
-
-  return ok(root);
+  // ts-patternで型安全にstepsキーをチェック
+  return match(root)
+    .with({ steps: P.array() }, (r) => ok(r))
+    .with({ steps: P.any }, () =>
+      err({
+        type: 'invalid_flow_structure' as const,
+        message: "'steps' must be an array",
+        details: 'The steps key must contain an array of command objects',
+      }),
+    )
+    .otherwise(() =>
+      err({
+        type: 'invalid_flow_structure' as const,
+        message: "Missing required 'steps' key in flow",
+        details: 'Flow object must have a steps key containing an array of commands',
+      }),
+    );
 };
 
 /**
@@ -135,6 +156,8 @@ const buildEnvMap = (envSection: Record<string, unknown>): Record<string, string
 /**
  * ルートオブジェクトからenv情報を抽出する
  *
+ * ts-patternで型安全にenvキーをチェックする。
+ *
  * @param root - 検証済みのルートオブジェクト
  * @returns env情報
  *
@@ -143,16 +166,8 @@ const buildEnvMap = (envSection: Record<string, unknown>): Record<string, string
  * - envがオブジェクトでない場合: 空のオブジェクトを返す
  */
 const extractEnvFromRoot = (root: Record<string, unknown>): FlowEnv => {
-  if (!('env' in root)) {
-    return {};
-  }
-
   const envSection = root.env;
-  if (!isRecord(envSection)) {
-    return {};
-  }
-
-  return buildEnvMap(envSection);
+  return isRecord(envSection) ? buildEnvMap(envSection) : {};
 };
 
 /**
@@ -246,13 +261,21 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  *
  * @param yamlContent - YAMLファイルの内容
  * @param fileName - ファイル名（フロー名として使用）
+ * @param processEnv - プロセス環境変数（process.env）
+ * @param dotEnv - .envファイルから読み込んだ環境変数
  * @returns 成功時: Flowオブジェクト、失敗時: ParseError
  *
  * @remarks
  * 新しいYAML形式のみをサポート：
  * - ルートはオブジェクト形式（`steps`キーは必須、`env`キーはオプション）
  * - 旧形式（配列形式や`---`区切り）はサポートしない
+ * - 環境変数はCommand型検証前に解決される
  * - コマンドは型検証され、不正な形式はエラーとなる
+ *
+ * 処理順序:
+ * 1. YAMLをパース
+ * 2. 環境変数を解決（文字列レベル）
+ * 3. Command型に検証
  *
  * @example
  * ```typescript
@@ -264,7 +287,12 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  *   - click: "ログイン"
  * `;
  *
- * const result = parseFlowYaml(yamlContent, 'login.enbu.yaml');
+ * const result = parseFlowYaml(
+ *   yamlContent,
+ *   'login.enbu.yaml',
+ *   process.env,
+ *   {}
+ * );
  * result.match(
  *   (flow) => console.log(flow.steps),
  *   (error) => console.error(error)
@@ -323,13 +351,13 @@ const extractLineNumbersFromSteps = (stepsNode: yaml.YAMLSeq, lineStarts: number
 
 /**
  * YAMLドキュメントを安全にパースする
+ *
+ * @remarks
+ * convertYamlParseErrorを再利用してエラーハンドリングを統一
  */
 const safeParseDocument = fromThrowable(
   (text: string) => yaml.parseDocument(text),
-  (error): ParseError => ({
-    type: 'yaml_syntax_error' as const,
-    message: error instanceof Error ? error.message : 'Unknown YAML parse error',
-  }),
+  convertYamlParseError,
 );
 
 /**
@@ -379,30 +407,32 @@ export const getStepLineNumbers = (yamlContent: string): Result<number[], ParseE
   });
 };
 
-export const parseFlowYaml = (yamlContent: string, fileName: string): Result<Flow, ParseError> => {
-  // 1. YAMLをパース（単一ドキュメント）
-  return (
-    safeYamlParse(yamlContent)
-      // 2. ルート構造を検証（オブジェクト形式、stepsキー必須）
-      .andThen(validateRootStructure)
-      .andThen((root) => {
-        // 3. envセクションを抽出（オプション）
-        const env = extractEnvFromRoot(root);
+/**
+ * ルートオブジェクトからRawFlowDataを構築する
+ */
+const buildRawFlowData = (root: Record<string, unknown>): RawFlowData => ({
+  env: extractEnvFromRoot(root),
+  steps: extractStepsFromRoot(root),
+});
 
-        // 4. steps配列を抽出
-        const steps = extractStepsFromRoot(root);
+/**
+ * 解決済みRawFlowDataからFlowを構築する
+ */
+const buildFlow = (resolvedRawFlow: RawFlowData, fileName: string): Result<Flow, ParseError> =>
+  validateCommands(resolvedRawFlow.steps).map((validatedCommands) => ({
+    name: fileName.replace(/\.enbu\.yaml$/, ''),
+    env: resolvedRawFlow.env,
+    steps: validatedCommands,
+  }));
 
-        // 5. steps配列の検証
-        return validateCommands(steps).map((validatedCommands) => {
-          // 6. フロー名をファイル名から生成（拡張子を除去）
-          const name = fileName.replace(/\.enbu\.yaml$/, '');
-
-          return {
-            name,
-            env,
-            steps: validatedCommands,
-          };
-        });
-      })
-  );
-};
+export const parseFlowYaml = (
+  yamlContent: string,
+  fileName: string,
+  processEnv: Readonly<Record<string, string | undefined>>,
+  dotEnv: Readonly<Record<string, string>>,
+): Result<Flow, ParseError> =>
+  safeYamlParse(yamlContent)
+    .andThen(validateRootStructure)
+    .map(buildRawFlowData)
+    .andThen((rawFlow) => resolveEnvVariables(rawFlow, processEnv, dotEnv))
+    .andThen((resolvedRawFlow) => buildFlow(resolvedRawFlow, fileName));

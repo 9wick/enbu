@@ -1,44 +1,31 @@
 /**
  * @packages/core
  *
- * フロー定義の型システム、パーサー、ローダー、実行エンジンを提供する。
+ * フロー実行エンジンの公開API。
+ * apps層（CLI、VSCode拡張）はorchestratorのみをインポートする。
+ *
+ * @remarks
+ * 内部モジュール（executor, loader, parser, types）は直接エクスポートしない。
+ * 必要な型・関数はorchestratorで re-export している。
  */
 
-// 型
-export type {
-  Flow,
-  FlowEnv,
-  Command,
-  OpenCommand,
-  ClickCommand,
-  TypeCommand,
-  FillCommand,
-  PressCommand,
-  HoverCommand,
-  SelectCommand,
-  ScrollCommand,
-  ScrollIntoViewCommand,
-  WaitCommand,
-  ScreenshotCommand,
-  SnapshotCommand,
-  EvalCommand,
-  AssertVisibleCommand,
-  AssertEnabledCommand,
-  AssertCheckedCommand,
-  ParseError,
-} from './types';
+export {
+  // メインAPI
+  runFlows,
+  // Parser関数
+  getStepLineNumbers,
+} from './orchestrator';
 
-// Executor型
 export type {
-  FlowResult,
-  StepResult,
-  FlowExecutionOptions,
-  ExecutionErrorType,
+  // Orchestrator型
+  FlowProgressCallback,
+  FlowRunSummary,
+  OrchestratorError,
+  RunFlowsInput,
+  RunFlowsOutput,
+  // Executor型（コールバック用）
+  StepCompletedProgress,
   StepProgress,
-  StepProgressCallback,
-} from './executor';
-
-// 関数
-export { parseFlowYaml, resolveEnvVariables, getStepLineNumbers } from './parser';
-export { loadFlows } from './loader';
-export { executeFlow } from './executor';
+  // Types型（表示用）
+  Command,
+} from './orchestrator';

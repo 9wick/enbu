@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Result, err, ok } from 'neverthrow';
+import { ResultAsync } from 'neverthrow';
 
 /**
  * テスト用HTTPサーバーの起動結果
@@ -13,7 +13,7 @@ type TestServerResult = {
   /** 実際にリスンしているポート番号 */
   port: number;
   /** サーバーを停止する関数 */
-  close: () => Promise<Result<void, ServerCloseError>>;
+  close: () => ResultAsync<void, ServerCloseError>;
 };
 
 /**
@@ -79,22 +79,18 @@ type FileReadError = {
  * await server.close();
  * ```
  */
-export const startTestServer = async (
-  port = 0,
-): Promise<Result<TestServerResult, ServerStartError>> => {
+export const startTestServer = (port = 0): ResultAsync<TestServerResult, ServerStartError> => {
   // フィクスチャディレクトリのパスを解決
   const fixturesDir = join(process.cwd(), 'tests', 'fixtures', 'html');
 
   // HTTPサーバーを作成
-  const server = createServer(async (req, res) => {
+  const server = createServer((req, res) => {
     // リクエストURLからファイル名を取得（先頭の'/'を除去）
     const filename = req.url?.slice(1) || 'index.html';
     const filePath = join(fixturesDir, filename);
 
-    // ファイルの読み取りを試行
-    const fileResult = await readFileContent(filePath);
-
-    fileResult.match(
+    // ファイルの読み取りを試行（非同期だが、matchで処理するのでawait不要）
+    readFileContent(filePath).match(
       (content) => {
         // ファイル読み取り成功: HTMLとして返す
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -109,28 +105,18 @@ export const startTestServer = async (
   });
 
   // サーバーの起動を試行
-  const listenResult = await listenServer(server, port);
-  if (listenResult.isErr()) {
-    return listenResult;
-  }
+  return listenServer(server, port).andThen((listeningServer) => {
+    // 実際に割り当てられたポート番号を取得
+    const address = listeningServer.address();
+    const actualPort = typeof address === 'object' && address !== null ? address.port : port;
+    const baseUrl = `http://localhost:${actualPort}`;
 
-  const listeningServer = listenResult.value;
-  const address = listeningServer.address();
-  const actualPort = typeof address === 'object' && address !== null ? address.port : port;
-  const baseUrl = `http://localhost:${actualPort}`;
-
-  // ヘルスチェック: サーバーがリクエストを受け付けられるまで待機
-  const healthCheckResult = await waitForServerReady(baseUrl);
-  if (healthCheckResult.isErr()) {
-    // ヘルスチェック失敗時はサーバーを閉じてエラーを返す
-    await closeServer(listeningServer);
-    return err(healthCheckResult.error);
-  }
-
-  return ok({
-    url: baseUrl,
-    port: actualPort,
-    close: async () => closeServer(listeningServer),
+    // ヘルスチェック: サーバーがリクエストを受け付けられるまで待機
+    return waitForServerReady(baseUrl).map(() => ({
+      url: baseUrl,
+      port: actualPort,
+      close: () => closeServer(listeningServer),
+    }));
   });
 };
 
@@ -138,20 +124,17 @@ export const startTestServer = async (
  * ファイルの内容を読み取る
  *
  * @param filePath - 読み取るファイルのパス
- * @returns ファイル内容のResult
+ * @returns ファイル内容のResultAsync
  */
-const readFileContent = async (filePath: string): Promise<Result<string, FileReadError>> => {
-  try {
-    const content = await readFile(filePath, 'utf-8');
-    return ok(content);
-  } catch (error) {
-    return err({
+const readFileContent = (filePath: string): ResultAsync<string, FileReadError> =>
+  ResultAsync.fromPromise(
+    readFile(filePath, 'utf-8'),
+    (): FileReadError => ({
       type: 'file_not_found',
       message: `ファイルが見つかりません: ${filePath}`,
       filePath,
-    });
-  }
-};
+    }),
+  );
 
 /**
  * サーバーがリクエストを受け付けられるようになるまで待機する
@@ -164,83 +147,82 @@ const readFileContent = async (filePath: string): Promise<Result<string, FileRea
  * @param retryIntervalMs - リトライ間隔（ミリ秒、デフォルト: 100）
  * @returns 成功時: void、失敗時: ServerStartError
  */
-const waitForServerReady = async (
+const waitForServerReady = (
   baseUrl: string,
   maxRetries = 10,
   retryIntervalMs = 100,
-): Promise<Result<void, ServerStartError>> => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch(baseUrl);
-      // 404でもOK（サーバーが応答している）
-      if (response.status === 200 || response.status === 404) {
-        return ok(undefined);
+): ResultAsync<void, ServerStartError> =>
+  ResultAsync.fromPromise(
+    (async () => {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const response = await fetch(baseUrl);
+          // 404でもOK（サーバーが応答している）
+          if (response.status === 200 || response.status === 404) {
+            return;
+          }
+        } catch {
+          // 接続エラーは無視してリトライ
+        }
+        await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
       }
-    } catch {
-      // 接続エラーは無視してリトライ
-    }
-    await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
-  }
-
-  return err({
-    type: 'server_start_failed',
-    message: `サーバーが起動しませんでした: ${baseUrl} (${maxRetries}回リトライ後)`,
-  });
-};
+      throw new Error(`サーバーが起動しませんでした: ${baseUrl} (${maxRetries}回リトライ後)`);
+    })(),
+    (error): ServerStartError => ({
+      type: 'server_start_failed',
+      message: (error as Error).message,
+    }),
+  );
 
 /**
  * サーバーを指定ポートでリスンする
  *
  * @param server - HTTPサーバーインスタンス
  * @param port - リスンするポート番号
- * @returns リスン中のサーバーのResult
+ * @returns リスン中のサーバーのResultAsync
  */
-const listenServer = async (
-  server: Server,
-  port: number,
-): Promise<Result<Server, ServerStartError>> => {
-  return new Promise((resolve) => {
-    const errorHandler = (error: Error) => {
-      resolve(
-        err({
+const listenServer = (server: Server, port: number): ResultAsync<Server, ServerStartError> =>
+  ResultAsync.fromSafePromise(
+    new Promise<Server>((resolve, reject) => {
+      const errorHandler = (error: Error) => {
+        reject({
           type: 'server_start_failed',
           message: `サーバーの起動に失敗しました: ${error.message}`,
           cause: error,
-        }),
-      );
-    };
+        });
+      };
 
-    // エラーハンドラーを一時的に設定
-    server.once('error', errorHandler);
+      // エラーハンドラーを一時的に設定
+      server.once('error', errorHandler);
 
-    server.listen(port, () => {
-      // リスン成功時はエラーハンドラーを削除
-      server.removeListener('error', errorHandler);
-      resolve(ok(server));
-    });
-  });
-};
+      server.listen(port, () => {
+        // リスン成功時はエラーハンドラーを削除
+        server.removeListener('error', errorHandler);
+        resolve(server);
+      });
+    }),
+  ).mapErr((e): ServerStartError => e as ServerStartError);
 
 /**
  * サーバーを停止する
  *
  * @param server - 停止するHTTPサーバーインスタンス
- * @returns 停止結果のResult
+ * @returns 停止結果のResultAsync
  */
-const closeServer = async (server: Server): Promise<Result<void, ServerCloseError>> => {
-  return new Promise((resolve) => {
-    server.close((error) => {
-      if (error) {
-        resolve(
-          err({
-            type: 'server_close_failed',
-            message: `サーバーの停止に失敗しました: ${error.message}`,
-            cause: error,
-          }),
-        );
-      } else {
-        resolve(ok(undefined));
-      }
-    });
-  });
-};
+const closeServer = (server: Server): ResultAsync<void, ServerCloseError> =>
+  ResultAsync.fromPromise(
+    new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    }),
+    (error): ServerCloseError => ({
+      type: 'server_close_failed',
+      message: `サーバーの停止に失敗しました: ${(error as Error).message}`,
+      cause: error,
+    }),
+  );

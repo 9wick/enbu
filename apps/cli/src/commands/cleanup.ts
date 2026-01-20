@@ -5,7 +5,7 @@
  * 他のプロジェクトのセッション（enbu-以外のプレフィックス）は残す。
  */
 
-import { type Result, ok, err, fromThrowable } from 'neverthrow';
+import { type Result, ResultAsync, ok, err, okAsync, fromThrowable } from 'neverthrow';
 import { spawn } from 'node:child_process';
 import type { CliError } from '../types';
 import { OutputFormatter } from '../output/formatter';
@@ -47,46 +47,48 @@ type SessionListResponse = {
  * @param args - コマンドの引数
  * @returns 標準出力の文字列
  */
-const execCommand = (command: string, args: string[]): Promise<Result<string, CliError>> => {
-  return new Promise((resolve) => {
-    const proc = spawn(command, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true,
-    });
+const execCommand = (command: string, args: string[]): ResultAsync<string, CliError> => {
+  return ResultAsync.fromSafePromise(
+    new Promise<Result<string, CliError>>((resolve) => {
+      const proc = spawn(command, args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true,
+      });
 
-    let stdout = '';
-    let stderr = '';
+      let stdout = '';
+      let stderr = '';
 
-    proc.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
 
-    proc.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
 
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve(ok(stdout));
-      } else {
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve(ok(stdout));
+        } else {
+          resolve(
+            err({
+              type: 'execution_error' as const,
+              message: `Command failed with code ${code}: ${stderr}`,
+            }),
+          );
+        }
+      });
+
+      proc.on('error', (error) => {
         resolve(
           err({
             type: 'execution_error' as const,
-            message: `Command failed with code ${code}: ${stderr}`,
+            message: `Failed to spawn command: ${error.message}`,
           }),
         );
-      }
-    });
-
-    proc.on('error', (error) => {
-      resolve(
-        err({
-          type: 'execution_error' as const,
-          message: `Failed to spawn command: ${error.message}`,
-        }),
-      );
-    });
-  });
+      });
+    }),
+  ).andThen((result) => result);
 };
 
 /**
@@ -124,10 +126,10 @@ const extractSessions = (response: SessionListResponse): Result<string[], CliErr
  *
  * @returns 成功時: 全セッション名の配列、失敗時: CliError
  */
-const listAllSessions = async (): Promise<Result<string[], CliError>> => {
-  const result = await execCommand('npx', ['agent-browser', 'session', 'list', '--json']);
-
-  return result.andThen(parseSessionListJson).andThen(extractSessions);
+const listAllSessions = (): ResultAsync<string[], CliError> => {
+  return execCommand('npx', ['agent-browser', 'session', 'list', '--json'])
+    .andThen((json) => parseSessionListJson(json))
+    .andThen(extractSessions);
 };
 
 /**
@@ -213,42 +215,46 @@ const cleanupAllSessions = async (
  * @param args - cleanupコマンドの引数
  * @returns 成功時: void、失敗時: CliError
  */
-export const runCleanupCommand = async (
-  args: CleanupCommandArgs,
-): Promise<Result<void, CliError>> => {
+export const runCleanupCommand = (args: CleanupCommandArgs): ResultAsync<void, CliError> => {
   const formatter = new OutputFormatter(args.verbose);
 
   formatter.info('Cleaning up enbu sessions...');
   formatter.newline();
 
   // 1. 全セッションを取得
-  const allSessionsResult = await listAllSessions();
-  if (allSessionsResult.isErr()) {
-    formatter.error(`Failed to list sessions: ${allSessionsResult.error.message}`);
-    return err(allSessionsResult.error);
-  }
+  return listAllSessions()
+    .mapErr((error) => {
+      formatter.error(`Failed to list sessions: ${error.message}`);
+      return error;
+    })
+    .andThen((allSessions) => {
+      // 2. enbu-セッションのみをフィルタリング
+      const enbuSessions = filterEnbuSessions(allSessions);
 
-  // 2. enbu-セッションのみをフィルタリング
-  const enbuSessions = filterEnbuSessions(allSessionsResult.value);
+      // クリーンアップ対象のセッションがない場合
+      if (enbuSessions.length === 0) {
+        formatter.info('No enbu sessions found');
+        return okAsync(undefined);
+      }
 
-  // クリーンアップ対象のセッションがない場合
-  if (enbuSessions.length === 0) {
-    formatter.info('No enbu sessions found');
-    return ok(undefined);
-  }
+      formatter.debug(`Found ${enbuSessions.length} enbu session(s)`);
 
-  formatter.debug(`Found ${enbuSessions.length} enbu session(s)`);
-
-  // 3. 各セッションをクリーンアップ
-  const result = await cleanupAllSessions(enbuSessions, formatter);
-
-  // 4. サマリーを表示
-  formatter.newline();
-  if (result.failed === 0) {
-    formatter.info(`Cleaned up ${result.succeeded} session(s)`);
-  } else {
-    formatter.info(`Cleaned up ${result.succeeded} session(s) (${result.failed} failed)`);
-  }
-
-  return ok(undefined);
+      // 3. 各セッションをクリーンアップ
+      return ResultAsync.fromPromise(
+        cleanupAllSessions(enbuSessions, formatter),
+        (): CliError => ({
+          type: 'execution_error',
+          message: 'Unexpected error during cleanup',
+        }),
+      ).map((result) => {
+        // 4. サマリーを表示
+        formatter.newline();
+        if (result.failed === 0) {
+          formatter.info(`Cleaned up ${result.succeeded} session(s)`);
+        } else {
+          formatter.info(`Cleaned up ${result.succeeded} session(s) (${result.failed} failed)`);
+        }
+        return undefined;
+      });
+    });
 };

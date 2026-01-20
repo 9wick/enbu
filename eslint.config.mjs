@@ -6,42 +6,31 @@ import eslintComments from '@eslint-community/eslint-plugin-eslint-comments/conf
 import boundaries from 'eslint-plugin-boundaries';
 
 /**
- * レイヤー定義（DDD風）
- * 依存方向: apps -> presentation -> application -> infrastructure -> core
- * config は全レイヤーから参照可能
+ * レイヤー定義
+ *
+ * 依存方向:
+ *   apps → core/orchestrator のみ
+ *   core/orchestrator → core/executor, core/loader, core/parser, core/types
+ *   core/executor → core/parser, core/types, agent-browser-adapter
+ *   core/loader → core/parser, core/types
+ *   core/parser → core/types
+ *   core/types → agent-browser-adapter (type only)
+ *   agent-browser-adapter → (外部のみ)
  */
 const LAYER_TYPES = {
+  // apps
   APP: 'app',
-  PRESENTATION: 'presentation',
-  APPLICATION: 'application',
-  INFRASTRUCTURE: 'infrastructure',
-  CORE: 'core',
+  // @packages/core 内部のレイヤー
+  CORE_ORCHESTRATOR: 'core-orchestrator',
+  CORE_EXECUTOR: 'core-executor',
+  CORE_LOADER: 'core-loader',
+  CORE_PARSER: 'core-parser',
+  CORE_TYPES: 'core-types',
+  // @packages/agent-browser-adapter
+  ADAPTER: 'adapter',
+  // その他
   CONFIG: 'config',
   TOOL: 'tool',
-};
-
-/**
- * 各レイヤーが依存可能なレイヤーの定義
- */
-const ALLOWED_DEPENDENCIES = {
-  [LAYER_TYPES.APP]: [
-    LAYER_TYPES.PRESENTATION,
-    LAYER_TYPES.APPLICATION,
-    LAYER_TYPES.INFRASTRUCTURE,
-    LAYER_TYPES.CORE,
-    LAYER_TYPES.CONFIG,
-  ],
-  [LAYER_TYPES.PRESENTATION]: [
-    LAYER_TYPES.APPLICATION,
-    LAYER_TYPES.INFRASTRUCTURE,
-    LAYER_TYPES.CORE,
-    LAYER_TYPES.CONFIG,
-  ],
-  [LAYER_TYPES.APPLICATION]: [LAYER_TYPES.INFRASTRUCTURE, LAYER_TYPES.CORE, LAYER_TYPES.CONFIG],
-  [LAYER_TYPES.INFRASTRUCTURE]: [LAYER_TYPES.CORE, LAYER_TYPES.CONFIG],
-  [LAYER_TYPES.CORE]: [LAYER_TYPES.CONFIG],
-  [LAYER_TYPES.CONFIG]: [],
-  [LAYER_TYPES.TOOL]: [],
 };
 
 export default tseslint.config(
@@ -52,7 +41,7 @@ export default tseslint.config(
   ...oxlint.configs['flat/all'], // oxlintで代替えできるruleをoffにする
   /**
    * eslint-plugin-boundaries の設定
-   * DDD風のレイヤー構造を強制する
+   * パッケージ間・モジュール間の依存方向を強制する
    */
   {
     files: ['**/*.{ts,tsx}'],
@@ -67,22 +56,36 @@ export default tseslint.config(
           pattern: 'apps/*',
           capture: ['app'],
         },
-        // packages - レイヤー別
+        // @packages/core 内部のレイヤー（より具体的なパターンを先に）
         {
-          type: LAYER_TYPES.CORE,
-          pattern: 'packages/core',
+          type: LAYER_TYPES.CORE_ORCHESTRATOR,
+          pattern: 'packages/core/src/orchestrator',
+          mode: 'folder',
         },
         {
-          type: LAYER_TYPES.INFRASTRUCTURE,
-          pattern: 'packages/infrastructure',
+          type: LAYER_TYPES.CORE_EXECUTOR,
+          pattern: 'packages/core/src/executor',
+          mode: 'folder',
         },
         {
-          type: LAYER_TYPES.APPLICATION,
-          pattern: 'packages/application',
+          type: LAYER_TYPES.CORE_LOADER,
+          pattern: 'packages/core/src/loader',
+          mode: 'folder',
         },
         {
-          type: LAYER_TYPES.PRESENTATION,
-          pattern: 'packages/presentation',
+          type: LAYER_TYPES.CORE_PARSER,
+          pattern: 'packages/core/src/parser',
+          mode: 'folder',
+        },
+        {
+          type: LAYER_TYPES.CORE_TYPES,
+          pattern: 'packages/core/src/types',
+          mode: 'folder',
+        },
+        // @packages/agent-browser-adapter
+        {
+          type: LAYER_TYPES.ADAPTER,
+          pattern: 'packages/agent-browser-adapter',
         },
         // 共通パッケージ
         {
@@ -96,6 +99,13 @@ export default tseslint.config(
       ],
       'boundaries/dependency-nodes': ['import'],
       'boundaries/include': ['apps/**/*', 'packages/**/*'],
+      // TypeScript のパスエイリアス解決
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: ['./tsconfig.json', './apps/*/tsconfig.json', './packages/*/tsconfig.json'],
+        },
+      },
     },
     rules: {
       'boundaries/element-types': [
@@ -103,35 +113,51 @@ export default tseslint.config(
         {
           default: 'disallow',
           rules: [
-            // apps は全 packages を参照可能
+            // apps → core/orchestrator のみ（@packages/core は orchestrator 経由でのみアクセス）
             {
               from: [LAYER_TYPES.APP],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.APP],
+              allow: [LAYER_TYPES.CORE_ORCHESTRATOR, LAYER_TYPES.CONFIG],
             },
-            // presentation -> application, infrastructure, domain, config
+            // core/orchestrator → executor, loader, parser, types
             {
-              from: [LAYER_TYPES.PRESENTATION],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.PRESENTATION],
+              from: [LAYER_TYPES.CORE_ORCHESTRATOR],
+              allow: [
+                LAYER_TYPES.CORE_EXECUTOR,
+                LAYER_TYPES.CORE_LOADER,
+                LAYER_TYPES.CORE_PARSER,
+                LAYER_TYPES.CORE_TYPES,
+                LAYER_TYPES.ADAPTER,
+              ],
             },
-            // application -> infrastructure, domain, config
+            // core/executor → parser, types, adapter
             {
-              from: [LAYER_TYPES.APPLICATION],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.APPLICATION],
+              from: [LAYER_TYPES.CORE_EXECUTOR],
+              allow: [LAYER_TYPES.CORE_PARSER, LAYER_TYPES.CORE_TYPES, LAYER_TYPES.ADAPTER],
             },
-            // infrastructure -> domain, config
+            // core/loader → parser, types
             {
-              from: [LAYER_TYPES.INFRASTRUCTURE],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.INFRASTRUCTURE],
+              from: [LAYER_TYPES.CORE_LOADER],
+              allow: [LAYER_TYPES.CORE_PARSER, LAYER_TYPES.CORE_TYPES],
             },
-            // core -> config のみ
+            // core/parser → types
             {
-              from: [LAYER_TYPES.CORE],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.CORE],
+              from: [LAYER_TYPES.CORE_PARSER],
+              allow: [LAYER_TYPES.CORE_TYPES],
+            },
+            // core/types → adapter (type only)
+            {
+              from: [LAYER_TYPES.CORE_TYPES],
+              allow: [LAYER_TYPES.ADAPTER],
+            },
+            // adapter → 外部のみ（何も許可しない）
+            {
+              from: [LAYER_TYPES.ADAPTER],
+              allow: [],
             },
             // config は依存不可
             {
               from: [LAYER_TYPES.CONFIG],
-              allow: ALLOWED_DEPENDENCIES[LAYER_TYPES.CONFIG],
+              allow: [],
             },
           ],
         },
@@ -196,6 +222,16 @@ export default tseslint.config(
             'throw は禁止です。neverthrow の Result 型（ok/err）を使用してください。外部ライブラリの例外は fromThrowable で変換してください。',
         },
         /**
+         * Promise<Result<>> を禁止。ResultAsync を使用すること。
+         * 非同期の Result 処理は ResultAsync で統一し、型の一貫性を保つ。
+         */
+        {
+          selector:
+            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
+          message:
+            'Promise<Result<>> は禁止です。ResultAsync を使用してください。fromPromise でラップするか、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
+        },
+        /**
          * neverthrow のチェーン内でのネストを禁止。
          * andThen のコールバック内で andThen を呼ぶとネストが深くなる。
          * 代わりにコンテキストオブジェクトを引き回すか、ヘルパー関数に切り出してフラットにする。
@@ -215,6 +251,29 @@ export default tseslint.config(
           selector: 'TSTypeAssertion',
           message:
             '<> による型アサーションは禁止です。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
+        },
+        /**
+         * in 演算子を禁止（型安全性を破壊するため）。
+         * 'prop' in obj は任意のプロパティ名でチェック可能で、
+         * narrowing 後は unknown 型になり型安全性が失われる。
+         * 代わりに ts-pattern の match を使用すること。
+         */
+        {
+          selector: 'BinaryExpression[operator="in"]',
+          message:
+            'in 演算子は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
+            '例: match(value).with({ type: "foo" }, ...).exhaustive()',
+        },
+        /**
+         * Object.hasOwn を禁止（型安全性を破壊するため）。
+         * in 演算子と同様に、任意のプロパティ名でチェック可能で型安全性が失われる。
+         * 代わりに ts-pattern の match を使用すること。
+         */
+        {
+          selector: 'CallExpression[callee.object.name="Object"][callee.property.name="hasOwn"]',
+          message:
+            'Object.hasOwn は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
+            '例: match(value).with({ type: "foo" }, ...).exhaustive()',
         },
       ],
     },
@@ -288,8 +347,19 @@ export default tseslint.config(
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
       '@typescript-eslint/unbound-method': 'off',
-      // テストファイルでは throw と型アサーションの制限を解除する。
-      'no-restricted-syntax': 'off',
+      /**
+       * テストファイルでは throw と型アサーションの制限を解除するが、
+       * Promise<Result<>> の禁止は維持する（ResultAsync を使用すること）。
+       */
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
+          message:
+            'Promise<Result<>> は禁止です。ResultAsync を使用し、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
+        },
+      ],
       // テストファイルではサブパスインポート制限を解除
       'no-restricted-imports': 'off',
     },
@@ -312,13 +382,67 @@ export default tseslint.config(
     },
   },
   /**
-   * example/ ディレクトリでは no-console を許可する。
-   * サンプルコードではデバッグ出力や動作確認のための console.log が有用なため。
+   * example/ ディレクトリではルールを緩和する。
+   * サンプルコードなので厳密なルールは不要。
    */
   {
     files: ['example/**/*.{ts,tsx,js,mjs}'],
     rules: {
       'no-console': 'off',
+      'no-restricted-syntax': 'off',
+      complexity: 'off',
+    },
+  },
+  /**
+   * orchestrator層では複雑度ルールを緩和する。
+   * アプリケーション層への境界として、多くのoptional引数を扱うため。
+   */
+  {
+    files: ['packages/core/src/orchestrator/**/*.ts'],
+    rules: {
+      complexity: ['error', { max: 12 }],
+    },
+  },
+  /**
+   * packages/core（ドメイン層）でのoptional禁止
+   * naoya式関数型DDDに基づき、optional/null/undefined を検出
+   *
+   * packages/agent-browser-adapter は外界との境界なので除外
+   */
+  {
+    files: ['packages/core/**/*.ts'],
+    ignores: [
+      'packages/core/**/*.test.ts',
+      'packages/core/**/*.spec.ts',
+      'packages/core/src/parser/**/*.ts', // パーサーは外界との境界なので除外
+      'packages/core/src/loader/**/*.ts', // ローダーも外界との境界なので除外
+      'packages/core/src/orchestrator/**/*.ts', // オーケストレーターはアプリケーション層への公開APIなので除外
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'TSPropertySignature[optional=true]',
+          message:
+            'ドメイン層でoptional property（?:）は禁止です。' +
+            'NoInput 型を使って明示的に表現してください。' +
+            '例: email: string | NoInput',
+        },
+        {
+          selector: 'TSUnionType > TSUndefinedKeyword',
+          message:
+            'ドメイン層で | undefined は禁止です。' +
+            'NoInput 型を使って明示的に表現してください。' +
+            '例: email: string | NoInput',
+        },
+        {
+          selector: 'TSUnionType > TSNullKeyword',
+          message:
+            'ドメイン層で | null は禁止です。' +
+            'Nothing 型を使って明示的に表現してください。' +
+            '例: result: Data | Nothing',
+        },
+      ],
     },
   },
   /**
@@ -380,6 +504,42 @@ export default tseslint.config(
           selector: 'TSTypeAssertion',
           message:
             '<> による型アサーションは禁止です。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
+        },
+      ],
+    },
+  },
+  /**
+   * テストファイルの配置ルール
+   * - __tests__ ディレクトリ内のファイルは禁止（Python方式）
+   * - .spec.ts は禁止、.test.ts を使用すること（統一性のため）
+   *
+   * __tests__ ディレクトリ内のファイルでエラーを発生させることで、
+   * 実質的にディレクトリの使用を禁止する
+   */
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message:
+            '__tests__ ディレクトリは禁止です。テストファイルは xxx.test.ts としてソースファイルと同じディレクトリに配置してください。',
+        },
+      ],
+    },
+  },
+  /**
+   * .spec.ts ファイルは禁止、.test.ts を使用すること
+   */
+  {
+    files: ['**/*.spec.ts', '**/*.spec.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message: '.spec.ts は禁止です。.test.ts を使用してください。',
         },
       ],
     },

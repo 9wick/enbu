@@ -6,71 +6,129 @@
  * エラー時のスクリーンショット撮影を含む実行フローを管理する。
  */
 
-import type { Result } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { P, match } from 'ts-pattern';
 import type { Command } from '../types';
-import type { StepResult, ExecutionContext } from './result';
-import { autoWait, type AutoWaitResult } from './auto-wait';
+import { autoWait, type SelectorInput } from './auto-wait';
 import { getCommandHandler } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
+import type { ExecutionContext, ExecutorError, ScreenshotResult, StepResult } from './result';
+
+/**
+ * AgentBrowserErrorからメッセージを取得する
+ *
+ * timeout型にはmessageフィールドがないため、型に応じてメッセージを生成する。
+ *
+ * @param error - AgentBrowserError
+ * @returns エラーメッセージ
+ */
+const getAgentBrowserErrorMessage = (error: AgentBrowserError): string => {
+  if (error.type === 'timeout') {
+    return `Timeout after ${error.timeoutMs}ms: ${error.command}`;
+  }
+  return error.message;
+};
+
+/**
+ * エラー時のスクリーンショットを撮影し、ScreenshotResult型で返す
+ *
+ * @param context - 実行コンテキスト
+ * @param captureScreenshot - スクリーンショット撮影が有効かどうか
+ * @returns スクリーンショット撮影結果
+ */
+const takeErrorScreenshot = async (
+  context: ExecutionContext,
+  captureScreenshot: boolean,
+): Promise<ScreenshotResult> => {
+  if (!captureScreenshot) {
+    return { status: 'disabled' };
+  }
+
+  return captureErrorScreenshot(context).match(
+    (path): ScreenshotResult => ({ status: 'captured', path }),
+    (error): ScreenshotResult => ({ status: 'failed', reason: getAgentBrowserErrorMessage(error) }),
+  );
+};
 
 /**
  * メッセージフィールドを持つエラーかどうかを判定する
  *
- * @param error - AgentBrowserError
+ * @param error - ExecutorError
  * @returns メッセージフィールドを持つ場合はtrue
  */
 const hasMessageField = (
-  error: AgentBrowserError,
-): error is Extract<AgentBrowserError, { message: string }> => {
+  error: ExecutorError,
+): error is Extract<ExecutorError, { message: string }> => {
   return (
     error.type === 'not_installed' ||
     error.type === 'command_failed' ||
     error.type === 'parse_error' ||
     error.type === 'assertion_failed' ||
-    error.type === 'validation_error'
+    error.type === 'command_execution_failed' ||
+    error.type === 'agent_browser_output_parse_error' ||
+    error.type === 'brand_validation_error'
   );
+};
+
+/**
+ * アサーションエラーのフォールバックメッセージを生成する
+ *
+ * @param error - アサーションエラー
+ * @returns フォールバックメッセージ
+ */
+const getAssertionFallback = (
+  error: Extract<ExecutorError, { type: 'assertion_failed' }>,
+): string => {
+  return error.message || `Assertion failed for command: ${error.command}`;
+};
+
+/**
+ * コマンド失敗エラーのフォールバックメッセージを生成する
+ *
+ * @param error - コマンド失敗エラー
+ * @returns フォールバックメッセージ
+ */
+const getCommandErrorFallback = (
+  error: Extract<ExecutorError, { type: 'command_failed' }>,
+): string => {
+  return error.rawError || error.stderr || `Command failed: ${error.command}`;
 };
 
 /**
  * コマンド実行エラーのフォールバックメッセージを生成する
  *
+ * ts-patternで型安全にエラーをルーティングし、メッセージを生成する。
+ *
  * @param error - コマンド実行エラー
  * @returns フォールバックメッセージ
  */
-const getCommandFailedFallback = (
-  error: Extract<
-    AgentBrowserError,
-    { errorMessage: string | null; stderr: string; command: string }
-  >,
-): string => {
-  return error.errorMessage || error.stderr || `Command failed: ${error.command}`;
-};
+const getCommandFailedFallback = (error: ExecutorError): string =>
+  match(error)
+    .with({ type: 'assertion_failed' }, getAssertionFallback)
+    .with({ type: 'command_failed' }, getCommandErrorFallback)
+    .with({ message: P.string }, (e) => e.message || 'Unknown error')
+    .otherwise(() => 'Unknown error');
 
 /**
- * AgentBrowserErrorからメッセージを取得する
+ * ExecutorErrorからメッセージを取得する
  *
  * エラーの種類によってメッセージの形式が異なるため、
  * 統一的なメッセージを生成する。
- * messageフィールドが空文字列の場合は、errorMessageまたはstderrから
+ * messageフィールドが空文字列の場合は、rawErrorまたはstderrから
  * フォールバックメッセージを生成する。
  *
- * @param error - AgentBrowserError
+ * @param error - ExecutorError
  * @returns エラーメッセージ
  */
-const getErrorMessage = (error: AgentBrowserError): string => {
+const getErrorMessage = (error: ExecutorError): string => {
   if (hasMessageField(error)) {
     // messageが空文字列でない場合はそのまま返す
     if (error.message) {
       return error.message;
     }
 
-    // messageが空文字列の場合、errorMessageまたはstderrからフォールバック
-    if (
-      error.type === 'command_failed' ||
-      error.type === 'assertion_failed' ||
-      error.type === 'validation_error'
-    ) {
+    // messageが空文字列の場合、rawErrorまたはstderrからフォールバック
+    if (error.type === 'command_failed' || error.type === 'assertion_failed') {
       return getCommandFailedFallback(error);
     }
 
@@ -85,7 +143,7 @@ const getErrorMessage = (error: AgentBrowserError): string => {
 
 /**
  * 自動待機の結果型
- * 成功時はresolvedRefを含むコンテキスト、失敗時はエラー情報を持つStepResult
+ * 成功時はresolvedRefStateが更新されたコンテキスト、失敗時はエラー情報を持つStepResult
  */
 type AutoWaitProcessResult =
   | { success: true; contextWithRef: ExecutionContext }
@@ -116,40 +174,44 @@ const processAutoWait = async (
     return { success: true, contextWithRef: context };
   }
 
-  const selector = getSelectorFromCommand(command);
-  const waitResult: Result<AutoWaitResult | undefined, AgentBrowserError> = await autoWait(
-    selector,
-    context,
-  );
+  const selectorInput = getSelectorFromCommand(command);
+  const waitResult = await autoWait(selectorInput, context);
 
-  // 自動待機失敗
-  if (waitResult.isErr()) {
-    const duration = Date.now() - startTime;
-    const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
+  return waitResult.match<Promise<AutoWaitProcessResult>>(
+    async (autoWaitResult) => {
+      // autoWaitの結果に応じてコンテキストを更新
+      if (autoWaitResult.type === 'resolved') {
+        // 要素が見つかった場合: refをコンテキストに設定
+        const contextWithRef: ExecutionContext = {
+          ...context,
+          resolvedRefState: { status: 'resolved' as const, ref: autoWaitResult.resolvedRef },
+        };
+        return { success: true, contextWithRef };
+      }
+      // スキップされた場合: コンテキストをそのまま返す
+      return { success: true, contextWithRef: context };
+    },
+    async (error) => {
+      // 自動待機失敗
+      const duration = Date.now() - startTime;
+      const screenshot = await takeErrorScreenshot(context, captureScreenshot);
 
-    return {
-      success: false,
-      failedResult: {
-        index,
-        command,
-        status: 'failed',
-        duration,
-        error: {
-          message: `Auto-wait timeout: ${getErrorMessage(waitResult.error)}`,
-          type: waitResult.error.type,
-          screenshot,
+      return {
+        success: false,
+        failedResult: {
+          index,
+          command,
+          status: 'failed' as const,
+          duration,
+          error: {
+            message: `Auto-wait timeout: ${getErrorMessage(error)}`,
+            type: error.type,
+            screenshot,
+          },
         },
-      },
-    };
-  }
-
-  // autoWaitで解決されたrefをcontextに設定
-  const autoWaitResult = waitResult.value;
-  const contextWithRef = autoWaitResult
-    ? { ...context, resolvedRef: autoWaitResult.resolvedRef }
-    : context;
-
-  return { success: true, contextWithRef };
+      };
+    },
+  );
 };
 
 /**
@@ -203,7 +265,7 @@ export const executeStep = async (
         stdout: commandResult.stdout,
       }),
       async (error) => {
-        const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
+        const screenshot = await takeErrorScreenshot(context, captureScreenshot);
 
         return {
           index,
@@ -220,7 +282,7 @@ export const executeStep = async (
     );
   } catch (error) {
     const duration = Date.now() - startTime;
-    const screenshot = captureScreenshot ? await captureErrorScreenshot(context) : undefined;
+    const screenshot = await takeErrorScreenshot(context, captureScreenshot);
 
     return {
       index,
@@ -229,7 +291,7 @@ export const executeStep = async (
       duration,
       error: {
         message: error instanceof Error ? error.message : 'Unknown error',
-        type: 'validation_error',
+        type: 'parse_error',
         screenshot,
       },
     };
@@ -270,21 +332,21 @@ const shouldAutoWait = (command: Command): boolean => {
 };
 
 /**
- * コマンドからセレクタを取得する
+ * コマンドからセレクタ入力を取得する
  *
  * コマンドの種類によって、セレクタが格納されているフィールド名が異なる:
  * - 多くのコマンドは 'selector' フィールドを持つ
  * - 一部のコマンドは 'target' フィールドを持つ
  *
+ * ts-patternで型安全にセレクタを抽出する。
+ *
  * @param command - セレクタを取得するコマンド
- * @returns セレクタ文字列、セレクタを持たないコマンドの場合はundefined
+ * @returns SelectorInput（hasSelector: セレクタあり、noSelector: セレクタなし）
  */
-const getSelectorFromCommand = (command: Command): string | undefined => {
-  if ('selector' in command) {
-    return command.selector;
-  }
-  if ('target' in command && typeof command.target === 'string') {
-    return command.target;
-  }
-  return undefined;
-};
+const getSelectorFromCommand = (command: Command): SelectorInput =>
+  match(command)
+    .with({ selector: P.string }, (cmd) => ({
+      type: 'hasSelector' as const,
+      selector: cmd.selector,
+    }))
+    .otherwise(() => ({ type: 'noSelector' as const }));

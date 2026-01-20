@@ -7,7 +7,12 @@
 
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { executeCommand } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
+import {
+  asFilePath,
+  browserScreenshot,
+  type AgentBrowserError,
+} from '@packages/agent-browser-adapter';
 import type { ExecutionContext } from './result';
 
 /**
@@ -17,27 +22,19 @@ import type { ExecutionContext } from './result';
  * スクリーンショットのパスは `{os.tmpdir()}/flow-error-{timestamp}.png` の形式で生成される。
  * Windows、macOS、Linuxなどの各OSで適切な一時ディレクトリが使用される。
  *
- * 撮影が失敗した場合は `undefined` を返す。これはエラーをネストさせないための設計。
- * エラー撮影の失敗は、元のエラーを隠蔽すべきではないため、ログに記録するのみとする。
+ * 撮影が失敗した場合はエラーを返す。
  *
  * @param context - 実行コンテキスト（セッション名や実行オプションを含む）
- * @returns スクリーンショットのパス、撮影失敗時は undefined
+ * @returns 成功時: スクリーンショットのパス、失敗時: AgentBrowserError
  */
-export const captureErrorScreenshot = async (
+export const captureErrorScreenshot = (
   context: ExecutionContext,
-): Promise<string | undefined> => {
+): ResultAsync<string, AgentBrowserError> => {
   const timestamp = Date.now();
   const screenshotPath = path.join(os.tmpdir(), `flow-error-${timestamp}.png`);
 
-  const result = await executeCommand(
-    'screenshot',
-    [screenshotPath, '--json'],
-    context.executeOptions,
-  );
-
-  // 撮影失敗時は undefined を返す
-  return result.match(
-    () => screenshotPath,
-    () => undefined,
+  // ファイルパス検証 → ブラウザ操作実行
+  return asFilePath(screenshotPath).asyncAndThen((validPath) =>
+    browserScreenshot(validPath, context.executeOptions).map(() => screenshotPath),
   );
 };

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { type Result, err, ok } from 'neverthrow';
+import { type Result, ResultAsync, err, ok } from 'neverthrow';
 import type { AgentBrowserError } from './types';
 
 /**
@@ -11,34 +11,39 @@ import type { AgentBrowserError } from './types';
  *
  * @returns agent-browserがインストールされている場合は成功メッセージ、インストールされていない場合はエラー
  */
-export const checkAgentBrowser = (): Promise<Result<string, AgentBrowserError>> => {
-  return new Promise((resolve) => {
-    const proc = spawn('npx', ['agent-browser', '--help'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      shell: true, // Windows対応のため
-    });
+export const checkAgentBrowser = (): ResultAsync<string, AgentBrowserError> =>
+  ResultAsync.fromPromise<Result<string, AgentBrowserError>, AgentBrowserError>(
+    new Promise((resolve) => {
+      const proc = spawn('npx', ['agent-browser', '--help'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true, // Windows対応のため
+      });
 
-    proc.on('error', (error) => {
-      // ENOENT: コマンドが見つからない
-      resolve(
-        err({
-          type: 'not_installed',
-          message: `agent-browser is not installed: ${error.message}`,
-        }),
-      );
-    });
-
-    proc.on('close', (exitCode) => {
-      if (exitCode === 0) {
-        resolve(ok('agent-browser is installed'));
-      } else {
+      proc.on('error', (error) => {
+        // ENOENT: コマンドが見つからない
         resolve(
           err({
             type: 'not_installed',
-            message: `agent-browser check failed with exit code ${exitCode}`,
+            message: `agent-browser is not installed: ${error.message}`,
           }),
         );
-      }
-    });
-  });
-};
+      });
+
+      proc.on('close', (exitCode) => {
+        if (exitCode === 0) {
+          resolve(ok('agent-browser is installed'));
+        } else {
+          resolve(
+            err({
+              type: 'not_installed',
+              message: `agent-browser check failed with exit code ${exitCode}`,
+            }),
+          );
+        }
+      });
+    }),
+    (): AgentBrowserError => ({
+      type: 'not_installed',
+      message: 'Unexpected error during agent-browser check',
+    }),
+  ).andThen((result) => result);

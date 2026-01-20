@@ -1,8 +1,13 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, ScrollDirection, Selector } from '@packages/agent-browser-adapter';
+import {
+  asSelector,
+  browserFocus,
+  browserScroll,
+  browserScrollIntoView,
+} from '@packages/agent-browser-adapter';
+import { errAsync, okAsync, type ResultAsync } from 'neverthrow';
 import type { ScrollCommand, ScrollIntoViewCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 import { resolveTextSelector } from './selector-utils';
 
 /**
@@ -15,24 +20,17 @@ import { resolveTextSelector } from './selector-utils';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScroll = async (
+export const handleScroll = (
   command: ScrollCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
+  const direction: ScrollDirection = command.direction;
 
-  return (
-    await executeCommand(
-      'scroll',
-      [command.direction, command.amount.toString(), '--json'],
-      context.executeOptions,
-    )
-  )
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  return browserScroll(direction, command.amount, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };
 
 /**
@@ -62,22 +60,49 @@ const isRefSelector = (selector: string): boolean => {
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScrollIntoView = async (
+export const handleScrollIntoView = (
   command: ScrollIntoViewCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  // autoWaitで解決されたrefがあればそれを使用、なければテキストセレクタの変換を適用
-  const selector = context.resolvedRef ?? resolveTextSelector(command.selector);
 
-  // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
-  // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
-  const commandName = isRefSelector(selector) ? 'focus' : 'scrollintoview';
+  // セレクタを解決する関数
+  const resolveSelectorAsync = (): ResultAsync<Selector, AgentBrowserError> => {
+    // autoWaitで解決されたrefがあればそれを使用（string型なので検証が必要）
+    if (context.resolvedRefState.status === 'resolved') {
+      return asSelector(context.resolvedRefState.ref).match(
+        (selector) => okAsync(selector),
+        (error) => errAsync(error),
+      );
+    }
+    // なければ元のセレクタを使用（既にBranded Type）、ただしテキストセレクタの変換は適用
+    const resolvedText = resolveTextSelector(command.selector);
+    // resolveTextSelectorはstring型を返すので検証が必要
+    return asSelector(resolvedText).match(
+      (selector) => okAsync(selector),
+      (error) => errAsync(error),
+    );
+  };
 
-  return (await executeCommand(commandName, [selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
+  return resolveSelectorAsync().andThen((selector) => {
+    // resolvedRefStateまたは変換後のセレクタ文字列をチェック
+    const selectorString =
+      context.resolvedRefState.status === 'resolved'
+        ? context.resolvedRefState.ref
+        : resolveTextSelector(command.selector);
+
+    // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
+    // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
+    if (isRefSelector(selectorString)) {
+      return browserFocus(selector, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      }));
+    }
+
+    return browserScrollIntoView(selector, context.executeOptions).map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
     }));
+  });
 };

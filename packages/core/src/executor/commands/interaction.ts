@@ -1,15 +1,35 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
-import type { ClickCommand, TypeCommand, FillCommand, PressCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
+import {
+  asSelector,
+  browserClick,
+  browserFill,
+  browserPress,
+  browserType,
+} from '@packages/agent-browser-adapter';
+import { errAsync, okAsync, type ResultAsync } from 'neverthrow';
+import type { ClickCommand, FillCommand, PressCommand, TypeCommand } from '../../types';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
- * セレクタを解決する
+ * セレクタを解決してResultAsyncに変換する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ *
+ * resolvedRefState.refはstring型なので、asSelectorで検証が必要
+ *
+ * @returns セレクタのResultAsync型。空文字列の場合はエラー。
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
-  return context.resolvedRef ?? originalSelector;
+const resolveSelectorAsync = (
+  originalSelector: Selector,
+  context: ExecutionContext,
+): ResultAsync<Selector, AgentBrowserError> => {
+  // resolvedRefがあればそれを検証して使用、なければ元のSelectorをそのまま使用
+  if (context.resolvedRefState.status === 'resolved') {
+    return asSelector(context.resolvedRefState.ref).match(
+      (selector) => okAsync(selector),
+      (error) => errAsync(error),
+    );
+  }
+  return okAsync(originalSelector);
 };
 
 /**
@@ -19,19 +39,16 @@ const resolveSelector = (originalSelector: string, context: ExecutionContext): s
  *
  * @param command - click コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleClick = async (
+export const handleClick = (
   command: ClickCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  const args = [selector, '--json'];
-
-  return (await executeCommand('click', args, context.executeOptions))
-    .andThen(parseJsonOutput)
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserClick(selector, context.executeOptions))
     .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
@@ -45,19 +62,16 @@ export const handleClick = async (
  *
  * @param command - type コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleType = async (
+export const handleType = (
   command: TypeCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  const args = [selector, command.value, '--json'];
-
-  return (await executeCommand('type', args, context.executeOptions))
-    .andThen(parseJsonOutput)
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserType(selector, command.value, context.executeOptions))
     .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
@@ -72,17 +86,16 @@ export const handleType = async (
  *
  * @param command - fill コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleFill = async (
+export const handleFill = (
   command: FillCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('fill', [selector, command.value, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserFill(selector, command.value, context.executeOptions))
     .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
@@ -97,18 +110,17 @@ export const handleFill = async (
  *
  * @param command - press コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handlePress = async (
+export const handlePress = (
   command: PressCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return (await executeCommand('press', [command.key, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  // command.key は既に KeyboardKey 型（Branded Type）なので、そのまま使用
+  return browserPress(command.key, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

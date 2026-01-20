@@ -70,6 +70,7 @@ const main = async (): Promise<void> => {
             session: args.session,
             verbose: args.verbose,
             progressJson: args.progressJson,
+            parallel: args.parallel,
           },
           formatter,
         );

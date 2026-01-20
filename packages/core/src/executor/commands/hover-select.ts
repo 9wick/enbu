@@ -1,15 +1,25 @@
+import type { AgentBrowserError, Selector } from '@packages/agent-browser-adapter';
+import { asSelector, browserHover, browserSelect } from '@packages/agent-browser-adapter';
 import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { errAsync, type ResultAsync } from 'neverthrow';
 import type { HoverCommand, SelectCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * セレクタを解決する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
+ *
+ * @returns セレクタのResult型。空文字列の場合はエラー。
  */
-const resolveSelector = (originalSelector: string, context: ExecutionContext): string => {
-  return context.resolvedRef ?? originalSelector;
+const resolveSelector = (
+  originalSelector: string,
+  context: ExecutionContext,
+): Result<Selector, AgentBrowserError> => {
+  const selectorString =
+    context.resolvedRefState.status === 'resolved'
+      ? context.resolvedRefState.ref
+      : originalSelector;
+  return asSelector(selectorString);
 };
 
 /**
@@ -22,19 +32,21 @@ const resolveSelector = (originalSelector: string, context: ExecutionContext): s
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleHover = async (
+export const handleHover = (
   command: HoverCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (await executeCommand('hover', [selector, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  // セレクタ検証とブラウザ操作実行
+  return resolveSelector(command.selector, context).match(
+    (selector) =>
+      browserHover(selector, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };
 
 /**
@@ -47,19 +59,19 @@ export const handleHover = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleSelect = async (
+export const handleSelect = (
   command: SelectCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
-  const selector = resolveSelector(command.selector, context);
 
-  return (
-    await executeCommand('select', [selector, command.value, '--json'], context.executeOptions)
-  )
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  // セレクタ検証とブラウザ操作実行
+  return resolveSelector(command.selector, context).match(
+    (selector) =>
+      browserSelect(selector, command.value, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };

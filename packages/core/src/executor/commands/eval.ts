@@ -1,8 +1,8 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserEval } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { EvalCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * eval コマンドのハンドラ
@@ -14,16 +14,15 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleEval = async (
+export const handleEval = (
   command: EvalCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return (await executeCommand('eval', [command.script, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+  // command.script は既に JsExpression 型（Branded Type）なので、そのまま使用
+  return browserEval(command.script, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

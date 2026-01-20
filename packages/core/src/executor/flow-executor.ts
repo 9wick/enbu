@@ -2,26 +2,46 @@
  * フロー実行エンジン
  *
  * このモジュールはYAMLフロー定義に基づいて、複数のステップを順次実行する機能を提供する。
- * 環境変数の展開、エラー時の処理（bail、スクリーンショット）、実行結果の集約を担当する。
+ * エラー時の処理（bail、スクリーンショット）、実行結果の集約を担当する。
+ *
+ * @remarks
+ * 環境変数の展開はParser層（env-resolver）で行われるため、
+ * このモジュールに渡されるFlowは既に環境変数が解決済みである前提。
  */
 
-import { type Result, ok, err } from 'neverthrow';
-import type { Flow } from '../types';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
-import type {
-  FlowResult,
-  FlowExecutionOptions,
-  StepResult,
-  ExecutionContext,
-  StepProgressCallback,
-} from './result';
+import { errAsync, ok, okAsync, type Result, ResultAsync } from 'neverthrow';
+import type { Flow } from '../types';
 import { executeStep } from './execute-step';
-import { expandEnvVars } from './env-expander';
+import type {
+  ExecutionContext,
+  FailedFlowResult,
+  FailedStepResult,
+  FlowExecutionOptions,
+  FlowResult,
+  NoCallback,
+  PassedFlowResult,
+  StepProgressCallback,
+  StepResult,
+} from './result';
+import { isFailedStepResult } from './result';
 
 // デバッグログ用（stderrに出力してno-consoleルールを回避）
 const DEBUG = process.env.DEBUG_FLOW === '1';
 const debugLog = (msg: string, ...args: unknown[]) => {
   if (DEBUG) process.stderr.write(`[flow-executor] ${msg} ${args.map(String).join(' ')}\n`);
+};
+
+/**
+ * NoCallbackかどうかを判定する型ガード関数
+ *
+ * @param callback - 判定対象のコールバック
+ * @returns NoCallbackの場合はfalse、StepProgressCallbackの場合はtrue
+ */
+const isStepProgressCallback = (
+  callback: StepProgressCallback | NoCallback,
+): callback is StepProgressCallback => {
+  return typeof callback === 'function';
 };
 
 /**
@@ -31,7 +51,7 @@ const debugLog = (msg: string, ...args: unknown[]) => {
  * @param sessionName - セッション名
  * @param duration - 全体の実行時間（ミリ秒）
  * @param steps - 実行済みのステップ結果の配列
- * @param firstFailureStep - 最初に失敗したステップの結果
+ * @param firstFailureStep - 最初に失敗したステップの結果（必ずfailedステータス）
  * @param firstFailureIndex - 最初に失敗したステップのインデックス
  * @returns 失敗したフロー結果
  */
@@ -40,9 +60,9 @@ const buildFailedFlowResult = (
   sessionName: string,
   duration: number,
   steps: StepResult[],
-  firstFailureStep: StepResult,
+  firstFailureStep: FailedStepResult,
   firstFailureIndex: number,
-): FlowResult => {
+): FailedFlowResult => {
   return {
     flow: expandedFlow,
     sessionName,
@@ -50,9 +70,9 @@ const buildFailedFlowResult = (
     duration,
     steps,
     error: {
-      message: firstFailureStep.error!.message,
+      message: firstFailureStep.error.message,
       stepIndex: firstFailureIndex,
-      screenshot: firstFailureStep.error!.screenshot,
+      screenshot: firstFailureStep.error.screenshot,
     },
   };
 };
@@ -71,7 +91,7 @@ const buildSuccessFlowResult = (
   sessionName: string,
   duration: number,
   steps: StepResult[],
-): FlowResult => {
+): PassedFlowResult => {
   return {
     flow: expandedFlow,
     sessionName,
@@ -99,15 +119,47 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
     sessionName: options.sessionName,
     executeOptions: {
       sessionName: options.sessionName,
-      headed: options.headed ?? false,
-      timeoutMs: options.commandTimeoutMs ?? 30000,
+      headed: options.headed,
+      timeoutMs: options.commandTimeoutMs,
       cwd: options.cwd,
     },
     env: mergedEnv,
-    autoWaitTimeoutMs: options.autoWaitTimeoutMs ?? 30000,
-    autoWaitIntervalMs: options.autoWaitIntervalMs ?? 100,
+    autoWaitTimeoutMs: options.autoWaitTimeoutMs,
+    autoWaitIntervalMs: options.autoWaitIntervalMs,
+    resolvedRefState: { status: 'notApplied' },
   };
 };
+
+/**
+ * 早期終了（bailで失敗）した場合の実行結果
+ */
+type EarlyExitResult = {
+  readonly kind: 'earlyExit';
+  readonly result: Result<FlowResult, AgentBrowserError>;
+  readonly steps: StepResult[];
+  readonly hasFailure: true;
+  readonly firstFailureIndex: number;
+};
+
+/**
+ * 最後まで実行した場合の実行結果
+ */
+type CompletedAllSteps = {
+  readonly kind: 'completed';
+  readonly steps: StepResult[];
+  readonly hasFailure: boolean;
+  readonly firstFailureIndex: number;
+};
+
+/**
+ * executeAllStepsの実行結果
+ *
+ * @remarks
+ * タグ付きユニオンでステップ実行の終了状態を表現する：
+ * - earlyExit: bail=trueで失敗した場合（早期終了）
+ * - completed: 最後まで実行した場合（失敗を含む可能性あり）
+ */
+type ExecuteAllStepsResult = EarlyExitResult | CompletedAllSteps;
 
 /**
  * 全ステップを実行する
@@ -117,8 +169,8 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
  * @param screenshot - スクリーンショットを撮影するか
  * @param bail - エラー時に即座に停止するか
  * @param startTime - 実行開始時刻
- * @param onStepProgress - ステップ進捗コールバック（オプション）
- * @returns ステップの実行結果とフロー結果（bailの場合のみ）
+ * @param onStepProgress - ステップ進捗コールバック
+ * @returns タグ付きユニオンによる実行結果（earlyExit または completed）
  */
 const executeAllSteps = async (
   expandedFlow: Flow,
@@ -126,13 +178,8 @@ const executeAllSteps = async (
   screenshot: boolean,
   bail: boolean,
   startTime: number,
-  onStepProgress?: StepProgressCallback,
-): Promise<{
-  steps: StepResult[];
-  hasFailure: boolean;
-  firstFailureIndex: number;
-  earlyResult?: Result<FlowResult, AgentBrowserError>;
-}> => {
+  onStepProgress: StepProgressCallback | NoCallback,
+): Promise<ExecuteAllStepsResult> => {
   debugLog('executeAllSteps start', { stepCount: expandedFlow.steps.length, bail, screenshot });
   const steps: StepResult[] = [];
   let hasFailure = false;
@@ -144,7 +191,7 @@ const executeAllSteps = async (
     debugLog(`step ${i + 1}/${expandedFlow.steps.length} start:`, command);
 
     // ステップ開始を通知
-    if (onStepProgress) {
+    if (isStepProgressCallback(onStepProgress)) {
       await onStepProgress({ stepIndex: i, stepTotal, status: 'started' });
     }
 
@@ -153,7 +200,7 @@ const executeAllSteps = async (
     steps.push(stepResult);
 
     // ステップ完了を通知
-    if (onStepProgress) {
+    if (isStepProgressCallback(onStepProgress)) {
       await onStepProgress({ stepIndex: i, stepTotal, status: 'completed', stepResult });
     }
 
@@ -166,10 +213,8 @@ const executeAllSteps = async (
       if (bail) {
         const duration = Date.now() - startTime;
         return {
-          steps,
-          hasFailure,
-          firstFailureIndex,
-          earlyResult: ok(
+          kind: 'earlyExit' as const,
+          result: ok(
             buildFailedFlowResult(
               expandedFlow,
               context.sessionName,
@@ -179,12 +224,20 @@ const executeAllSteps = async (
               i,
             ),
           ),
+          steps,
+          hasFailure: true,
+          firstFailureIndex,
         };
       }
     }
   }
 
-  return { steps, hasFailure, firstFailureIndex };
+  return {
+    kind: 'completed' as const,
+    steps,
+    hasFailure,
+    firstFailureIndex,
+  };
 };
 
 /**
@@ -192,83 +245,94 @@ const executeAllSteps = async (
  *
  * フロー実行の処理フローは以下の通り:
  * 1. オプションのデフォルト値を設定
- * 2. 実行コンテキストを構築（Flow.envとoptions.envをマージ）
- * 3. フロー内の環境変数を展開（未定義変数はエラー）
- * 4. 各ステップを順次実行
- * 5. エラー発生時の処理:
+ * 2. 実行コンテキストを構築
+ * 3. 各ステップを順次実行
+ * 4. エラー発生時の処理:
  *    - `bail: true`（デフォルト）: 最初の失敗で即座に停止
  *    - `bail: false`: 失敗ステップをスキップして続行
- * 6. スクリーンショット撮影:
+ * 5. スクリーンショット撮影:
  *    - `screenshot: true`（デフォルト）: 失敗時にスクリーンショットを撮影
  *    - `screenshot: false`: スクリーンショットを撮影しない
- * 7. 実行結果を集約して返す
+ * 6. 実行結果を集約して返す
  *
- * @param flow - 実行するフロー定義（YAMLから読み込んだもの）
- * @param options - 実行時のオプション（セッション名、タイムアウト、環境変数など）
+ * @param flow - 実行するフロー定義（環境変数は解決済みである前提）
+ * @param options - 実行時のオプション（セッション名、タイムアウトなど）
  * @returns フロー実行結果（成功時）、またはエラー（失敗時）
  *
  * @remarks
+ * ## 前提条件
+ * - 環境変数の展開はParser層（env-resolver）で既に完了している前提
+ * - flowに含まれる${VAR}形式の変数は全て解決済み
+ *
  * ## エラーハンドリングの設計
  * - 個別のステップエラーは StepResult 内に格納される
  * - フロー全体のエラーは FlowResult.error に格納される
  * - executeFlow自体がerrを返すのは以下のケース:
  *   - agent-browserが起動できない場合
- *   - 環境変数の展開に失敗した場合（未定義変数など）
+ *   - 予期しない内部エラーが発生した場合
  * - ステップの失敗は正常な実行結果として扱われ、okで返される
  *
  * ## bail オプションの動作
  * - bail: true の場合、最初の失敗で即座に FlowResult を返す
  * - bail: false の場合、全てのステップを実行し、最後に FlowResult を返す
  * - いずれの場合も、失敗があれば status: 'failed' となる
- *
- * ## 環境変数のマージ
- * - Flow.envとoptions.envをマージして使用
- * - 優先順位: options.env > Flow.env（実行時オプションが優先）
  */
-export const executeFlow = async (
+export const executeFlow = (
   flow: Flow,
   options: FlowExecutionOptions,
-): Promise<Result<FlowResult, AgentBrowserError>> => {
-  const startTime = Date.now();
-  const bail = options.bail ?? true;
-  const screenshot = options.screenshot ?? true;
+): ResultAsync<FlowResult, AgentBrowserError> => {
   const context = buildExecutionContext(options, flow);
+  const bail = options.bail;
+  const screenshot = options.screenshot;
+  const startTime = Date.now();
 
-  // 環境変数を展開（未定義変数がある場合はエラーを返す）
-  const expandResult = expandEnvVars(flow, context.env);
-  if (expandResult.isErr()) {
-    return err(expandResult.error);
-  }
-  const expandedFlow = expandResult.value;
+  return ResultAsync.fromPromise(
+    executeAllSteps(flow, context, screenshot, bail, startTime, options.onStepProgress),
+    (error): AgentBrowserError => ({
+      type: 'command_execution_failed',
+      message: 'executeFlow internal error',
+      command: 'executeFlow',
+      rawError: String(error),
+    }),
+  ).andThen((result) => {
+    // タグ付きユニオンで分岐
+    if (result.kind === 'earlyExit') {
+      return result.result.match(
+        (value) => okAsync(value),
+        (error) => errAsync(error),
+      );
+    }
 
-  const { steps, hasFailure, firstFailureIndex, earlyResult } = await executeAllSteps(
-    expandedFlow,
-    context,
-    screenshot,
-    bail,
-    startTime,
-    options.onStepProgress,
-  );
+    // kind === 'completed' の場合
+    const { steps, hasFailure, firstFailureIndex } = result;
+    const duration = Date.now() - startTime;
 
-  if (earlyResult) {
-    return earlyResult;
-  }
+    if (hasFailure) {
+      const firstFailureStep = steps[firstFailureIndex];
+      // hasFailure=trueの場合、firstFailureStepは必ずFailedStepResult
+      // 型ガードを使用して型を絞り込む
+      if (!isFailedStepResult(firstFailureStep)) {
+        // 論理的にこのパスには到達しないが、型安全性のため
+        const error: AgentBrowserError = {
+          type: 'command_execution_failed',
+          message: 'Internal error: firstFailureStep must have failed status',
+          command: 'executeFlow',
+          rawError: 'hasFailure is true but step status is not failed',
+        };
+        return errAsync(error);
+      }
+      return okAsync(
+        buildFailedFlowResult(
+          flow,
+          context.sessionName,
+          duration,
+          steps,
+          firstFailureStep,
+          firstFailureIndex,
+        ),
+      );
+    }
 
-  const duration = Date.now() - startTime;
-
-  if (hasFailure) {
-    const firstFailureStep = steps[firstFailureIndex];
-    return ok(
-      buildFailedFlowResult(
-        expandedFlow,
-        context.sessionName,
-        duration,
-        steps,
-        firstFailureStep,
-        firstFailureIndex,
-      ),
-    );
-  }
-
-  return ok(buildSuccessFlowResult(expandedFlow, context.sessionName, duration, steps));
+    return okAsync(buildSuccessFlowResult(flow, context.sessionName, duration, steps));
+  });
 };

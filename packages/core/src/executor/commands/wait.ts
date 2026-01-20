@@ -1,8 +1,29 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, ExecuteOptions } from '@packages/agent-browser-adapter';
+import {
+  browserWaitForFunction,
+  browserWaitForLoad,
+  browserWaitForMs,
+  browserWaitForSelector,
+  browserWaitForText,
+  browserWaitForUrl,
+} from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
+import { P, match } from 'ts-pattern';
 import type { WaitCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
+
+/**
+ * 出力をCommandResultに変換するヘルパー関数を生成する
+ *
+ * @param startTime - コマンド実行開始時刻（ミリ秒）
+ * @returns CommandResult変換関数
+ */
+const createResultMapper =
+  (startTime: number) =>
+  <T>(output: T): CommandResult => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  });
 
 /**
  * wait コマンドのハンドラ
@@ -15,75 +36,27 @@ import type { ExecutionContext, CommandResult } from '../result';
  * - url: URL変化を待つ (wait --url <pattern>)
  * - fn: JS式がtruthyになるのを待つ (wait --fn <expression>)
  *
+ * ts-patternでパターンマッチし、型安全にルーティングする。
+ *
  * @param command - wait コマンドのパラメータ
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleWait = async (
+export const handleWait = (
   command: WaitCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
-  const startTime = Date.now();
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const toResult = createResultMapper(Date.now());
+  const options: ExecuteOptions = context.executeOptions;
 
-  // ミリ秒指定の場合: wait <ms>
-  if ('ms' in command) {
-    return (await executeCommand('wait', [command.ms.toString(), '--json'], context.executeOptions))
-      .andThen(parseJsonOutput)
-      .map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-  }
-
-  // セレクタ指定の場合: wait <selector>
-  if ('selector' in command) {
-    return (await executeCommand('wait', [command.selector, '--json'], context.executeOptions))
-      .andThen(parseJsonOutput)
-      .map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-  }
-
-  // テキスト指定の場合: wait --text <text>
-  if ('text' in command) {
-    return (
-      await executeCommand('wait', ['--text', command.text, '--json'], context.executeOptions)
+  return match(command)
+    .with({ ms: P.number }, (cmd) => browserWaitForMs(cmd.ms, options).map(toResult))
+    .with({ selector: P.string }, (cmd) =>
+      browserWaitForSelector(cmd.selector, options).map(toResult),
     )
-      .andThen(parseJsonOutput)
-      .map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-  }
-
-  // ロード状態指定の場合: wait --load <state>
-  if ('load' in command) {
-    return (
-      await executeCommand('wait', ['--load', command.load, '--json'], context.executeOptions)
-    )
-      .andThen(parseJsonOutput)
-      .map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-  }
-
-  // URL指定の場合: wait --url <pattern>
-  if ('url' in command) {
-    return (await executeCommand('wait', ['--url', command.url, '--json'], context.executeOptions))
-      .andThen(parseJsonOutput)
-      .map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-  }
-
-  // JS式指定の場合: wait --fn <expression>
-  return (await executeCommand('wait', ['--fn', command.fn, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
+    .with({ text: P.string }, (cmd) => browserWaitForText(cmd.text, options).map(toResult))
+    .with({ load: P.string }, (cmd) => browserWaitForLoad(cmd.load, options).map(toResult))
+    .with({ url: P.string }, (cmd) => browserWaitForUrl(cmd.url, options).map(toResult))
+    .with({ fn: P.string }, (cmd) => browserWaitForFunction(cmd.fn, options).map(toResult))
+    .exhaustive();
 };

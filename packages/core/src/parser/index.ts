@@ -3,4 +3,4 @@
  */
 
 export { resolveEnvVariables } from './env-resolver';
-export { parseFlowYaml, getStepLineNumbers } from './yaml-parser';
+export { getStepLineNumbers, parseFlowYaml } from './yaml-parser';

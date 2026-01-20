@@ -1,46 +1,53 @@
 /**
  * コマンド型ガード・正規化関数
  *
- * YAMLからパースされた値を正規化されたCommand型に変換する。
+ * YAMLからパースされた値を正規化されたRawCommand型に変換する。
  * 以下の2つの形式をサポート:
  * 1. 正規化済み形式: { command: 'click', selector: '...' }
  * 2. YAML簡略形式: { click: '...' }
+ *
+ * RawCommand型は未検証の状態であり、command-validatorで
+ * Branded Typeに変換される。
  */
 
+import { match, P } from 'ts-pattern';
 import type {
-  OpenCommand,
-  ClickCommand,
-  TypeCommand,
-  FillCommand,
-  PressCommand,
-  HoverCommand,
-  SelectCommand,
-  ScrollCommand,
-  ScrollIntoViewCommand,
-  WaitCommand,
   LoadState,
-  ScreenshotCommand,
-  SnapshotCommand,
-  EvalCommand,
-  AssertVisibleCommand,
-  AssertNotVisibleCommand,
-  AssertEnabledCommand,
-  AssertCheckedCommand,
-  Command,
+  RawAssertCheckedCommand,
+  RawAssertEnabledCommand,
+  RawAssertNotVisibleCommand,
+  RawAssertVisibleCommand,
+  RawClickCommand,
+  RawCommand,
+  RawEvalCommand,
+  RawFillCommand,
+  RawHoverCommand,
+  RawOpenCommand,
+  RawPressCommand,
+  RawScreenshotCommand,
+  RawScrollCommand,
+  RawScrollIntoViewCommand,
+  RawSelectCommand,
+  RawSnapshotCommand,
+  RawTypeCommand,
+  RawWaitCommand,
 } from '../../types';
+import { UseDefault } from '../../types/utility-types';
 
 /**
  * YAML簡略形式を検出するヘルパー
  *
  * { click: '...' } のような形式で、commandキーが存在しない場合にtrue
+ * ts-patternを使って型安全に判定する。
  *
  * @param obj - チェック対象のオブジェクト
  * @param key - 検出するキー名
  * @returns YAML簡略形式の場合true
  */
-const hasYamlKey = (obj: Record<string, unknown>, key: string): boolean => {
-  return key in obj && !('command' in obj);
-};
+const hasYamlKey = (obj: Record<string, unknown>, key: string): boolean =>
+  match(obj)
+    .with({ command: P.any }, () => false) // commandキーがあればfalse
+    .otherwise(() => obj[key] !== undefined); // キーが存在するかチェック
 
 /**
  * 値がRecord型かどうかを判定する型ガード
@@ -80,7 +87,7 @@ const toRecord = (value: unknown): Record<string, unknown> | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたOpenCommand、または不正な場合null
  */
-export const normalizeOpenCommand = (value: unknown): OpenCommand | null => {
+export const normalizeOpenCommand = (value: unknown): RawOpenCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -105,7 +112,7 @@ export const normalizeOpenCommand = (value: unknown): OpenCommand | null => {
  * @param selector - セレクタ文字列
  * @returns ClickCommand
  */
-const buildClickCommand = (selector: string): ClickCommand => {
+const buildClickCommand = (selector: string): RawClickCommand => {
   return { command: 'click', selector };
 };
 
@@ -115,7 +122,7 @@ const buildClickCommand = (selector: string): ClickCommand => {
  * @param obj - 検証対象のオブジェクト
  * @returns ClickCommand、または不正な場合null
  */
-const checkNormalizedClick = (obj: Record<string, unknown>): ClickCommand | null => {
+const checkNormalizedClick = (obj: Record<string, unknown>): RawClickCommand | null => {
   if (obj.command === 'click' && typeof obj.selector === 'string') {
     return buildClickCommand(obj.selector);
   }
@@ -128,7 +135,7 @@ const checkNormalizedClick = (obj: Record<string, unknown>): ClickCommand | null
  * @param obj - 検証対象のオブジェクト
  * @returns ClickCommand、または不正な場合null
  */
-const checkYamlClick = (obj: Record<string, unknown>): ClickCommand | null => {
+const checkYamlClick = (obj: Record<string, unknown>): RawClickCommand | null => {
   if (!hasYamlKey(obj, 'click')) {
     return null;
   }
@@ -156,13 +163,13 @@ const checkYamlClick = (obj: Record<string, unknown>): ClickCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたClickCommand、または不正な場合null
  */
-export const normalizeClickCommand = (value: unknown): ClickCommand | null => {
+export const normalizeClickCommand = (value: unknown): RawClickCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: ClickCommand | null = checkNormalizedClick(obj);
+  const normalized: RawClickCommand | null = checkNormalizedClick(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -193,7 +200,7 @@ const extractTextOrValue = (obj: Record<string, unknown>): string | null => {
  * @param value - 入力値
  * @returns TypeCommand
  */
-const buildTypeCommand = (selector: string, value: string): TypeCommand => {
+const buildTypeCommand = (selector: string, value: string): RawTypeCommand => {
   return { command: 'type', selector, value };
 };
 
@@ -203,7 +210,7 @@ const buildTypeCommand = (selector: string, value: string): TypeCommand => {
  * @param obj - 検証対象のオブジェクト
  * @returns TypeCommand、または不正な場合null
  */
-const checkNormalizedType = (obj: Record<string, unknown>): TypeCommand | null => {
+const checkNormalizedType = (obj: Record<string, unknown>): RawTypeCommand | null => {
   if (obj.command === 'type' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
     return buildTypeCommand(obj.selector, obj.value);
   }
@@ -216,7 +223,7 @@ const checkNormalizedType = (obj: Record<string, unknown>): TypeCommand | null =
  * @param obj - 検証対象のオブジェクト
  * @returns TypeCommand、または不正な場合null
  */
-const checkYamlType = (obj: Record<string, unknown>): TypeCommand | null => {
+const checkYamlType = (obj: Record<string, unknown>): RawTypeCommand | null => {
   if (!hasYamlKey(obj, 'type')) {
     return null;
   }
@@ -243,13 +250,13 @@ const checkYamlType = (obj: Record<string, unknown>): TypeCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたTypeCommand、または不正な場合null
  */
-export const normalizeTypeCommand = (value: unknown): TypeCommand | null => {
+export const normalizeTypeCommand = (value: unknown): RawTypeCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: TypeCommand | null = checkNormalizedType(obj);
+  const normalized: RawTypeCommand | null = checkNormalizedType(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -263,7 +270,7 @@ export const normalizeTypeCommand = (value: unknown): TypeCommand | null => {
  * @param obj - 検証対象のオブジェクト
  * @returns FillCommand、または不正な場合null
  */
-const checkNormalizedFill = (obj: Record<string, unknown>): FillCommand | null => {
+const checkNormalizedFill = (obj: Record<string, unknown>): RawFillCommand | null => {
   if (obj.command === 'fill' && typeof obj.selector === 'string' && typeof obj.value === 'string') {
     return { command: 'fill', selector: obj.selector, value: obj.value };
   }
@@ -276,7 +283,7 @@ const checkNormalizedFill = (obj: Record<string, unknown>): FillCommand | null =
  * @param obj - 検証対象のオブジェクト
  * @returns FillCommand、または不正な場合null
  */
-const checkYamlFill = (obj: Record<string, unknown>): FillCommand | null => {
+const checkYamlFill = (obj: Record<string, unknown>): RawFillCommand | null => {
   if (!hasYamlKey(obj, 'fill')) {
     return null;
   }
@@ -303,13 +310,13 @@ const checkYamlFill = (obj: Record<string, unknown>): FillCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたFillCommand、または不正な場合null
  */
-export const normalizeFillCommand = (value: unknown): FillCommand | null => {
+export const normalizeFillCommand = (value: unknown): RawFillCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: FillCommand | null = checkNormalizedFill(obj);
+  const normalized: RawFillCommand | null = checkNormalizedFill(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -326,7 +333,7 @@ export const normalizeFillCommand = (value: unknown): FillCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたPressCommand、または不正な場合null
  */
-export const normalizePressCommand = (value: unknown): PressCommand | null => {
+export const normalizePressCommand = (value: unknown): RawPressCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -352,7 +359,7 @@ export const normalizePressCommand = (value: unknown): PressCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたHoverCommand、または不正な場合null
  */
-export const normalizeHoverCommand = (value: unknown): HoverCommand | null => {
+export const normalizeHoverCommand = (value: unknown): RawHoverCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -375,7 +382,7 @@ export const normalizeHoverCommand = (value: unknown): HoverCommand | null => {
  * @param obj - 検証対象のオブジェクト
  * @returns SelectCommand、または不正な場合null
  */
-const checkNormalizedSelect = (obj: Record<string, unknown>): SelectCommand | null => {
+const checkNormalizedSelect = (obj: Record<string, unknown>): RawSelectCommand | null => {
   if (
     obj.command === 'select' &&
     typeof obj.selector === 'string' &&
@@ -392,7 +399,7 @@ const checkNormalizedSelect = (obj: Record<string, unknown>): SelectCommand | nu
  * @param obj - 検証対象のオブジェクト
  * @returns SelectCommand、または不正な場合null
  */
-const checkYamlSelect = (obj: Record<string, unknown>): SelectCommand | null => {
+const checkYamlSelect = (obj: Record<string, unknown>): RawSelectCommand | null => {
   if (!hasYamlKey(obj, 'select')) {
     return null;
   }
@@ -414,13 +421,13 @@ const checkYamlSelect = (obj: Record<string, unknown>): SelectCommand | null => 
  * @param value - 検証対象の値
  * @returns 正規化されたSelectCommand、または不正な場合null
  */
-export const normalizeSelectCommand = (value: unknown): SelectCommand | null => {
+export const normalizeSelectCommand = (value: unknown): RawSelectCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: SelectCommand | null = checkNormalizedSelect(obj);
+  const normalized: RawSelectCommand | null = checkNormalizedSelect(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -441,7 +448,7 @@ const isScrollDirection = (value: unknown): value is 'up' | 'down' | 'left' | 'r
   return value === 'up' || value === 'down' || value === 'left' || value === 'right';
 };
 
-const checkNormalizedScroll = (obj: Record<string, unknown>): ScrollCommand | null => {
+const checkNormalizedScroll = (obj: Record<string, unknown>): RawScrollCommand | null => {
   if (
     obj.command === 'scroll' &&
     isScrollDirection(obj.direction) &&
@@ -458,7 +465,7 @@ const checkNormalizedScroll = (obj: Record<string, unknown>): ScrollCommand | nu
  * @param obj - 検証対象のオブジェクト
  * @returns ScrollCommand、または不正な場合null
  */
-const checkYamlScroll = (obj: Record<string, unknown>): ScrollCommand | null => {
+const checkYamlScroll = (obj: Record<string, unknown>): RawScrollCommand | null => {
   if (!hasYamlKey(obj, 'scroll')) {
     return null;
   }
@@ -480,13 +487,13 @@ const checkYamlScroll = (obj: Record<string, unknown>): ScrollCommand | null => 
  * @param value - 検証対象の値
  * @returns 正規化されたScrollCommand、または不正な場合null
  */
-export const normalizeScrollCommand = (value: unknown): ScrollCommand | null => {
+export const normalizeScrollCommand = (value: unknown): RawScrollCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: ScrollCommand | null = checkNormalizedScroll(obj);
+  const normalized: RawScrollCommand | null = checkNormalizedScroll(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -503,7 +510,7 @@ export const normalizeScrollCommand = (value: unknown): ScrollCommand | null => 
  * @param value - 検証対象の値
  * @returns 正規化されたScrollIntoViewCommand、または不正な場合null
  */
-export const normalizeScrollIntoViewCommand = (value: unknown): ScrollIntoViewCommand | null => {
+export const normalizeScrollIntoViewCommand = (value: unknown): RawScrollIntoViewCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -536,7 +543,7 @@ const isLoadState = (value: unknown): value is LoadState => {
  * @param obj - 検証対象のオブジェクト
  * @returns WaitCommand、または不正な場合null
  */
-const checkNormalizedWaitBasic = (obj: Record<string, unknown>): WaitCommand | null => {
+const checkNormalizedWaitBasic = (obj: Record<string, unknown>): RawWaitCommand | null => {
   if (obj.command !== 'wait') {
     return null;
   }
@@ -562,7 +569,7 @@ const checkNormalizedWaitBasic = (obj: Record<string, unknown>): WaitCommand | n
  * @param obj - 検証対象のオブジェクト
  * @returns WaitCommand、または不正な場合null
  */
-const checkNormalizedWaitExtended = (obj: Record<string, unknown>): WaitCommand | null => {
+const checkNormalizedWaitExtended = (obj: Record<string, unknown>): RawWaitCommand | null => {
   if (obj.command !== 'wait') {
     return null;
   }
@@ -588,7 +595,7 @@ const checkNormalizedWaitExtended = (obj: Record<string, unknown>): WaitCommand 
  * @param obj - 検証対象のオブジェクト
  * @returns WaitCommand、または不正な場合null
  */
-const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null => {
+const checkNormalizedWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
   return checkNormalizedWaitBasic(obj) ?? checkNormalizedWaitExtended(obj);
 };
 
@@ -598,7 +605,7 @@ const checkNormalizedWait = (obj: Record<string, unknown>): WaitCommand | null =
  * @param inner - waitオブジェクトの内容
  * @returns WaitCommand、または不正な場合null
  */
-const checkYamlWaitObject = (inner: Record<string, unknown>): WaitCommand | null => {
+const checkYamlWaitObject = (inner: Record<string, unknown>): RawWaitCommand | null => {
   if (typeof inner.text === 'string') {
     return { command: 'wait', text: inner.text };
   }
@@ -624,7 +631,7 @@ const checkYamlWaitObject = (inner: Record<string, unknown>): WaitCommand | null
  * @param obj - 検証対象のオブジェクト
  * @returns WaitCommand、または不正な場合null
  */
-const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
+const checkYamlWait = (obj: Record<string, unknown>): RawWaitCommand | null => {
   if (!hasYamlKey(obj, 'wait')) {
     return null;
   }
@@ -671,13 +678,13 @@ const checkYamlWait = (obj: Record<string, unknown>): WaitCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたWaitCommand、または不正な場合null
  */
-export const normalizeWaitCommand = (value: unknown): WaitCommand | null => {
+export const normalizeWaitCommand = (value: unknown): RawWaitCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: WaitCommand | null = checkNormalizedWait(obj);
+  const normalized: RawWaitCommand | null = checkNormalizedWait(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -689,14 +696,15 @@ export const normalizeWaitCommand = (value: unknown): WaitCommand | null => {
  * ScreenshotCommandを構築するヘルパー
  *
  * @param path - スクリーンショットのパス
- * @param full - フルページオプション（オプショナル）
+ * @param full - フルページオプション
  * @returns ScreenshotCommand
  */
-const buildScreenshotCommand = (path: string, full: unknown): ScreenshotCommand => {
-  const result: ScreenshotCommand = { command: 'screenshot', path };
-  if (typeof full === 'boolean') {
-    result.full = full;
-  }
+const buildScreenshotCommand = (path: string, full: unknown): RawScreenshotCommand => {
+  const result: RawScreenshotCommand = {
+    command: 'screenshot',
+    path,
+    full: typeof full === 'boolean' ? full : UseDefault,
+  };
   return result;
 };
 
@@ -706,10 +714,10 @@ const buildScreenshotCommand = (path: string, full: unknown): ScreenshotCommand 
  * @param value - screenshot フィールドの値
  * @returns ScreenshotCommand、または不正な場合null
  */
-const normalizeYamlScreenshot = (value: unknown): ScreenshotCommand | null => {
+const normalizeYamlScreenshot = (value: unknown): RawScreenshotCommand | null => {
   // { screenshot: './path.png' }
   if (typeof value === 'string') {
-    return { command: 'screenshot', path: value };
+    return { command: 'screenshot', path: value, full: UseDefault };
   }
 
   // { screenshot: { path: '...', full: true } }
@@ -732,7 +740,7 @@ const normalizeYamlScreenshot = (value: unknown): ScreenshotCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたScreenshotCommand、または不正な場合null
  */
-export const normalizeScreenshotCommand = (value: unknown): ScreenshotCommand | null => {
+export const normalizeScreenshotCommand = (value: unknown): RawScreenshotCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -758,22 +766,20 @@ export const normalizeScreenshotCommand = (value: unknown): ScreenshotCommand | 
  * @param value - 検証対象の値
  * @returns 正規化されたSnapshotCommand、または不正な場合null
  */
-export const normalizeSnapshotCommand = (value: unknown): SnapshotCommand | null => {
+export const normalizeSnapshotCommand = (value: unknown): RawSnapshotCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  if (obj.command === 'snapshot') {
-    return { command: 'snapshot' };
-  }
-
-  // { snapshot: {} } or { snapshot: null }
-  if ('snapshot' in obj && !('command' in obj)) {
-    return { command: 'snapshot' };
-  }
-
-  return null;
+  // ts-patternで型安全にマッチング
+  return match(obj)
+    .with({ command: 'snapshot' }, () => ({ command: 'snapshot' as const }))
+    .with({ snapshot: P.any }, (o) =>
+      // commandキーがない場合のみYAML簡略形式として認識
+      o.command === undefined ? { command: 'snapshot' as const } : null,
+    )
+    .otherwise(() => null);
 };
 
 /**
@@ -785,7 +791,7 @@ export const normalizeSnapshotCommand = (value: unknown): SnapshotCommand | null
  * @param value - 検証対象の値
  * @returns 正規化されたEvalCommand、または不正な場合null
  */
-export const normalizeEvalCommand = (value: unknown): EvalCommand | null => {
+export const normalizeEvalCommand = (value: unknown): RawEvalCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -811,7 +817,7 @@ export const normalizeEvalCommand = (value: unknown): EvalCommand | null => {
  * @param value - 検証対象の値
  * @returns 正規化されたAssertVisibleCommand、または不正な場合null
  */
-export const normalizeAssertVisibleCommand = (value: unknown): AssertVisibleCommand | null => {
+export const normalizeAssertVisibleCommand = (value: unknown): RawAssertVisibleCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -839,7 +845,7 @@ export const normalizeAssertVisibleCommand = (value: unknown): AssertVisibleComm
  */
 export const normalizeAssertNotVisibleCommand = (
   value: unknown,
-): AssertNotVisibleCommand | null => {
+): RawAssertNotVisibleCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -865,7 +871,7 @@ export const normalizeAssertNotVisibleCommand = (
  * @param value - 検証対象の値
  * @returns 正規化されたAssertEnabledCommand、または不正な場合null
  */
-export const normalizeAssertEnabledCommand = (value: unknown): AssertEnabledCommand | null => {
+export const normalizeAssertEnabledCommand = (value: unknown): RawAssertEnabledCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
@@ -886,22 +892,23 @@ export const normalizeAssertEnabledCommand = (value: unknown): AssertEnabledComm
  * AssertCheckedCommandを構築するヘルパー
  *
  * @param selector - セレクタ文字列
- * @param checked - 期待されるチェック状態（オプショナル）
+ * @param checked - 期待されるチェック状態
  * @returns AssertCheckedCommand、またはcheckedが不正な型の場合null
  */
 const buildAssertCheckedCommand = (
   selector: string,
   checked: unknown,
-): AssertCheckedCommand | null => {
+): RawAssertCheckedCommand | null => {
   // checkedが存在し、かつboolean以外の場合は不正
   if (checked !== undefined && typeof checked !== 'boolean') {
     return null;
   }
 
-  const result: AssertCheckedCommand = { command: 'assertChecked', selector };
-  if (typeof checked === 'boolean') {
-    result.checked = checked;
-  }
+  const result: RawAssertCheckedCommand = {
+    command: 'assertChecked',
+    selector,
+    checked: typeof checked === 'boolean' ? checked : UseDefault,
+  };
   return result;
 };
 
@@ -913,7 +920,7 @@ const buildAssertCheckedCommand = (
  */
 const checkNormalizedAssertChecked = (
   obj: Record<string, unknown>,
-): AssertCheckedCommand | null => {
+): RawAssertCheckedCommand | null => {
   if (obj.command === 'assertChecked' && typeof obj.selector === 'string') {
     return buildAssertCheckedCommand(obj.selector, obj.checked);
   }
@@ -926,14 +933,14 @@ const checkNormalizedAssertChecked = (
  * @param obj - 検証対象のオブジェクト
  * @returns AssertCheckedCommand、または不正な場合null
  */
-const checkYamlAssertChecked = (obj: Record<string, unknown>): AssertCheckedCommand | null => {
+const checkYamlAssertChecked = (obj: Record<string, unknown>): RawAssertCheckedCommand | null => {
   if (!hasYamlKey(obj, 'assertChecked')) {
     return null;
   }
 
   // { assertChecked: 'セレクタ' }
   if (typeof obj.assertChecked === 'string') {
-    return { command: 'assertChecked', selector: obj.assertChecked };
+    return { command: 'assertChecked', selector: obj.assertChecked, checked: UseDefault };
   }
 
   // { assertChecked: { selector: '...', checked?: boolean } }
@@ -954,13 +961,13 @@ const checkYamlAssertChecked = (obj: Record<string, unknown>): AssertCheckedComm
  * @param value - 検証対象の値
  * @returns 正規化されたAssertCheckedCommand、または不正な場合null
  */
-export const normalizeAssertCheckedCommand = (value: unknown): AssertCheckedCommand | null => {
+export const normalizeAssertCheckedCommand = (value: unknown): RawAssertCheckedCommand | null => {
   const obj: Record<string, unknown> | null = toRecord(value);
   if (obj === null) {
     return null;
   }
 
-  const normalized: AssertCheckedCommand | null = checkNormalizedAssertChecked(obj);
+  const normalized: RawAssertCheckedCommand | null = checkNormalizedAssertChecked(obj);
   if (normalized !== null) {
     return normalized;
   }
@@ -973,7 +980,7 @@ export const normalizeAssertCheckedCommand = (value: unknown): AssertCheckedComm
  *
  * validateCommandで順次試行される。
  */
-export const normalizers: Array<(value: unknown) => Command | null> = [
+export const normalizers: Array<(value: unknown) => RawCommand | null> = [
   normalizeOpenCommand,
   normalizeClickCommand,
   normalizeTypeCommand,

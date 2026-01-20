@@ -1,4 +1,4 @@
-import { type Result, ok } from 'neverthrow';
+import { ResultAsync, okAsync } from 'neverthrow';
 import { createInterface } from 'node:readline';
 import { resolve } from 'node:path';
 import type { CliError } from '../types';
@@ -32,28 +32,31 @@ steps:
  * @param args.verbose - 詳細なログ出力を行うかどうか
  * @returns 成功時: void、失敗時: CliError
  */
-export const runInitCommand = async (args: {
+export const runInitCommand = (args: {
   force: boolean;
   verbose: boolean;
-}): Promise<Result<void, CliError>> => {
+}): ResultAsync<void, CliError> => {
   const formatter = new OutputFormatter(args.verbose);
 
   formatter.info('Initializing enbu project...');
 
   // .abflow/ ディレクトリとサンプルファイルを作成
-  const setupResult = await setupAbflowDirectory(args.force, formatter);
-  if (setupResult.isErr()) {
-    return setupResult;
-  }
-
-  // .gitignore への追記を提案
-  await promptGitignoreUpdate(formatter);
-
-  formatter.newline();
-  formatter.info('Initialization complete!');
-  formatter.info(`Try: npx enbu ${ABFLOW_DIR}/example.enbu.yaml`);
-
-  return ok(undefined);
+  return setupAbflowDirectory(args.force, formatter).andThen(() => {
+    // .gitignore への追記を提案
+    return ResultAsync.fromPromise(
+      promptGitignoreUpdate(formatter),
+      (error): CliError => ({
+        type: 'execution_error' as const,
+        message: 'Failed to prompt gitignore update',
+        cause: error,
+      }),
+    ).map(() => {
+      formatter.newline();
+      formatter.info('Initialization complete!');
+      formatter.info(`Try: npx enbu ${ABFLOW_DIR}/example.enbu.yaml`);
+      return undefined;
+    });
+  });
 };
 
 /**
@@ -66,39 +69,65 @@ export const runInitCommand = async (args: {
  * @param formatter - 出力フォーマッター
  * @returns 成功時: void、失敗時: CliError
  */
-const setupAbflowDirectory = async (
+const setupAbflowDirectory = (
   force: boolean,
   formatter: OutputFormatter,
-): Promise<Result<void, CliError>> => {
+): ResultAsync<void, CliError> => {
   // .abflow/ ディレクトリを作成
   const abflowPath = resolve(process.cwd(), ABFLOW_DIR);
-  const abflowExists = await fileExists(abflowPath);
 
-  if (abflowExists && !force) {
-    formatter.success(`Directory already exists: ${ABFLOW_DIR}`);
-  } else {
-    const createDirResult = await createDirectory(abflowPath);
-    if (createDirResult.isErr()) {
-      return createDirResult;
-    }
-    formatter.success(`Created ${ABFLOW_DIR}/ directory`);
-  }
+  return ResultAsync.fromPromise(
+    fileExists(abflowPath),
+    (error): CliError => ({
+      type: 'execution_error' as const,
+      message: 'Failed to check if directory exists',
+      cause: error,
+    }),
+  )
+    .andThen((abflowExists) => {
+      if (abflowExists && !force) {
+        formatter.success(`Directory already exists: ${ABFLOW_DIR}`);
+        return okAsync(undefined);
+      }
+      return createDirectory(abflowPath).map(() => {
+        formatter.success(`Created ${ABFLOW_DIR}/ directory`);
+        return undefined;
+      });
+    })
+    .andThen(() => createExampleFlowIfNeeded(abflowPath, force, formatter));
+};
 
-  // example.enbu.yaml を生成
+/**
+ * example.enbu.yaml を必要に応じて作成
+ *
+ * @param abflowPath - .abflow ディレクトリのパス
+ * @param force - 強制上書きフラグ
+ * @param formatter - 出力フォーマッター
+ * @returns 成功時: void、失敗時: CliError
+ */
+const createExampleFlowIfNeeded = (
+  abflowPath: string,
+  force: boolean,
+  formatter: OutputFormatter,
+): ResultAsync<void, CliError> => {
   const exampleFlowPath = resolve(abflowPath, 'example.enbu.yaml');
-  const exampleFlowExists = await fileExists(exampleFlowPath);
-
-  if (exampleFlowExists && !force) {
-    formatter.success(`File already exists: ${ABFLOW_DIR}/example.enbu.yaml`);
-  } else {
-    const writeResult = await writeFileContent(exampleFlowPath, SAMPLE_FLOW_YAML);
-    if (writeResult.isErr()) {
-      return writeResult;
+  return ResultAsync.fromPromise(
+    fileExists(exampleFlowPath),
+    (error): CliError => ({
+      type: 'execution_error' as const,
+      message: 'Failed to check if file exists',
+      cause: error,
+    }),
+  ).andThen((exampleFlowExists) => {
+    if (exampleFlowExists && !force) {
+      formatter.success(`File already exists: ${ABFLOW_DIR}/example.enbu.yaml`);
+      return okAsync(undefined);
     }
-    formatter.success(`Created ${ABFLOW_DIR}/example.enbu.yaml`);
-  }
-
-  return ok(undefined);
+    return writeFileContent(exampleFlowPath, SAMPLE_FLOW_YAML).map(() => {
+      formatter.success(`Created ${ABFLOW_DIR}/example.enbu.yaml`);
+      return undefined;
+    });
+  });
 };
 
 /**
@@ -176,29 +205,42 @@ const askYesNo = (question: string): Promise<boolean> => {
  * @param path - .gitignoreファイルのパス
  * @returns 成功時: void、失敗時: CliError（type: 'execution_error'）
  */
-const updateGitignore = async (path: string): Promise<Result<void, CliError>> => {
-  const exists = await fileExists(path);
+/**
+ * 既存の .gitignore にエントリを追記する
+ *
+ * @param path - .gitignoreファイルのパス
+ * @param entry - 追記するエントリ
+ * @returns 成功時: void、失敗時: CliError
+ */
+const appendToExistingGitignore = (path: string, entry: string): ResultAsync<void, CliError> =>
+  readFileContent(path).andThen((content) => {
+    // 既に .abflow/ が含まれている場合はスキップ
+    if (content.includes(entry)) {
+      return okAsync(undefined);
+    }
+
+    // 追記
+    const newContent = content.endsWith('\n') ? `${content}${entry}\n` : `${content}\n${entry}\n`;
+    return writeFileContent(path, newContent);
+  });
+
+const updateGitignore = (path: string): ResultAsync<void, CliError> => {
   const entry = '.abflow/';
 
-  if (!exists) {
-    // .gitignore が存在しない場合、新規作成
-    return writeFileContent(path, `${entry}\n`);
-  }
+  return ResultAsync.fromPromise(
+    fileExists(path),
+    (error): CliError => ({
+      type: 'execution_error' as const,
+      message: 'Failed to check if .gitignore exists',
+      cause: error,
+    }),
+  ).andThen((exists) => {
+    if (!exists) {
+      // .gitignore が存在しない場合、新規作成
+      return writeFileContent(path, `${entry}\n`);
+    }
 
-  // 既存の .gitignore を読み込み
-  const readResult = await readFileContent(path);
-  if (readResult.isErr()) {
-    return readResult.andThen(() => ok(undefined));
-  }
-
-  const content = readResult.value;
-
-  // 既に .abflow/ が含まれている場合はスキップ
-  if (content.includes(entry)) {
-    return ok(undefined);
-  }
-
-  // 追記
-  const newContent = content.endsWith('\n') ? `${content}${entry}\n` : `${content}\n${entry}\n`;
-  return writeFileContent(path, newContent);
+    // 既存の .gitignore を読み込んで追記
+    return appendToExistingGitignore(path, entry);
+  });
 };

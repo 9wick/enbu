@@ -1,8 +1,8 @@
-import type { Result } from 'neverthrow';
-import { executeCommand, parseJsonOutput } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserOpen } from '@packages/agent-browser-adapter';
+import type { ResultAsync } from 'neverthrow';
 import type { OpenCommand } from '../../types';
-import type { ExecutionContext, CommandResult } from '../result';
+import type { CommandResult, ExecutionContext } from '../result';
 
 /**
  * open コマンドのハンドラ
@@ -14,20 +14,15 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleOpen = async (
+export const handleOpen = (
   command: OpenCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return (await executeCommand('open', [command.url, '--json'], context.executeOptions))
-    .andThen(parseJsonOutput)
-    .map((output) => {
-      const duration = Date.now() - startTime;
-
-      return {
-        stdout: JSON.stringify(output),
-        duration,
-      };
-    });
+  // command.url は既に Url 型（Branded Type）なので、そのまま使用
+  return browserOpen(command.url, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
 };

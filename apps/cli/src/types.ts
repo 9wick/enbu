@@ -41,6 +41,8 @@ export type ParsedArgs = {
       session?: string;
       /** 進捗をJSON形式で出力するか（VS Code拡張など外部ツール連携用） */
       progressJson: boolean;
+      /** 並列実行数（指定しない場合は順次実行） */
+      parallel?: number;
     }
   | {
       /** cleanupコマンドの引数 */
