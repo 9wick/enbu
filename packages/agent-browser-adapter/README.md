@@ -33,37 +33,40 @@ import {
 } from '@packages/agent-browser-adapter';
 
 // URLを開く
-const openResult = await browserOpen(asUrl('https://example.com'), {
-  sessionName: 'my-session',
-  headed: true,
-});
+// asUrl, asSelectorなどのas*関数はResult型を返すため、
+// asyncAndThenでチェーンして処理する
+const openResult = await asUrl('https://example.com')
+  .asyncAndThen((url) => browserOpen(url, {
+    sessionName: 'my-session',
+    headed: true,
+  }));
 
 openResult.match(
-  (output) => console.log('Opened:', output.data?.url),
+  (data) => console.log('Opened:', data.url),
   (error) => console.error('Failed:', error.message),
 );
 
 // 要素をクリック
-const clickResult = await browserClick(asSelector('#login-button'));
+const clickResult = await asSelector('#login-button')
+  .asyncAndThen((selector) => browserClick(selector));
 
 // フォームに入力
-const fillResult = await browserFill(
-  asSelector('#email'),
-  'user@example.com',
-);
+const fillResult = await asSelector('#email')
+  .asyncAndThen((selector) => browserFill(selector, 'user@example.com'));
 ```
 
 ### セッション管理
 
 ```typescript
-import { browserOpen, browserClose } from '@packages/agent-browser-adapter';
+import { browserOpen, browserClose, asUrl } from '@packages/agent-browser-adapter';
 
 // セッションを指定してブラウザを開く
-await browserOpen(asUrl('https://example.com'), {
-  sessionName: 'test-session',
-  headed: true, // ヘッドレスモードを無効化
-  timeoutMs: 30000, // タイムアウト設定
-});
+await asUrl('https://example.com')
+  .asyncAndThen((url) => browserOpen(url, {
+    sessionName: 'test-session',
+    headed: true, // ヘッドレスモードを無効化
+    timeoutMs: 30000, // タイムアウト設定
+  }));
 
 // セッションを閉じる
 await browserClose({ sessionName: 'test-session' });
@@ -147,6 +150,8 @@ await browserClose({ sessionName: 'test-session' });
 
 引数の誤りを防ぐため、Brand 型を使用している。生の文字列を渡すことはできず、専用のファクトリ関数を使用する必要がある。
 
+**重要**: 各as*関数は `Result<Brand型, BrandValidationError>` を返すため、成功時の値を取り出すには `.asyncAndThen()` や `.match()` などのメソッドを使用する必要がある。
+
 ```typescript
 import {
   asSelector,
@@ -154,64 +159,93 @@ import {
   asFilePath,
   asKeyboardKey,
   asJsExpression,
+  browserOpen,
 } from '@packages/agent-browser-adapter';
 
-// セレクタ
-const selector = asSelector('#my-button');
-const refSelector = asSelector('@e1');
-const textSelector = asSelector('text="ログイン"');
+// セレクタ（Result<Selector, BrandValidationError>を返す）
+const selectorResult = asSelector('#my-button');
+const refSelectorResult = asSelector('@e1');
+const textSelectorResult = asSelector('text="ログイン"');
 
-// URL
-const url = asUrl('https://example.com');
+// URL（Result<Url, BrandValidationError>を返す）
+const urlResult = asUrl('https://example.com');
 
-// ファイルパス
-const path = asFilePath('./screenshots/result.png');
+// ファイルパス（Result<FilePath, BrandValidationError>を返す）
+const pathResult = asFilePath('./screenshots/result.png');
 
-// キーボードキー
-const key = asKeyboardKey('Enter');
+// キーボードキー（Result<KeyboardKey, BrandValidationError>を返す）
+const keyResult = asKeyboardKey('Enter');
 
-// JavaScript式
-const expr = asJsExpression('document.title');
+// JavaScript式（Result<JsExpression, BrandValidationError>を返す）
+const exprResult = asJsExpression('document.title');
+
+// Result型の値をasynAndThenでチェーンして使用
+await asUrl('https://example.com')
+  .asyncAndThen((url) => browserOpen(url, { sessionName: 'test' }));
+
+// またはmatchでエラーハンドリング
+const result = asSelector('#my-button').match(
+  (selector) => {
+    // 成功時の処理
+    return selector;
+  },
+  (error) => {
+    // エラー時の処理
+    console.error('検証失敗:', error.message);
+    return null;
+  },
+);
 ```
 
 ### エラー型
 
-全ての関数は `Result<T, AgentBrowserError>` を返す。エラー型は以下の種類がある：
+全ての関数は `ResultAsync<T, AgentBrowserError>` を返す（以前の `Promise<Result<T, E>>` から変更）。エラー型は以下の種類がある：
 
 | type | 説明 |
 |------|------|
-| `not_installed` | agent-browser CLI が見つからない |
-| `command_failed` | コマンド実行が失敗した |
-| `timeout` | タイムアウトが発生した |
-| `parse_error` | JSON パースに失敗した |
-| `assertion_failed` | アサーションが失敗した |
-| `validation_error` | 入力バリデーションに失敗した |
-| `agent_browser_output_parse_error` | CLI 出力の valibot 検証に失敗した |
+| `not_installed` | agent-browser CLI が見つからない、または起動できない |
+| `command_failed` | プロセスが非0終了コードで終了した（exitCode !== 0） |
+| `command_execution_failed` | agent-browserがsuccess:falseを返した（exitCode === 0だが操作失敗） |
+| `timeout` | コマンドがタイムアウトした |
+| `parse_error` | JSON出力のパースに失敗した |
+| `agent_browser_output_parse_error` | CLI出力がスキーマに合わない（valibot検証失敗） |
+| `brand_validation_error` | Brand型の検証に失敗した（as*関数で空文字列など） |
 
 ### 出力型
 
-各コマンドは以下の共通構造で出力を返す：
-
-```typescript
-{
-  success: boolean;
-  data: T | null;  // コマンド固有のデータ
-  error: string | null;
-}
-```
+各関数は `ResultAsync<Data型, AgentBrowserError>` を返す。agent-browser CLIの生出力（`{success, data, error}` 構造）は内部で処理され、外部APIとしては `data` の型のみがエクスポートされる。
 
 主な出力型：
 
-| 型 | コマンド | data の内容 |
-|----|----------|-------------|
-| `OpenOutput` | open | `{ url: string }` |
-| `SimpleActionOutput` | click, type, fill など | `{}` |
-| `ScreenshotOutput` | screenshot | `{ path: string }` |
-| `SnapshotOutput` | snapshot | `{ snapshot: string, refs: Record<string, SnapshotRef> }` |
-| `EvalOutput` | eval | `{ result: unknown }` |
-| `IsVisibleOutput` | is visible | `{ visible: boolean }` |
-| `IsEnabledOutput` | is enabled | `{ enabled: boolean }` |
-| `IsCheckedOutput` | is checked | `{ checked: boolean }` |
+| 型 | コマンド | 内容 |
+|----|----------|------|
+| `OpenData` | browserOpen | `{ url: string }` |
+| `EmptyData` | browserClick, browserType, browserFill など | `{}` |
+| `ScreenshotData` | browserScreenshot | `{ path: string }` |
+| `SnapshotData` | browserSnapshot | `{ snapshot: string, refs: Record<string, SnapshotRef> }` |
+| `EvalData` | browserEval | `{ result: unknown }` |
+| `IsVisibleData` | browserIsVisible | `{ visible: boolean }` |
+| `IsEnabledData` | browserIsEnabled | `{ enabled: boolean }` |
+| `IsCheckedData` | browserIsChecked | `{ checked: boolean }` |
+
+使用例：
+
+```typescript
+// openの戻り値はResultAsync<OpenData, AgentBrowserError>
+const result = await asUrl('https://example.com')
+  .asyncAndThen((url) => browserOpen(url));
+
+result.match(
+  (data) => {
+    // dataはOpenData型 = { url: string }
+    console.log('Opened:', data.url);
+  },
+  (error) => {
+    // errorはAgentBrowserError型
+    console.error('Failed:', error.message);
+  },
+);
+```
 
 ## 実行オプション
 
