@@ -39,6 +39,7 @@ export type { LoadState } from '@packages/agent-browser-adapter';
  * これにより「CSSセレクタ」「Ref参照」「テキスト検索」という
  * 異なるドメイン概念を型で明確に分離する。
  */
+
 export type SelectorSpec =
   | { css: CssSelector; ref?: never; text?: never }
   | { css?: never; ref: RefSelector; text?: never }
@@ -47,6 +48,7 @@ export type SelectorSpec =
 /**
  * 未検証のセレクタ指定型（YAMLパース直後）
  */
+
 export type RawSelectorSpec =
   | { css: string; ref?: never; text?: never }
   | { css?: never; ref: string; text?: never }

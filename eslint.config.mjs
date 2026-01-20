@@ -420,9 +420,11 @@ export default tseslint.config(
     ],
     rules: {
       'no-restricted-syntax': [
-        'warn',
+        'error',
         {
-          selector: 'TSPropertySignature[optional=true]',
+          // ?: never は discriminated union パターンとして許容
+          selector:
+            'TSPropertySignature[optional=true]:not(:has(TSTypeAnnotation > TSNeverKeyword))',
           message:
             'ドメイン層でoptional property（?:）は禁止です。' +
             'NoInput 型を使って明示的に表現してください。' +
