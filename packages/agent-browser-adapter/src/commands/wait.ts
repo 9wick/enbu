@@ -5,7 +5,7 @@
  * waitコマンドの複数のパターンを個別の関数に分割して型安全に提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type {
   AgentBrowserError,
   ExecuteOptions,
@@ -25,14 +25,13 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForMs = async (
+export const browserWaitForMs = (
   ms: number,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', [ms.toString(), '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', [ms.toString(), '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};
 
 /**
  * 指定したセレクタの要素が出現するまで待機する
@@ -41,14 +40,13 @@ export const browserWaitForMs = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForSelector = async (
+export const browserWaitForSelector = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', [selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', [selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};
 
 /**
  * 指定したテキストがページに出現するまで待機する
@@ -57,14 +55,13 @@ export const browserWaitForSelector = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForText = async (
+export const browserWaitForText = (
   text: string,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', ['--text', text, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', ['--text', text, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};
 
 /**
  * 指定したロード状態になるまで待機する
@@ -73,14 +70,13 @@ export const browserWaitForText = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForLoad = async (
+export const browserWaitForLoad = (
   state: LoadState,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', ['--load', state, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', ['--load', state, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};
 
 /**
  * ネットワークがアイドル状態になるまで待機する
@@ -90,11 +86,9 @@ export const browserWaitForLoad = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForNetworkIdle = async (
+export const browserWaitForNetworkIdle = (
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return browserWaitForLoad('networkidle', options);
-};
+): ResultAsync<EmptyData, AgentBrowserError> => browserWaitForLoad('networkidle', options);
 
 /**
  * URLが指定したパターンに変化するまで待機する
@@ -103,14 +97,13 @@ export const browserWaitForNetworkIdle = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForUrl = async (
+export const browserWaitForUrl = (
   pattern: string,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', ['--url', pattern, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', ['--url', pattern, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};
 
 /**
  * 指定したJavaScript式がtruthyになるまで待機する
@@ -119,11 +112,10 @@ export const browserWaitForUrl = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserWaitForFunction = async (
+export const browserWaitForFunction = (
   expression: JsExpression,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('wait', ['--fn', expression, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('wait', ['--fn', expression, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'wait'),
   );
-};

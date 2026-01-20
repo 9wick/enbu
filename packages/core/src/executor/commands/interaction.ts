@@ -1,5 +1,4 @@
-import type { Result } from 'neverthrow';
-import { err } from 'neverthrow';
+import { type ResultAsync, okAsync, errAsync } from 'neverthrow';
 import {
   browserClick,
   browserType,
@@ -13,17 +12,19 @@ import type { ClickCommand, TypeCommand, FillCommand, PressCommand } from '../..
 import type { ExecutionContext, CommandResult } from '../result';
 
 /**
- * セレクタを解決する
+ * セレクタを解決してResultAsyncに変換する
  * autoWaitで解決されたresolvedRefがあればそれを使用、なければ元のセレクタを使用
  *
- * @returns セレクタのResult型。空文字列の場合はエラー。
+ * @returns セレクタのResultAsync型。空文字列の場合はエラー。
  */
-const resolveSelector = (
+const resolveSelectorAsync = (
   originalSelector: string,
   context: ExecutionContext,
-): Result<Selector, AgentBrowserError> => {
-  return asSelector(context.resolvedRef ?? originalSelector);
-};
+): ResultAsync<Selector, AgentBrowserError> =>
+  asSelector(context.resolvedRef ?? originalSelector).match(
+    (selector) => okAsync(selector),
+    (error) => errAsync(error),
+  );
 
 /**
  * click コマンドのハンドラ
@@ -32,25 +33,20 @@ const resolveSelector = (
  *
  * @param command - click コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleClick = async (
+export const handleClick = (
   command: ClickCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // セレクタ検証
-  const selectorResult = resolveSelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserClick(selectorResult.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserClick(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
 };
 
 /**
@@ -60,27 +56,20 @@ export const handleClick = async (
  *
  * @param command - type コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleType = async (
+export const handleType = (
   command: TypeCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // セレクタ検証
-  const selectorResult = resolveSelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserType(selectorResult.value, command.value, context.executeOptions)).map(
-    (output) => ({
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserType(selector, command.value, context.executeOptions))
+    .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
-    }),
-  );
+    }));
 };
 
 /**
@@ -91,27 +80,20 @@ export const handleType = async (
  *
  * @param command - fill コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handleFill = async (
+export const handleFill = (
   command: FillCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // セレクタ検証
-  const selectorResult = resolveSelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserFill(selectorResult.value, command.value, context.executeOptions)).map(
-    (output) => ({
+  return resolveSelectorAsync(command.selector, context)
+    .andThen((selector) => browserFill(selector, command.value, context.executeOptions))
+    .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
-    }),
-  );
+    }));
 };
 
 /**
@@ -122,23 +104,20 @@ export const handleFill = async (
  *
  * @param command - press コマンドのパラメータ
  * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
+ * @returns コマンド実行結果を含むResultAsync型
  */
-export const handlePress = async (
+export const handlePress = (
   command: PressCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // キー検証
-  const keyResult = asKeyboardKey(command.key);
-  if (keyResult.isErr()) {
-    return err(keyResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserPress(keyResult.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  return asKeyboardKey(command.key).match(
+    (key) =>
+      browserPress(key, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };

@@ -1,5 +1,4 @@
-import type { Result } from 'neverthrow';
-import { err } from 'neverthrow';
+import { type ResultAsync, errAsync } from 'neverthrow';
 import { browserEval, asJsExpression } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { EvalCommand } from '../../types';
@@ -15,21 +14,19 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleEval = async (
+export const handleEval = (
   command: EvalCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // JavaScript式検証
-  const scriptResult = asJsExpression(command.script);
-  if (scriptResult.isErr()) {
-    return err(scriptResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserEval(scriptResult.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  // JavaScript式検証とブラウザ操作実行
+  return asJsExpression(command.script).match(
+    (script) =>
+      browserEval(script, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };

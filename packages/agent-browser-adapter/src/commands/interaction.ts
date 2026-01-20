@@ -4,7 +4,7 @@
  * ブラウザ要素との対話に関するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, KeyboardKey, Selector } from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
@@ -18,14 +18,13 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserClick = async (
+export const browserClick = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('click', [selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('click', [selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'click'),
   );
-};
 
 /**
  * 指定したセレクタの要素にテキストを入力する（既存テキストはクリアしない）
@@ -35,15 +34,14 @@ export const browserClick = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserType = async (
+export const browserType = (
   selector: Selector,
   value: string,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('type', [selector, value, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('type', [selector, value, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'type'),
   );
-};
 
 /**
  * 指定したセレクタのフォーム要素にテキストを入力する（既存テキストをクリア）
@@ -53,15 +51,14 @@ export const browserType = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserFill = async (
+export const browserFill = (
   selector: Selector,
   value: string,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('fill', [selector, value, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('fill', [selector, value, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'fill'),
   );
-};
 
 /**
  * 指定したキーボードキーを押す
@@ -70,14 +67,13 @@ export const browserFill = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserPress = async (
+export const browserPress = (
   key: KeyboardKey,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('press', [key, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('press', [key, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'press'),
   );
-};
 
 /**
  * 指定したセレクタの要素にマウスホバーする
@@ -86,14 +82,13 @@ export const browserPress = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserHover = async (
+export const browserHover = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('hover', [selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('hover', [selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'hover'),
   );
-};
 
 /**
  * 指定したセレクタのセレクトボックスから値を選択する
@@ -103,15 +98,14 @@ export const browserHover = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserSelect = async (
+export const browserSelect = (
   selector: Selector,
   value: string,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('select', [selector, value, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('select', [selector, value, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'select'),
   );
-};
 
 /**
  * 指定したセレクタの要素にフォーカスする
@@ -120,11 +114,10 @@ export const browserSelect = async (
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserFocus = async (
+export const browserFocus = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('focus', [selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('focus', [selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'focus'),
   );
-};

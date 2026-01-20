@@ -4,7 +4,7 @@
  * ブラウザ要素の状態を確認するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, Selector } from '../types';
 import type { IsCheckedData, IsEnabledData, IsVisibleData } from '../schemas';
 import { IsCheckedDataSchema, IsEnabledDataSchema, IsVisibleDataSchema } from '../schemas';
@@ -18,14 +18,13 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション
  * @returns 成功時: IsVisibleData、失敗時: AgentBrowserError
  */
-export const browserIsVisible = async (
+export const browserIsVisible = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsVisibleData, AgentBrowserError>> => {
-  return (await executeCommand('is', ['visible', selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<IsVisibleData, AgentBrowserError> =>
+  executeCommand('is', ['visible', selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, IsVisibleDataSchema, 'is visible'),
   );
-};
 
 /**
  * 指定したセレクタの要素が有効化されているかチェックする
@@ -34,14 +33,13 @@ export const browserIsVisible = async (
  * @param options - 実行オプション
  * @returns 成功時: IsEnabledData、失敗時: AgentBrowserError
  */
-export const browserIsEnabled = async (
+export const browserIsEnabled = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsEnabledData, AgentBrowserError>> => {
-  return (await executeCommand('is', ['enabled', selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<IsEnabledData, AgentBrowserError> =>
+  executeCommand('is', ['enabled', selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, IsEnabledDataSchema, 'is enabled'),
   );
-};
 
 /**
  * 指定したセレクタのチェックボックスがチェックされているかチェックする
@@ -50,11 +48,10 @@ export const browserIsEnabled = async (
  * @param options - 実行オプション
  * @returns 成功時: IsCheckedData、失敗時: AgentBrowserError
  */
-export const browserIsChecked = async (
+export const browserIsChecked = (
   selector: Selector,
   options: ExecuteOptions = {},
-): Promise<Result<IsCheckedData, AgentBrowserError>> => {
-  return (await executeCommand('is', ['checked', selector, '--json'], options)).andThen((stdout) =>
+): ResultAsync<IsCheckedData, AgentBrowserError> =>
+  executeCommand('is', ['checked', selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, IsCheckedDataSchema, 'is checked'),
   );
-};

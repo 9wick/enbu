@@ -2,7 +2,7 @@
  * executor の型定義
  */
 
-import type { Result } from 'neverthrow';
+import type { ResultAsync } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command, Flow } from '../types';
 
@@ -217,4 +217,4 @@ export type CommandResult = {
 export type CommandHandler<T extends Command> = (
   command: T,
   context: ExecutionContext,
-) => Promise<Result<CommandResult, ExecutorError>>;
+) => ResultAsync<CommandResult, ExecutorError>;

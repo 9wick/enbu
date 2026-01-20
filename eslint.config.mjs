@@ -196,6 +196,16 @@ export default tseslint.config(
             'throw は禁止です。neverthrow の Result 型（ok/err）を使用してください。外部ライブラリの例外は fromThrowable で変換してください。',
         },
         /**
+         * Promise<Result<>> を禁止。ResultAsync を使用すること。
+         * 非同期の Result 処理は ResultAsync で統一し、型の一貫性を保つ。
+         */
+        {
+          selector:
+            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
+          message:
+            'Promise<Result<>> は禁止です。ResultAsync を使用してください。fromPromise でラップするか、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
+        },
+        /**
          * neverthrow のチェーン内でのネストを禁止。
          * andThen のコールバック内で andThen を呼ぶとネストが深くなる。
          * 代わりにコンテキストオブジェクトを引き回すか、ヘルパー関数に切り出してフラットにする。
@@ -288,8 +298,19 @@ export default tseslint.config(
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
       '@typescript-eslint/unbound-method': 'off',
-      // テストファイルでは throw と型アサーションの制限を解除する。
-      'no-restricted-syntax': 'off',
+      /**
+       * テストファイルでは throw と型アサーションの制限を解除するが、
+       * Promise<Result<>> の禁止は維持する（ResultAsync を使用すること）。
+       */
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
+          message:
+            'Promise<Result<>> は禁止です。ResultAsync を使用してください。fromPromise でラップするか、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
+        },
+      ],
       // テストファイルではサブパスインポート制限を解除
       'no-restricted-imports': 'off',
     },

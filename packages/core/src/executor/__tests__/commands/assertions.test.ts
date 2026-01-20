@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok, err } from 'neverthrow';
+import { okAsync, errAsync } from 'neverthrow';
 import {
   handleAssertVisible,
   handleAssertNotVisible,
@@ -19,7 +19,10 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserWaitForSelector: vi.fn(),
   browserWaitForText: vi.fn(),
   browserWaitForNetworkIdle: vi.fn(),
-  asSelector: vi.fn((v) => ok(v)),
+  asSelector: vi.fn((v) => {
+    const { okAsync } = require('neverthrow');
+    return okAsync(v);
+  }),
 }));
 
 import {
@@ -33,7 +36,7 @@ describe('handleAssertVisible', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // waitForElement用のデフォルトモック
-    vi.mocked(browserWaitForText).mockResolvedValue(ok({}));
+    vi.mocked(browserWaitForText).mockReturnValue(okAsync({}));
   });
 
   const mockContext: ExecutionContext = {
@@ -61,7 +64,7 @@ describe('handleAssertVisible', () => {
       selector: 'ログイン',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: true }));
+    vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
 
     // Act
     const result = await handleAssertVisible(command, mockContext);
@@ -83,7 +86,7 @@ describe('handleAssertVisible', () => {
       selector: 'ログイン',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: false }));
+    vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: false }));
 
     // Act
     const result = await handleAssertVisible(command, mockContext);
@@ -116,8 +119,8 @@ describe('handleAssertVisible', () => {
       selector: '存在しない要素',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      err({
+    vi.mocked(browserIsVisible).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         message: 'Element not found',
         command: 'is',
@@ -159,8 +162,8 @@ describe('handleAssertVisible', () => {
       selector: 'ログイン',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      err({
+    vi.mocked(browserIsVisible).mockReturnValue(
+      errAsync({
         type: 'agent_browser_output_parse_error',
         message: 'Invalid response data',
         command: 'is',
@@ -189,7 +192,7 @@ describe('handleAssertNotVisible', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // waitForPageStable用のデフォルトモック
-    vi.mocked(browserWaitForNetworkIdle).mockResolvedValue(ok({}));
+    vi.mocked(browserWaitForNetworkIdle).mockReturnValue(okAsync({}));
   });
 
   const mockContext: ExecutionContext = {
@@ -217,7 +220,7 @@ describe('handleAssertNotVisible', () => {
       selector: 'エラーメッセージ',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: false }));
+    vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: false }));
 
     // Act
     const result = await handleAssertNotVisible(command, mockContext);
@@ -239,7 +242,7 @@ describe('handleAssertNotVisible', () => {
       selector: 'エラーメッセージ',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(ok({ visible: true }));
+    vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
 
     // Act
     const result = await handleAssertNotVisible(command, mockContext);
@@ -272,8 +275,8 @@ describe('handleAssertNotVisible', () => {
       selector: '存在しない要素',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      err({
+    vi.mocked(browserIsVisible).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         message: 'Element not found',
         command: 'is',
@@ -315,8 +318,8 @@ describe('handleAssertNotVisible', () => {
       selector: 'エラーメッセージ',
     };
 
-    vi.mocked(browserIsVisible).mockResolvedValue(
-      err({
+    vi.mocked(browserIsVisible).mockReturnValue(
+      errAsync({
         type: 'agent_browser_output_parse_error',
         message: 'Invalid response data',
         command: 'is',
@@ -371,7 +374,7 @@ describe('handleAssertChecked', () => {
       selector: '利用規約に同意',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: true }));
+    vi.mocked(browserIsChecked).mockReturnValue(okAsync({ checked: true }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -394,7 +397,7 @@ describe('handleAssertChecked', () => {
       checked: false,
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: false }));
+    vi.mocked(browserIsChecked).mockReturnValue(okAsync({ checked: false }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -416,7 +419,7 @@ describe('handleAssertChecked', () => {
       selector: '利用規約に同意',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(ok({ checked: false }));
+    vi.mocked(browserIsChecked).mockReturnValue(okAsync({ checked: false }));
 
     // Act
     const result = await handleAssertChecked(command, mockContext);
@@ -449,8 +452,8 @@ describe('handleAssertChecked', () => {
       selector: '存在しない要素',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(
-      err({
+    vi.mocked(browserIsChecked).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         message: 'Element not found',
         command: 'is',
@@ -492,8 +495,8 @@ describe('handleAssertChecked', () => {
       selector: '利用規約に同意',
     };
 
-    vi.mocked(browserIsChecked).mockResolvedValue(
-      err({
+    vi.mocked(browserIsChecked).mockReturnValue(
+      errAsync({
         type: 'agent_browser_output_parse_error',
         message: 'Invalid response data',
         command: 'is',

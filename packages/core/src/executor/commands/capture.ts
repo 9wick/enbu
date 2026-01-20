@@ -1,5 +1,4 @@
-import type { Result } from 'neverthrow';
-import { err } from 'neverthrow';
+import { type ResultAsync, errAsync } from 'neverthrow';
 import { browserScreenshot, browserSnapshot, asFilePath } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { ScreenshotCommand, SnapshotCommand } from '../../types';
@@ -15,28 +14,24 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScreenshot = async (
+export const handleScreenshot = (
   command: ScreenshotCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // ファイルパス検証
-  const filePathResult = asFilePath(command.path);
-  if (filePathResult.isErr()) {
-    return err(filePathResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (
-    await browserScreenshot(filePathResult.value, {
-      ...context.executeOptions,
-      fullPage: command.fullPage,
-    })
-  ).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  // ファイルパス検証とブラウザ操作実行
+  return asFilePath(command.path).match(
+    (filePath) =>
+      browserScreenshot(filePath, {
+        ...context.executeOptions,
+        fullPage: command.fullPage,
+      }).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };
 
 /**
@@ -49,13 +44,13 @@ export const handleScreenshot = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleSnapshot = async (
+export const handleSnapshot = (
   command: SnapshotCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  return (await browserSnapshot(context.executeOptions)).map((output) => ({
+  return browserSnapshot(context.executeOptions).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));

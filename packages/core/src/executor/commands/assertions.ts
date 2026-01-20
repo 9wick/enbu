@@ -1,4 +1,4 @@
-import { ok, err } from 'neverthrow';
+import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import type { Result } from 'neverthrow';
 import {
   browserWaitForSelector,
@@ -67,23 +67,20 @@ const resolveVisibilitySelector = (
  * @param context - 実行コンテキスト
  * @returns 成功時はok(undefined)、失敗時はerr(AgentBrowserError)
  */
-const waitForElement = async (
+const waitForElement = (
   originalSelector: string,
   context: ExecutionContext,
-): Promise<Result<undefined, AgentBrowserError>> => {
+): ResultAsync<undefined, AgentBrowserError> => {
   // @ref、#id、.class、[attr]、text= 形式の場合: browserWaitForSelector
   if (isCssOrRefSelector(originalSelector)) {
-    const selectorResult = asSelector(originalSelector);
-    if (selectorResult.isErr()) {
-      return err(selectorResult.error);
-    }
-    const result = await browserWaitForSelector(selectorResult.value, context.executeOptions);
-    return result.map(() => undefined);
+    return asSelector(originalSelector).match(
+      (selector) => browserWaitForSelector(selector, context.executeOptions).map(() => undefined),
+      (error) => errAsync(error),
+    );
   }
 
   // テキストの場合: browserWaitForText
-  const result = await browserWaitForText(originalSelector, context.executeOptions);
-  return result.map(() => undefined);
+  return browserWaitForText(originalSelector, context.executeOptions).map(() => undefined);
 };
 
 /**
@@ -92,12 +89,52 @@ const waitForElement = async (
  * @param context - 実行コンテキスト
  * @returns 成功時はok(undefined)、失敗時はerr(AgentBrowserError)
  */
-const waitForPageStable = async (
-  context: ExecutionContext,
-): Promise<Result<undefined, AgentBrowserError>> => {
-  const result = await browserWaitForNetworkIdle(context.executeOptions);
-  return result.map(() => undefined);
+const waitForPageStable = (context: ExecutionContext): ResultAsync<undefined, AgentBrowserError> =>
+  browserWaitForNetworkIdle(context.executeOptions).map(() => undefined);
+
+/**
+ * 表示状態を確認するヘルパー関数
+ */
+const checkVisibility = (
+  selector: string,
+  data: { visible: boolean },
+  startTime: number,
+): ResultAsync<CommandResult, AssertionFailedError> => {
+  const duration = Date.now() - startTime;
+
+  if (!data.visible) {
+    const error: AssertionFailedError = {
+      type: 'assertion_failed',
+      message: `Element "${selector}" is not visible`,
+      command: 'assertVisible',
+      selector,
+      expected: true,
+      actual: false,
+    };
+    return errAsync(error);
+  }
+
+  return okAsync({
+    stdout: JSON.stringify(data),
+    duration,
+  });
 };
+
+/**
+ * セレクタを取得して表示状態を確認する
+ */
+const getAndCheckVisibility = (
+  originalSelector: string,
+  context: ExecutionContext,
+  startTime: number,
+): ResultAsync<CommandResult, ExecutorError> =>
+  resolveVisibilitySelector(originalSelector, context).match(
+    (selector) =>
+      browserIsVisible(selector, context.executeOptions).andThen((data) =>
+        checkVisibility(originalSelector, data, startTime),
+      ),
+    (error) => errAsync(error),
+  );
 
 /**
  * assertVisible コマンドのハンドラ
@@ -116,54 +153,71 @@ const waitForPageStable = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleAssertVisible = async (
+export const handleAssertVisible = (
   command: AssertVisibleCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, ExecutorError>> => {
+): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
 
   // 1. 要素の出現を待機（autoWaitで解決済みでなければ）
-  if (!context.resolvedRef) {
-    const waitResult = await waitForElement(command.selector, context);
-    if (waitResult.isErr()) {
-      return err({
-        type: 'timeout',
-        command: 'wait',
-        args: [command.selector],
-        timeoutMs: context.autoWaitTimeoutMs,
-      });
-    }
+  const waitStep = context.resolvedRef
+    ? okAsync<undefined, ExecutorError>(undefined)
+    : waitForElement(command.selector, context).mapErr(
+        (): ExecutorError => ({
+          type: 'timeout',
+          command: 'wait',
+          args: [command.selector],
+          timeoutMs: context.autoWaitTimeoutMs,
+        }),
+      );
+
+  // 2. セレクタを解決して表示状態を確認
+  return waitStep.andThen(() => getAndCheckVisibility(command.selector, context, startTime));
+};
+
+/**
+ * 非表示状態を確認するヘルパー関数
+ */
+const checkNotVisible = (
+  selector: string,
+  data: { visible: boolean },
+  startTime: number,
+): ResultAsync<CommandResult, AssertionFailedError> => {
+  const duration = Date.now() - startTime;
+
+  if (data.visible) {
+    const error: AssertionFailedError = {
+      type: 'assertion_failed',
+      message: `Element "${selector}" is visible`,
+      command: 'assertNotVisible',
+      selector,
+      expected: false,
+      actual: true,
+    };
+    return errAsync(error);
   }
 
-  // 2. セレクタを解決
-  const selectorResult = resolveVisibilitySelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-
-  // 3. 表示状態を確認
-  return (await browserIsVisible(selectorResult.value, context.executeOptions)).andThen((data) => {
-    const duration = Date.now() - startTime;
-
-    // アサーション条件を確認
-    if (!data.visible) {
-      const error: AssertionFailedError = {
-        type: 'assertion_failed',
-        message: `Element "${command.selector}" is not visible`,
-        command: 'assertVisible',
-        selector: command.selector,
-        expected: true,
-        actual: false,
-      };
-      return err(error);
-    }
-
-    return ok({
-      stdout: JSON.stringify(data),
-      duration,
-    });
+  return okAsync({
+    stdout: JSON.stringify(data),
+    duration,
   });
 };
+
+/**
+ * セレクタを取得して非表示状態を確認する
+ */
+const getAndCheckNotVisible = (
+  originalSelector: string,
+  context: ExecutionContext,
+  startTime: number,
+): ResultAsync<CommandResult, ExecutorError> =>
+  resolveVisibilitySelector(originalSelector, context).match(
+    (selector) =>
+      browserIsVisible(selector, context.executeOptions).andThen((data) =>
+        checkNotVisible(originalSelector, data, startTime),
+      ),
+    (error) => errAsync(error),
+  );
 
 /**
  * assertNotVisible コマンドのハンドラ
@@ -181,51 +235,23 @@ export const handleAssertVisible = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleAssertNotVisible = async (
+export const handleAssertNotVisible = (
   command: AssertNotVisibleCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, ExecutorError>> => {
+): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
 
   // 1. ページの安定状態を待機
-  const waitResult = await waitForPageStable(context);
-  if (waitResult.isErr()) {
-    return err({
-      type: 'timeout',
-      command: 'wait',
-      args: ['--load', 'networkidle'],
-      timeoutMs: context.autoWaitTimeoutMs,
-    });
-  }
-
-  // 2. セレクタを解決
-  const selectorResult = resolveVisibilitySelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-
-  // 3. 表示状態を確認
-  return (await browserIsVisible(selectorResult.value, context.executeOptions)).andThen((data) => {
-    const duration = Date.now() - startTime;
-
-    // アサーション条件を確認
-    if (data.visible) {
-      const error: AssertionFailedError = {
-        type: 'assertion_failed',
-        message: `Element "${command.selector}" is visible`,
-        command: 'assertNotVisible',
-        selector: command.selector,
-        expected: false,
-        actual: true,
-      };
-      return err(error);
-    }
-
-    return ok({
-      stdout: JSON.stringify(data),
-      duration,
-    });
-  });
+  return waitForPageStable(context)
+    .mapErr(
+      (): ExecutorError => ({
+        type: 'timeout',
+        command: 'wait',
+        args: ['--load', 'networkidle'],
+        timeoutMs: context.autoWaitTimeoutMs,
+      }),
+    )
+    .andThen(() => getAndCheckNotVisible(command.selector, context, startTime));
 };
 
 /**
@@ -239,39 +265,38 @@ export const handleAssertNotVisible = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleAssertEnabled = async (
+export const handleAssertEnabled = (
   command: AssertEnabledCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, ExecutorError>> => {
+): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
 
-  // セレクタ検証
-  const selectorResult = resolveSelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
+  // セレクタ検証とブラウザ操作実行
+  return resolveSelector(command.selector, context).match(
+    (selector) =>
+      browserIsEnabled(selector, context.executeOptions).andThen((data) => {
+        const duration = Date.now() - startTime;
 
-  return (await browserIsEnabled(selectorResult.value, context.executeOptions)).andThen((data) => {
-    const duration = Date.now() - startTime;
+        // アサーション条件を確認
+        if (!data.enabled) {
+          const error: AssertionFailedError = {
+            type: 'assertion_failed',
+            message: `Element "${command.selector}" is not enabled`,
+            command: 'assertEnabled',
+            selector: command.selector,
+            expected: true,
+            actual: false,
+          };
+          return errAsync(error);
+        }
 
-    // アサーション条件を確認
-    if (!data.enabled) {
-      const error: AssertionFailedError = {
-        type: 'assertion_failed',
-        message: `Element "${command.selector}" is not enabled`,
-        command: 'assertEnabled',
-        selector: command.selector,
-        expected: true,
-        actual: false,
-      };
-      return err(error);
-    }
-
-    return ok({
-      stdout: JSON.stringify(data),
-      duration,
-    });
-  });
+        return okAsync({
+          stdout: JSON.stringify(data),
+          duration,
+        });
+      }),
+    (error) => errAsync(error),
+  );
 };
 
 /**
@@ -285,40 +310,39 @@ export const handleAssertEnabled = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleAssertChecked = async (
+export const handleAssertChecked = (
   command: AssertCheckedCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, ExecutorError>> => {
+): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
 
-  // セレクタ検証
-  const selectorResult = resolveSelector(command.selector, context);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
+  // セレクタ検証とブラウザ操作実行
+  return resolveSelector(command.selector, context).match(
+    (selector) =>
+      browserIsChecked(selector, context.executeOptions).andThen((data) => {
+        const duration = Date.now() - startTime;
 
-  return (await browserIsChecked(selectorResult.value, context.executeOptions)).andThen((data) => {
-    const duration = Date.now() - startTime;
+        // アサーション条件を確認
+        const expectedChecked = command.checked ?? true; // デフォルトはtrue
+        const actualChecked = data.checked;
 
-    // アサーション条件を確認
-    const expectedChecked = command.checked ?? true; // デフォルトはtrue
-    const actualChecked = data.checked;
+        if (actualChecked !== expectedChecked) {
+          const error: AssertionFailedError = {
+            type: 'assertion_failed',
+            message: `Element "${command.selector}" checked state is ${actualChecked}, expected ${expectedChecked}`,
+            command: 'assertChecked',
+            selector: command.selector,
+            expected: expectedChecked,
+            actual: actualChecked,
+          };
+          return errAsync(error);
+        }
 
-    if (actualChecked !== expectedChecked) {
-      const error: AssertionFailedError = {
-        type: 'assertion_failed',
-        message: `Element "${command.selector}" checked state is ${actualChecked}, expected ${expectedChecked}`,
-        command: 'assertChecked',
-        selector: command.selector,
-        expected: expectedChecked,
-        actual: actualChecked,
-      };
-      return err(error);
-    }
-
-    return ok({
-      stdout: JSON.stringify(data),
-      duration,
-    });
-  });
+        return okAsync({
+          stdout: JSON.stringify(data),
+          duration,
+        });
+      }),
+    (error) => errAsync(error),
+  );
 };

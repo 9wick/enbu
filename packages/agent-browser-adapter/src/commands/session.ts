@@ -4,7 +4,7 @@
  * ブラウザセッションの管理に関するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError } from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
@@ -17,10 +17,7 @@ import { validateAndExtractData } from '../validator';
  * @param sessionName - クローズするセッション名
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */
-export const browserClose = async (
-  sessionName: string,
-): Promise<Result<EmptyData, AgentBrowserError>> => {
-  return (await executeCommand('close', ['--json'], { sessionName })).andThen((stdout) =>
+export const browserClose = (sessionName: string): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('close', ['--json'], { sessionName }).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'close'),
   );
-};

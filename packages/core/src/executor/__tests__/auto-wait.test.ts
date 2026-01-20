@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ok, err } from 'neverthrow';
+import { okAsync, errAsync } from 'neverthrow';
 import { autoWait } from '../auto-wait';
 import type { ExecutionContext } from '../result';
 
@@ -40,8 +40,8 @@ describe('autoWait', () => {
    */
   it('AW-1: 要素が最初のsnapshotで見つかる場合、すぐに成功を返す', async () => {
     // Arrange: snapshotが "ログイン" 要素を含む
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
+    vi.mocked(browserSnapshot).mockReturnValue(
+      okAsync({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
 
     // Act: ログイン要素を待機
@@ -68,9 +68,9 @@ describe('autoWait', () => {
   it('AW-2: ポーリングで要素が見つかる場合、成功を返す', async () => {
     // Arrange: 1回目は空、2回目でログイン要素が出現
     vi.mocked(browserSnapshot)
-      .mockResolvedValueOnce(ok({ snapshot: '', refs: {} }))
-      .mockResolvedValueOnce(
-        ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
+      .mockReturnValueOnce(okAsync({ snapshot: '', refs: {} }))
+      .mockReturnValueOnce(
+        okAsync({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
       );
 
     // Act: ログイン要素を待機
@@ -90,7 +90,7 @@ describe('autoWait', () => {
    */
   it('AW-3: タイムアウトまで要素が見つからない場合、timeoutエラーを返す', async () => {
     // Arrange: 常に空のsnapshotを返す
-    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs: {} }));
+    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs: {} }));
 
     // Act: 存在しない要素を待機
     const promise = autoWait('NotExist', mockContext);
@@ -140,8 +140,8 @@ describe('autoWait', () => {
    */
   it('AW-5: 参照ID形式のセレクタで要素が見つかる', async () => {
     // Arrange: snapshotが e1 参照を含む
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      ok({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
+    vi.mocked(browserSnapshot).mockReturnValue(
+      okAsync({ snapshot: '', refs: { e1: { name: 'ログイン', role: 'button' } } }),
     );
 
     // Act: @e1 参照IDで待機
@@ -161,8 +161,8 @@ describe('autoWait', () => {
    */
   it('AW-6: snapshotのパースが失敗した場合、エラーを返す', async () => {
     // Arrange: snapshotのパースが失敗
-    vi.mocked(browserSnapshot).mockResolvedValue(
-      err({
+    vi.mocked(browserSnapshot).mockReturnValue(
+      errAsync({
         type: 'agent_browser_output_parse_error',
         message: 'Invalid refs',
         command: 'snapshot',
@@ -204,7 +204,7 @@ describe('autoWait', () => {
       e5: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs: multipleRefs }));
+    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs: multipleRefs }));
 
     // Act: 「詳細を見る」を待機
     const promise = autoWait('詳細を見る', mockContext);
@@ -242,7 +242,7 @@ describe('autoWait', () => {
       e4: { name: '詳細を見る', role: 'link' },
     };
 
-    vi.mocked(browserSnapshot).mockResolvedValue(ok({ snapshot: '', refs }));
+    vi.mocked(browserSnapshot).mockReturnValue(okAsync({ snapshot: '', refs }));
 
     // Act: 「ログイン」を待機
     const promise = autoWait('ログイン', mockContext);

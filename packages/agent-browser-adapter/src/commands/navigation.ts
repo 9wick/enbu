@@ -4,7 +4,7 @@
  * ブラウザのURL移動に関するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, Url } from '../types';
 import type { OpenData } from '../schemas';
 import { OpenDataSchema } from '../schemas';
@@ -20,11 +20,10 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション
  * @returns 成功時: OpenData、失敗時: AgentBrowserError
  */
-export const browserOpen = async (
+export const browserOpen = (
   url: Url,
   options: ExecuteOptions = {},
-): Promise<Result<OpenData, AgentBrowserError>> => {
-  return (await executeCommand('open', [url, '--json'], options)).andThen((stdout) =>
+): ResultAsync<OpenData, AgentBrowserError> =>
+  executeCommand('open', [url, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, OpenDataSchema, 'open'),
   );
-};

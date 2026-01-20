@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { okAsync, errAsync } from 'neverthrow';
 import { runInitCommand } from '../../commands/init';
 import * as fsUtils from '../../utils/fs';
 
@@ -19,24 +20,8 @@ describe('runInitCommand', () => {
 
     // デフォルトのモック動作
     vi.mocked(fsUtils.fileExists).mockResolvedValue(false);
-    vi.mocked(fsUtils.createDirectory).mockReturnValue({
-      isOk: () => true,
-      isErr: () => false,
-      map: vi.fn(),
-      mapErr: vi.fn(),
-      andThen: vi.fn(),
-      orElse: vi.fn(),
-      match: vi.fn(),
-    } as never);
-    vi.mocked(fsUtils.writeFileContent).mockReturnValue({
-      isOk: () => true,
-      isErr: () => false,
-      map: vi.fn(),
-      mapErr: vi.fn(),
-      andThen: vi.fn(),
-      orElse: vi.fn(),
-      match: vi.fn(),
-    } as never);
+    vi.mocked(fsUtils.createDirectory).mockReturnValue(okAsync(undefined));
+    vi.mocked(fsUtils.writeFileContent).mockReturnValue(okAsync(undefined));
   });
 
   /**
@@ -103,16 +88,9 @@ describe('runInitCommand', () => {
    */
   it('I-4: ファイルシステムエラーが発生した場合、エラーを返す', async () => {
     // Arrange
-    vi.mocked(fsUtils.createDirectory).mockReturnValue({
-      isOk: () => false,
-      isErr: () => true,
-      error: { type: 'execution_error', message: 'Permission denied' },
-      map: vi.fn(),
-      mapErr: vi.fn(),
-      andThen: vi.fn(),
-      orElse: vi.fn(),
-      match: vi.fn(),
-    } as never);
+    vi.mocked(fsUtils.createDirectory).mockReturnValue(
+      errAsync({ type: 'execution_error', message: 'Permission denied' }),
+    );
 
     // Act
     const result = await runInitCommand({ force: false, verbose: false });

@@ -1,4 +1,4 @@
-import type { Result } from 'neverthrow';
+import type { ResultAsync } from 'neverthrow';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { Command } from '../../types';
 import type { CommandHandler, ExecutionContext, CommandResult, ExecutorError } from '../result';
@@ -32,7 +32,7 @@ import {
 const routeNavigationInputCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+): ResultAsync<CommandResult, AgentBrowserError> | null => {
   switch (command.command) {
     case 'open':
       return handleOpen(command, context);
@@ -53,7 +53,7 @@ const routeNavigationInputCommand = (
 const routeInteractionCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+): ResultAsync<CommandResult, AgentBrowserError> | null => {
   switch (command.command) {
     case 'press':
       return handlePress(command, context);
@@ -72,7 +72,7 @@ const routeInteractionCommand = (
 const routeScrollWaitCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+): ResultAsync<CommandResult, AgentBrowserError> | null => {
   switch (command.command) {
     case 'scroll':
       return handleScroll(command, context);
@@ -91,7 +91,7 @@ const routeScrollWaitCommand = (
 const routeAssertionCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, ExecutorError>> | null => {
+): ResultAsync<CommandResult, ExecutorError> | null => {
   switch (command.command) {
     case 'assertVisible':
       return handleAssertVisible(command, context);
@@ -112,7 +112,7 @@ const routeAssertionCommand = (
 const routeUtilityCommand = (
   command: Command,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> | null => {
+): ResultAsync<CommandResult, AgentBrowserError> | null => {
   switch (command.command) {
     case 'screenshot':
       return handleScreenshot(command, context);

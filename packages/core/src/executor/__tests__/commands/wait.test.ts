@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok } from 'neverthrow';
+import { okAsync } from 'neverthrow';
 import { handleWait } from '../../commands/wait';
 import type { WaitCommand } from '../../../types';
 import type { ExecutionContext } from '../../result';
@@ -12,9 +12,9 @@ vi.mock('@packages/agent-browser-adapter', () => ({
   browserWaitForLoad: vi.fn(),
   browserWaitForUrl: vi.fn(),
   browserWaitForFunction: vi.fn(),
-  asSelector: vi.fn((v) => ok(v)),
-  asJsExpression: vi.fn((v) => ok(v)),
-  asUrl: vi.fn((v) => ok(v)),
+  asSelector: vi.fn((v) => okAsync(v)),
+  asJsExpression: vi.fn((v) => okAsync(v)),
+  asUrl: vi.fn((v) => okAsync(v)),
 }));
 
 import {
@@ -56,7 +56,7 @@ describe('handleWait', () => {
       ms: 1000,
     };
 
-    vi.mocked(browserWaitForMs).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForMs).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
@@ -79,8 +79,8 @@ describe('handleWait', () => {
       selector: '#loading-spinner',
     };
 
-    vi.mocked(browserWaitForSelector).mockResolvedValue(
-      ok({ success: true, data: {}, error: null }),
+    vi.mocked(browserWaitForSelector).mockReturnValue(
+      okAsync({ success: true, data: {}, error: null }),
     );
 
     // Act
@@ -107,7 +107,9 @@ describe('handleWait', () => {
       text: '読み込み完了',
     };
 
-    vi.mocked(browserWaitForText).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForText).mockReturnValue(
+      okAsync({ success: true, data: {}, error: null }),
+    );
 
     // Act
     const result = await handleWait(command, mockContext);
@@ -130,7 +132,9 @@ describe('handleWait', () => {
       load: 'networkidle',
     };
 
-    vi.mocked(browserWaitForLoad).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForLoad).mockReturnValue(
+      okAsync({ success: true, data: {}, error: null }),
+    );
 
     // Act
     const result = await handleWait(command, mockContext);
@@ -153,7 +157,7 @@ describe('handleWait', () => {
       url: '**/dashboard',
     };
 
-    vi.mocked(browserWaitForUrl).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserWaitForUrl).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleWait(command, mockContext);
@@ -176,8 +180,8 @@ describe('handleWait', () => {
       fn: 'window.appReady === true',
     };
 
-    vi.mocked(browserWaitForFunction).mockResolvedValue(
-      ok({ success: true, data: {}, error: null }),
+    vi.mocked(browserWaitForFunction).mockReturnValue(
+      okAsync({ success: true, data: {}, error: null }),
     );
 
     // Act

@@ -4,7 +4,7 @@
  * ブラウザの画面キャプチャに関するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, FilePath, ScreenshotOptions } from '../types';
 import type { ScreenshotData, SnapshotData } from '../schemas';
 import { ScreenshotDataSchema, SnapshotDataSchema } from '../schemas';
@@ -18,14 +18,14 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション（fullPageオプション含む）
  * @returns 成功時: ScreenshotData、失敗時: AgentBrowserError
  */
-export const browserScreenshot = async (
+export const browserScreenshot = (
   path: FilePath,
   options: ScreenshotOptions = {},
-): Promise<Result<ScreenshotData, AgentBrowserError>> => {
+): ResultAsync<ScreenshotData, AgentBrowserError> => {
   const { fullPage, ...executeOptions } = options;
   const args = fullPage ? [path, '--full', '--json'] : [path, '--json'];
 
-  return (await executeCommand('screenshot', args, executeOptions)).andThen((stdout) =>
+  return executeCommand('screenshot', args, executeOptions).andThen((stdout) =>
     validateAndExtractData(stdout, ScreenshotDataSchema, 'screenshot'),
   );
 };
@@ -36,10 +36,9 @@ export const browserScreenshot = async (
  * @param options - 実行オプション
  * @returns 成功時: SnapshotData、失敗時: AgentBrowserError
  */
-export const browserSnapshot = async (
+export const browserSnapshot = (
   options: ExecuteOptions = {},
-): Promise<Result<SnapshotData, AgentBrowserError>> => {
-  return (await executeCommand('snapshot', ['--json'], options)).andThen((stdout) =>
+): ResultAsync<SnapshotData, AgentBrowserError> =>
+  executeCommand('snapshot', ['--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, SnapshotDataSchema, 'snapshot'),
   );
-};

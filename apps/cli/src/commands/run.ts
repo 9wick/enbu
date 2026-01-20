@@ -5,7 +5,7 @@
  * 実行結果を表示し、終了コードを返す。
  */
 
-import { type Result, ok, err, fromPromise } from 'neverthrow';
+import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { glob } from 'glob';
@@ -98,21 +98,17 @@ type RunCommandArgs = {
  * @param formatter - 出力フォーマッター
  * @returns 成功時: void、失敗時: CliError
  */
-const checkAgentBrowserInstallation = async (
-  formatter: OutputFormatter,
-): Promise<Result<void, CliError>> => {
+const checkAgentBrowserInstallation = (formatter: OutputFormatter): ResultAsync<void, CliError> => {
   formatter.info('Checking agent-browser...');
   formatter.debug('Checking agent-browser installation...');
 
-  const checkResult = await checkAgentBrowser();
-
-  return checkResult.match(
-    () => {
+  return checkAgentBrowser()
+    .map(() => {
       formatter.success('agent-browser is installed');
       formatter.newline();
-      return ok(undefined);
-    },
-    (error) => {
+      return undefined;
+    })
+    .mapErr((error) => {
       formatter.failure('agent-browser is not installed');
       formatter.newline();
       formatter.error('Error: agent-browser is not installed');
@@ -123,12 +119,11 @@ const checkAgentBrowserInstallation = async (
           ? error.message
           : `${error.type}: ${error.type === 'command_failed' ? (error.rawError ?? error.stderr) : ''}`;
 
-      return err({
+      return {
         type: 'execution_error' as const,
         message: errorMessage,
-      });
-    },
-  );
+      };
+    });
 };
 
 /**
@@ -139,15 +134,15 @@ const checkAgentBrowserInstallation = async (
  * @param files - 指定されたファイルパスの配列
  * @returns 成功時: 解決されたファイルパスの配列、失敗時: CliError
  */
-const resolveFlowFiles = async (files: string[]): Promise<Result<string[], CliError>> => {
+const resolveFlowFiles = (files: string[]): ResultAsync<string[], CliError> => {
   if (files.length > 0) {
     // ファイルパスが指定されている場合、絶対パスに変換
-    return ok(files.map((f) => resolve(process.cwd(), f)));
+    return okAsync(files.map((f) => resolve(process.cwd(), f)));
   }
 
   // 指定がない場合、.abflow/ 配下を検索
   const pattern = resolve(process.cwd(), '.abflow', '*.enbu.yaml');
-  return fromPromise(
+  return ResultAsync.fromPromise(
     glob(pattern),
     (error): CliError => ({
       type: 'execution_error' as const,
@@ -163,35 +158,59 @@ const resolveFlowFiles = async (files: string[]): Promise<Result<string[], CliEr
  * @param filePath - フローファイルのパス
  * @returns 成功時: Flowオブジェクト、失敗時: CliError
  */
-const loadFlowFromFile = async (filePath: string): Promise<Result<Flow, CliError>> => {
+const loadFlowFromFile = (filePath: string): ResultAsync<Flow, CliError> => {
   // ファイル読み込み
-  const readResult = await fromPromise<string, CliError>(
+  return ResultAsync.fromPromise<string, CliError>(
     readFile(filePath, 'utf-8'),
     (error): CliError => ({
       type: 'execution_error' as const,
       message: `Failed to read file: ${filePath}`,
       cause: error,
     }),
-  );
+  ).andThen((yamlContent) => {
+    // ファイル名を抽出（拡張子付き）
+    const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
 
-  if (readResult.isErr()) {
-    return err(readResult.error);
+    // YAMLをパース
+    const parseResult = parseFlowYaml(yamlContent, fileName);
+    return parseResult.match(
+      (flow) => okAsync(flow),
+      (parseError): ResultAsync<Flow, CliError> =>
+        errAsync({
+          type: 'execution_error' as const,
+          message: `Failed to parse flow file: ${parseError.message}`,
+          cause: parseError,
+        }),
+    );
+  });
+};
+
+/**
+ * フローファイルを再帰的に読み込む
+ *
+ * @param remainingFiles - 残りのフローファイルパス
+ * @param loadedFlows - 読み込み済みのフロー配列
+ * @param formatter - 出力フォーマッター
+ * @returns 成功時: Flowオブジェクトの配列、失敗時: CliError
+ */
+const loadFlowsRecursively = (
+  remainingFiles: string[],
+  loadedFlows: Flow[],
+  formatter: OutputFormatter,
+): ResultAsync<Flow[], CliError> => {
+  // 全ファイル読み込み完了
+  if (remainingFiles.length === 0) {
+    return okAsync(loadedFlows);
   }
 
-  const yamlContent = readResult.value;
+  const [currentFile, ...restFiles] = remainingFiles;
 
-  // ファイル名を抽出（拡張子付き）
-  const fileName = filePath.split('/').pop() ?? 'unknown.enbu.yaml';
-
-  // YAMLをパース
-  const parseResult = parseFlowYaml(yamlContent, fileName);
-  return parseResult.mapErr(
-    (parseError): CliError => ({
-      type: 'execution_error' as const,
-      message: `Failed to parse flow file: ${parseError.message}`,
-      cause: parseError,
-    }),
-  );
+  return loadFlowFromFile(currentFile)
+    .mapErr((error): CliError => {
+      formatter.failure(`Failed to load flows: ${error.message}`);
+      return error;
+    })
+    .andThen((flow) => loadFlowsRecursively(restFiles, [...loadedFlows, flow], formatter));
 };
 
 /**
@@ -201,28 +220,18 @@ const loadFlowFromFile = async (filePath: string): Promise<Result<Flow, CliError
  * @param formatter - 出力フォーマッター
  * @returns 成功時: Flowオブジェクトの配列、失敗時: CliError
  */
-const loadFlows = async (
+const loadFlows = (
   flowFiles: string[],
   formatter: OutputFormatter,
-): Promise<Result<Flow[], CliError>> => {
+): ResultAsync<Flow[], CliError> => {
   formatter.info('Loading flows...');
   formatter.debug(`Loading flows from: ${flowFiles.join(', ')}`);
 
-  // 各ファイルを順次読み込み
-  const flows: Flow[] = [];
-  for (const filePath of flowFiles) {
-    const loadResult = await loadFlowFromFile(filePath);
-    if (loadResult.isErr()) {
-      formatter.failure(`Failed to load flows: ${loadResult.error.message}`);
-      return err(loadResult.error);
-    }
-    flows.push(loadResult.value);
-  }
-
-  formatter.success(`Loaded ${flows.length} flow(s)`);
-  formatter.newline();
-
-  return ok(flows);
+  return loadFlowsRecursively(flowFiles, [], formatter).map((flows) => {
+    formatter.success(`Loaded ${flows.length} flow(s)`);
+    formatter.newline();
+    return flows;
+  });
 };
 
 /**
@@ -367,22 +376,20 @@ const createStepProgressCallback = (
  * @param sessionName - セッション名
  * @returns 成功時: FlowResult、失敗時: CliError
  */
-const executeFlowWithProgress = async (
+const executeFlowWithProgress = (
   flow: Flow,
   args: RunCommandArgs,
   sessionName: string,
-): Promise<Result<FlowResult, CliError>> => {
-  // フロー実行（ステップ失敗時は即停止）
-  const executeResult = await executeFlow(flow, {
+): ResultAsync<FlowResult, CliError> => {
+  // フロー実行
+  return executeFlow(flow, {
     sessionName,
     headed: args.headed,
     env: args.env,
     commandTimeoutMs: args.timeout,
     screenshot: args.screenshot,
     onStepProgress: createStepProgressCallback(args.progressJson),
-  });
-
-  return executeResult.mapErr(
+  }).mapErr(
     (agentError: AgentBrowserError): CliError => ({
       type: 'execution_error' as const,
       message: formatAgentBrowserErrorMessage(agentError),
@@ -565,45 +572,40 @@ const executeAllFlows = async (
  * @param formatter - 出力フォーマッター
  * @returns 成功時: 実行結果、失敗時: CliError
  */
-export const runFlowCommand = async (
+export const runFlowCommand = (
   args: RunCommandArgs,
   formatter: OutputFormatter,
-): Promise<Result<FlowExecutionResult, CliError>> => {
+): ResultAsync<FlowExecutionResult, CliError> => {
   formatter.debug(`Args: ${JSON.stringify(args)}`);
 
   // 1. agent-browserインストール確認
-  const checkResult = await checkAgentBrowserInstallation(formatter);
-  if (checkResult.isErr()) {
-    return err(checkResult.error);
-  }
+  return checkAgentBrowserInstallation(formatter)
+    .andThen(() => {
+      // 2. フローファイル解決
+      return resolveFlowFiles(args.files);
+    })
+    .andThen((flowFiles) => {
+      if (flowFiles.length === 0) {
+        formatter.error('Error: No flow files found');
+        formatter.error('Try: npx enbu init');
+        return errAsync({
+          type: 'execution_error' as const,
+          message: 'No flow files found',
+        });
+      }
 
-  // 2. フローファイル解決
-  const flowFilesResult = await resolveFlowFiles(args.files);
-  if (flowFilesResult.isErr()) {
-    return err(flowFilesResult.error);
-  }
-
-  const flowFiles = flowFilesResult.value;
-
-  if (flowFiles.length === 0) {
-    formatter.error('Error: No flow files found');
-    formatter.error('Try: npx enbu init');
-    return err({
-      type: 'execution_error' as const,
-      message: 'No flow files found',
+      // 3. フローファイル読み込み
+      return loadFlows(flowFiles, formatter);
+    })
+    .andThen((flows) => {
+      // 4. フロー実行
+      return ResultAsync.fromPromise(
+        executeAllFlows(flows, args, formatter),
+        (error): CliError => ({
+          type: 'execution_error' as const,
+          message: 'Failed to execute flows',
+          cause: error,
+        }),
+      );
     });
-  }
-
-  // 3. フローファイル読み込み
-  const loadResult = await loadFlows(flowFiles, formatter);
-  if (loadResult.isErr()) {
-    return err(loadResult.error);
-  }
-
-  const flows = loadResult.value;
-
-  // 4. フロー実行
-  const executionResult = await executeAllFlows(flows, args, formatter);
-
-  return ok(executionResult);
 };

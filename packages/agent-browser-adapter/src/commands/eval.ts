@@ -4,7 +4,7 @@
  * ブラウザコンテキストでJavaScriptを実行するコマンドを提供する。
  */
 
-import type { Result } from 'neverthrow';
+import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, JsExpression } from '../types';
 import type { EvalData } from '../schemas';
 import { EvalDataSchema } from '../schemas';
@@ -18,11 +18,10 @@ import { validateAndExtractData } from '../validator';
  * @param options - 実行オプション
  * @returns 成功時: EvalData、失敗時: AgentBrowserError
  */
-export const browserEval = async (
+export const browserEval = (
   script: JsExpression,
   options: ExecuteOptions = {},
-): Promise<Result<EvalData, AgentBrowserError>> => {
-  return (await executeCommand('eval', [script, '--json'], options)).andThen((stdout) =>
+): ResultAsync<EvalData, AgentBrowserError> =>
+  executeCommand('eval', [script, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EvalDataSchema, 'eval'),
   );
-};

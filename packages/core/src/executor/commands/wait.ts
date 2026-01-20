@@ -1,5 +1,4 @@
-import type { Result } from 'neverthrow';
-import { err } from 'neverthrow';
+import { type ResultAsync, errAsync } from 'neverthrow';
 import {
   browserWaitForMs,
   browserWaitForSelector,
@@ -35,17 +34,15 @@ const createResultMapper =
  * @param toResult - CommandResult変換関数
  * @returns コマンド実行結果
  */
-const handleWaitSelector = async (
+const handleWaitSelector = (
   selector: string,
   options: ExecuteOptions,
   toResult: <T>(output: T) => CommandResult,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
-  const selectorResult = asSelector(selector);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
-  return (await browserWaitForSelector(selectorResult.value, options)).map(toResult);
-};
+): ResultAsync<CommandResult, AgentBrowserError> =>
+  asSelector(selector).match(
+    (sel) => browserWaitForSelector(sel, options).map(toResult),
+    (error) => errAsync(error),
+  );
 
 /**
  * JS式指定のwaitを処理する
@@ -55,17 +52,15 @@ const handleWaitSelector = async (
  * @param toResult - CommandResult変換関数
  * @returns コマンド実行結果
  */
-const handleWaitFunction = async (
+const handleWaitFunction = (
   fn: string,
   options: ExecuteOptions,
   toResult: <T>(output: T) => CommandResult,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
-  const exprResult = asJsExpression(fn);
-  if (exprResult.isErr()) {
-    return err(exprResult.error);
-  }
-  return (await browserWaitForFunction(exprResult.value, options)).map(toResult);
-};
+): ResultAsync<CommandResult, AgentBrowserError> =>
+  asJsExpression(fn).match(
+    (expr) => browserWaitForFunction(expr, options).map(toResult),
+    (error) => errAsync(error),
+  );
 
 /**
  * wait コマンドのハンドラ
@@ -82,16 +77,16 @@ const handleWaitFunction = async (
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleWait = async (
+export const handleWait = (
   command: WaitCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const toResult = createResultMapper(Date.now());
   const options = context.executeOptions;
 
   // ミリ秒指定の場合: wait <ms>
   if ('ms' in command) {
-    return (await browserWaitForMs(command.ms, options)).map(toResult);
+    return browserWaitForMs(command.ms, options).map(toResult);
   }
 
   // セレクタ指定の場合: wait <selector>
@@ -101,18 +96,18 @@ export const handleWait = async (
 
   // テキスト指定の場合: wait --text <text>
   if ('text' in command) {
-    return (await browserWaitForText(command.text, options)).map(toResult);
+    return browserWaitForText(command.text, options).map(toResult);
   }
 
   // ロード状態指定の場合: wait --load <state>
   if ('load' in command) {
     const loadState: LoadState = command.load;
-    return (await browserWaitForLoad(loadState, options)).map(toResult);
+    return browserWaitForLoad(loadState, options).map(toResult);
   }
 
   // URL指定の場合: wait --url <pattern>
   if ('url' in command) {
-    return (await browserWaitForUrl(command.url, options)).map(toResult);
+    return browserWaitForUrl(command.url, options).map(toResult);
   }
 
   // JS式指定の場合: wait --fn <expression>

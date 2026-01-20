@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok, err } from 'neverthrow';
+import { okAsync, errAsync, ok } from 'neverthrow';
 import { handleClick, handleType, handleFill, handlePress } from '../../commands/interaction';
 import type { ClickCommand, TypeCommand, FillCommand, PressCommand } from '../../../types';
 import type { ExecutionContext } from '../../result';
@@ -51,7 +51,7 @@ describe('handleClick', () => {
       selector: 'ログインボタン',
     };
 
-    vi.mocked(browserClick).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserClick).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleClick(command, mockContext);
@@ -81,8 +81,8 @@ describe('handleClick', () => {
       selector: '存在しないボタン',
     };
 
-    vi.mocked(browserClick).mockResolvedValue(
-      err({
+    vi.mocked(browserClick).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         message: 'Element not found',
         command: 'click',
@@ -140,7 +140,7 @@ describe('handleType', () => {
       value: 'テストユーザー',
     };
 
-    vi.mocked(browserType).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserType).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleType(command, mockContext);
@@ -181,7 +181,7 @@ describe('handleFill', () => {
       value: 'test@example.com',
     };
 
-    vi.mocked(browserFill).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserFill).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handleFill(command, mockContext);
@@ -221,7 +221,7 @@ describe('handlePress', () => {
       key: 'Enter',
     };
 
-    vi.mocked(browserPress).mockResolvedValue(ok({ success: true, data: {}, error: null }));
+    vi.mocked(browserPress).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
 
     // Act
     const result = await handlePress(command, mockContext);

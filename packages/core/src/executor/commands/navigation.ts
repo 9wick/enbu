@@ -1,5 +1,4 @@
-import { err } from 'neverthrow';
-import type { Result } from 'neverthrow';
+import { type ResultAsync, errAsync } from 'neverthrow';
 import { browserOpen, asUrl } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { OpenCommand } from '../../types';
@@ -15,21 +14,18 @@ import type { ExecutionContext, CommandResult } from '../result';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleOpen = async (
+export const handleOpen = (
   command: OpenCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
 
-  // URL検証
-  const urlResult = asUrl(command.url);
-  if (urlResult.isErr()) {
-    return err(urlResult.error);
-  }
-
-  // ブラウザ操作実行
-  return (await browserOpen(urlResult.value, context.executeOptions)).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
+  return asUrl(command.url).match(
+    (url) =>
+      browserOpen(url, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      })),
+    (error) => errAsync(error),
+  );
 };

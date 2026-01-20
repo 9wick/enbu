@@ -6,7 +6,7 @@
  * 要素が見つかるまでポーリングを行う。
  */
 
-import { Result, ok, err } from 'neverthrow';
+import { type Result, ResultAsync, ok, err, okAsync, errAsync } from 'neverthrow';
 import { browserSnapshot } from '@packages/agent-browser-adapter';
 import type { AgentBrowserError, SnapshotRefs } from '@packages/agent-browser-adapter';
 import type { ExecutionContext } from './result';
@@ -26,6 +26,15 @@ export type AutoWaitResult = {
 };
 
 /**
+ * ポーリングの結果型（内部使用）
+ * - continue: 要素が見つからなかったので次のポーリングへ
+ * - done: 成功または失敗で終了
+ */
+type PollResult =
+  | { type: 'continue' }
+  | { type: 'done'; result: Result<AutoWaitResult, AgentBrowserError> };
+
+/**
  * スナップショット取得結果を処理し、refsを取得する
  *
  * スナップショット取得が成功し、データが存在する場合はrefsを返す。
@@ -41,61 +50,169 @@ const processSnapshotResult = (
 };
 
 /**
- * マッチング結果を処理し、適切なResultを返す
+ * マッチング結果を処理し、適切なPollResultを返す
  *
  * - found: 成功として解決されたrefを返す
  * - multiple: command_execution_failedを返す
- * - not_found: undefinedを返す（継続してポーリングする）
+ * - not_found: continueを返す（継続してポーリングする）
  *
  * @param matchResult - findMatchingRefIdの実行結果
  * @param selector - 検索に使用したセレクタ（エラーメッセージ用）
- * @returns 成功時: AutoWaitResult、失敗時: AgentBrowserError、継続時: undefined
+ * @returns PollResult
  */
-const handleMatchResult = (
-  matchResult: MatchResult,
-  selector: string,
-): Result<AutoWaitResult, AgentBrowserError> | undefined => {
+const handleMatchResult = (matchResult: MatchResult, selector: string): PollResult => {
   if (matchResult.type === 'found') {
-    return ok({ resolvedRef: `@${matchResult.refId}` });
+    return {
+      type: 'done',
+      result: ok({ resolvedRef: `@${matchResult.refId}` }),
+    };
   }
   if (matchResult.type === 'multiple') {
-    return err({
-      type: 'command_execution_failed',
-      message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
-      command: 'auto-wait',
-      rawError: `Multiple matches: ${matchResult.refIds.join(', ')}`,
-    });
+    return {
+      type: 'done',
+      result: err({
+        type: 'command_execution_failed',
+        message: `Selector "${selector}" matched ${matchResult.refIds.length} elements. Use a more specific selector or specify index.`,
+        command: 'auto-wait',
+        rawError: `Multiple matches: ${matchResult.refIds.join(', ')}`,
+      }),
+    };
   }
-  return undefined;
+  return { type: 'continue' };
 };
 
 /**
  * タイムアウトをチェックする
  *
- * 経過時間がタイムアウト時間を超えている場合はtimeoutエラーを返す。
- * 超えていない場合はundefinedを返す（継続してポーリングする）。
+ * 経過時間がタイムアウト時間を超えている場合はdone(err)を返す。
+ * 超えていない場合はcontinueを返す（継続してポーリングする）。
  *
  * @param startTime - 処理開始時刻（ミリ秒）
  * @param timeoutMs - タイムアウト時間（ミリ秒）
  * @param selector - 検索に使用したセレクタ（エラーメッセージ用）
- * @returns タイムアウト時: AgentBrowserError、継続時: undefined
+ * @returns PollResult
  */
-const checkTimeout = (
-  startTime: number,
-  timeoutMs: number,
-  selector: string,
-): Result<never, AgentBrowserError> | undefined => {
+const checkTimeout = (startTime: number, timeoutMs: number, selector: string): PollResult => {
   const elapsed = Date.now() - startTime;
   if (elapsed >= timeoutMs) {
-    return err({
-      type: 'timeout',
-      command: 'auto-wait',
-      args: [selector],
-      timeoutMs,
-    });
+    return {
+      type: 'done',
+      result: err({
+        type: 'timeout',
+        command: 'auto-wait',
+        args: [selector],
+        timeoutMs,
+      }),
+    };
   }
-  return undefined;
+  return { type: 'continue' };
 };
+
+/**
+ * 単一のポーリングイテレーションを実行する
+ *
+ * @param selector - 検索するセレクタ
+ * @param context - 実行コンテキスト
+ * @param startTime - 処理開始時刻
+ * @param pollCount - 現在のポーリング回数
+ * @returns PollResultを含むResultAsync
+ */
+const executePollIteration = (
+  selector: string,
+  context: ExecutionContext,
+  startTime: number,
+  pollCount: number,
+): ResultAsync<PollResult, AgentBrowserError> => {
+  debugLog(`poll #${pollCount}: calling snapshot...`);
+
+  return browserSnapshot(context.executeOptions).andThen((snapshotOutput) => {
+    debugLog(`poll #${pollCount}: snapshot done`);
+
+    const refsResult = processSnapshotResult(ok(snapshotOutput));
+    if (refsResult.isErr()) {
+      debugLog(`poll #${pollCount}: error`, refsResult.error);
+      return errAsync(refsResult.error);
+    }
+
+    const refs = refsResult.value;
+    debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
+
+    // セレクタに一致する要素を検索
+    const matchResult = findMatchingRefId(selector, refs);
+
+    // マッチング結果を処理
+    const pollResult = handleMatchResult(matchResult, selector);
+    if (pollResult.type === 'done') {
+      if (pollResult.result.isOk()) {
+        debugLog(
+          `poll #${pollCount}: element found! resolvedRef=${pollResult.result.value.resolvedRef}`,
+        );
+      } else {
+        debugLog(`poll #${pollCount}: multiple elements matched!`);
+      }
+      return okAsync(pollResult);
+    }
+
+    // タイムアウトチェック
+    debugLog(`poll #${pollCount}: not found, elapsed=${Date.now() - startTime}ms`);
+    const timeoutResult = checkTimeout(startTime, context.autoWaitTimeoutMs, selector);
+    if (timeoutResult.type === 'done') {
+      debugLog(`poll #${pollCount}: TIMEOUT`);
+      return okAsync(timeoutResult);
+    }
+
+    debugLog(`poll #${pollCount}: will continue...`);
+    const continueResult: PollResult = { type: 'continue' };
+    return okAsync(continueResult);
+  });
+};
+
+/**
+ * sleep後に次のポーリングを実行する
+ *
+ * @param selector - 検索するセレクタ
+ * @param context - 実行コンテキスト
+ * @param startTime - 処理開始時刻
+ * @param pollCount - 現在のポーリング回数
+ * @returns AutoWaitResultを含むResultAsync
+ */
+const sleepAndPollNext = (
+  selector: string,
+  context: ExecutionContext,
+  startTime: number,
+  pollCount: number,
+): ResultAsync<AutoWaitResult, AgentBrowserError> =>
+  ResultAsync.fromSafePromise(sleep(context.autoWaitIntervalMs)).andThen(() =>
+    pollRecursively(selector, context, startTime, pollCount + 1),
+  );
+
+/**
+ * 再帰的にポーリングを実行する
+ *
+ * @param selector - 検索するセレクタ
+ * @param context - 実行コンテキスト
+ * @param startTime - 処理開始時刻
+ * @param pollCount - 現在のポーリング回数
+ * @returns AutoWaitResultを含むResultAsync
+ */
+const pollRecursively = (
+  selector: string,
+  context: ExecutionContext,
+  startTime: number,
+  pollCount: number,
+): ResultAsync<AutoWaitResult, AgentBrowserError> =>
+  executePollIteration(selector, context, startTime, pollCount).andThen((pollResult) => {
+    if (pollResult.type === 'done') {
+      // 成功または失敗で終了
+      return pollResult.result.match(
+        (value) => okAsync(value),
+        (error) => errAsync(error),
+      );
+    }
+
+    // 次のポーリングまで待機してから再帰
+    return sleepAndPollNext(selector, context, startTime, pollCount);
+  });
 
 /**
  * 要素の出現を待機する
@@ -109,68 +226,22 @@ const checkTimeout = (
  * @param context - 実行コンテキスト（タイムアウト時間、ポーリング間隔などを含む）
  * @returns 成功時: 解決されたrefを含む結果、失敗時: AgentBrowserError
  */
-export const autoWait = async (
+export const autoWait = (
   selector: string | undefined,
   context: ExecutionContext,
-): Promise<Result<AutoWaitResult | undefined, AgentBrowserError>> => {
+): ResultAsync<AutoWaitResult | undefined, AgentBrowserError> => {
   debugLog(`autoWait start: selector=${selector}`);
+
   // セレクタがない場合はスキップ
   if (!selector) {
     debugLog('no selector, skipping');
-    return ok(undefined);
+    return okAsync(undefined);
   }
 
   const startTime = Date.now();
-  const { autoWaitTimeoutMs, autoWaitIntervalMs, executeOptions } = context;
-  debugLog(`timeout=${autoWaitTimeoutMs}ms, interval=${autoWaitIntervalMs}ms`);
+  debugLog(`timeout=${context.autoWaitTimeoutMs}ms, interval=${context.autoWaitIntervalMs}ms`);
 
-  let pollCount = 0;
-  // ポーリングループ
-  while (true) {
-    pollCount++;
-    debugLog(`poll #${pollCount}: calling snapshot...`);
-    // snapshot取得（全要素を対象とする。-iオプションはインタラクティブ要素のみになり、
-    // assertVisibleなどで静的テキスト要素が見つからなくなるため使用しない）
-    const snapshotResult = await browserSnapshot(executeOptions);
-    debugLog(`poll #${pollCount}: snapshot done, isOk=${snapshotResult.isOk()}`);
-
-    // snapshotのパース失敗またはデータ取得失敗は致命的エラー
-    const refsResult = processSnapshotResult(snapshotResult);
-    if (refsResult.isErr()) {
-      debugLog(`poll #${pollCount}: error`, refsResult.error);
-      return err(refsResult.error);
-    }
-
-    const refs = refsResult.value;
-    debugLog(`poll #${pollCount}: refs count=${Object.keys(refs).length}`);
-
-    // セレクタに一致する要素を検索
-    const matchResult = findMatchingRefId(selector, refs);
-
-    // マッチング結果を処理
-    const handledResult = handleMatchResult(matchResult, selector);
-    if (handledResult !== undefined) {
-      if (handledResult.isOk()) {
-        const resolvedRef = handledResult.value.resolvedRef;
-        debugLog(`poll #${pollCount}: element found! resolvedRef=${resolvedRef}`);
-      } else {
-        debugLog(`poll #${pollCount}: multiple elements matched!`);
-      }
-      return handledResult;
-    }
-
-    // タイムアウトチェック
-    debugLog(`poll #${pollCount}: not found, elapsed=${Date.now() - startTime}ms`);
-    const timeoutResult = checkTimeout(startTime, autoWaitTimeoutMs, selector);
-    if (timeoutResult !== undefined) {
-      debugLog(`poll #${pollCount}: TIMEOUT`);
-      return timeoutResult;
-    }
-
-    // 次のポーリングまで待機
-    debugLog(`poll #${pollCount}: sleeping ${autoWaitIntervalMs}ms...`);
-    await sleep(autoWaitIntervalMs);
-  }
+  return pollRecursively(selector, context, startTime, 1);
 };
 
 /**

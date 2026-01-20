@@ -3,7 +3,7 @@ import { runFlowCommand } from '../../commands/run';
 import { OutputFormatter } from '../../output/formatter';
 import { checkAgentBrowser, browserClose } from '@packages/agent-browser-adapter';
 import { executeFlow, parseFlowYaml } from '@packages/core';
-import { ok, err } from 'neverthrow';
+import { ok, okAsync, errAsync } from 'neverthrow';
 import type { Flow, FlowResult } from '@packages/core';
 
 // 依存をモック
@@ -41,8 +41,8 @@ describe('runFlowCommand', () => {
     } as unknown as OutputFormatter;
 
     // デフォルトのモック動作
-    vi.mocked(checkAgentBrowser).mockResolvedValue(ok('agent-browser is installed') as never);
-    vi.mocked(browserClose).mockResolvedValue(ok(undefined) as never);
+    vi.mocked(checkAgentBrowser).mockReturnValue(okAsync('agent-browser is installed') as never);
+    vi.mocked(browserClose).mockReturnValue(okAsync(undefined) as never);
   });
 
   /**
@@ -53,8 +53,8 @@ describe('runFlowCommand', () => {
    */
   it('R-1: agent-browserが未インストールの場合、エラーを返す', async () => {
     // Arrange
-    vi.mocked(checkAgentBrowser).mockResolvedValue(
-      err({
+    vi.mocked(checkAgentBrowser).mockReturnValue(
+      errAsync({
         type: 'not_installed',
         message: 'agent-browser is not installed',
       }) as never,
@@ -159,7 +159,7 @@ describe('runFlowCommand', () => {
     );
 
     vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
-    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+    vi.mocked(executeFlow).mockReturnValue(okAsync(mockFlowResult) as never);
 
     // Act
     const result = await runFlowCommand(
@@ -232,7 +232,7 @@ describe('runFlowCommand', () => {
     );
 
     vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
-    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+    vi.mocked(executeFlow).mockReturnValue(okAsync(mockFlowResult) as never);
 
     // Act
     const result = await runFlowCommand(
@@ -333,8 +333,8 @@ describe('runFlowCommand', () => {
       .mockReturnValueOnce(ok(mockFlow1) as never)
       .mockReturnValueOnce(ok(mockFlow2) as never);
     vi.mocked(executeFlow)
-      .mockResolvedValueOnce(ok(mockFlowResult1) as never)
-      .mockResolvedValueOnce(ok(mockFlowResult2) as never);
+      .mockReturnValueOnce(okAsync(mockFlowResult1) as never)
+      .mockReturnValueOnce(okAsync(mockFlowResult2) as never);
 
     // Act
     const result = await runFlowCommand(
@@ -439,8 +439,8 @@ describe('runFlowCommand', () => {
       .mockReturnValueOnce(ok(mockFlow1) as never)
       .mockReturnValueOnce(ok(mockFlow2) as never);
     vi.mocked(executeFlow)
-      .mockResolvedValueOnce(ok(mockFlowResult1) as never)
-      .mockResolvedValueOnce(ok(mockFlowResult2) as never);
+      .mockReturnValueOnce(okAsync(mockFlowResult1) as never)
+      .mockReturnValueOnce(okAsync(mockFlowResult2) as never);
 
     // Act
     const result = await runFlowCommand(
@@ -509,7 +509,7 @@ describe('runFlowCommand', () => {
     );
 
     vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
-    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+    vi.mocked(executeFlow).mockReturnValue(okAsync(mockFlowResult) as never);
 
     // Act
     await runFlowCommand(
@@ -579,7 +579,7 @@ describe('runFlowCommand', () => {
     );
 
     vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
-    vi.mocked(executeFlow).mockResolvedValue(ok(mockFlowResult) as never);
+    vi.mocked(executeFlow).mockReturnValue(okAsync(mockFlowResult) as never);
 
     // Act
     await runFlowCommand(
@@ -638,8 +638,8 @@ describe('runFlowCommand', () => {
 
     vi.mocked(parseFlowYaml).mockReturnValue(ok(mockFlow) as never);
     // executeFlowがエラーを返すようにモック（初期化エラーなど）
-    vi.mocked(executeFlow).mockResolvedValue(
-      err({
+    vi.mocked(executeFlow).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         command: 'open',
         exitCode: 1,

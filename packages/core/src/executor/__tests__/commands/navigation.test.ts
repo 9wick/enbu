@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok, err } from 'neverthrow';
+import { okAsync, errAsync } from 'neverthrow';
 import { handleOpen } from '../../commands/navigation';
 import type { OpenCommand } from '../../../types';
 import type { ExecutionContext } from '../../result';
@@ -7,7 +7,7 @@ import type { ExecutionContext } from '../../result';
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
   browserOpen: vi.fn(),
-  asUrl: vi.fn((v) => ok(v)),
+  asUrl: vi.fn((v) => okAsync(v)),
 }));
 
 import { browserOpen } from '@packages/agent-browser-adapter';
@@ -42,7 +42,7 @@ describe('handleOpen', () => {
       url: 'https://example.com',
     };
 
-    vi.mocked(browserOpen).mockResolvedValue(ok({ url: 'https://example.com' }));
+    vi.mocked(browserOpen).mockReturnValue(okAsync({ url: 'https://example.com' }));
 
     // Act
     const result = await handleOpen(command, mockContext);
@@ -72,8 +72,8 @@ describe('handleOpen', () => {
       url: 'https://invalid-url',
     };
 
-    vi.mocked(browserOpen).mockResolvedValue(
-      err({
+    vi.mocked(browserOpen).mockReturnValue(
+      errAsync({
         type: 'command_failed',
         message: 'Invalid URL',
         command: 'open',

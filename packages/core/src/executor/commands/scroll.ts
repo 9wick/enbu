@@ -1,5 +1,4 @@
-import type { Result } from 'neverthrow';
-import { err } from 'neverthrow';
+import { type ResultAsync, errAsync } from 'neverthrow';
 import {
   browserScroll,
   browserScrollIntoView,
@@ -21,14 +20,14 @@ import { resolveTextSelector } from './selector-utils';
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScroll = async (
+export const handleScroll = (
   command: ScrollCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
   const direction: ScrollDirection = command.direction;
 
-  return (await browserScroll(direction, command.amount, context.executeOptions)).map((output) => ({
+  return browserScroll(direction, command.amount, context.executeOptions).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));
@@ -61,33 +60,31 @@ const isRefSelector = (selector: string): boolean => {
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
-export const handleScrollIntoView = async (
+export const handleScrollIntoView = (
   command: ScrollIntoViewCommand,
   context: ExecutionContext,
-): Promise<Result<CommandResult, AgentBrowserError>> => {
+): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
   // autoWaitで解決されたrefがあればそれを使用、なければテキストセレクタの変換を適用
   const selectorString = context.resolvedRef ?? resolveTextSelector(command.selector);
 
   // セレクタ検証
-  const selectorResult = asSelector(selectorString);
-  if (selectorResult.isErr()) {
-    return err(selectorResult.error);
-  }
+  return asSelector(selectorString).match(
+    (selector) => {
+      // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
+      // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
+      if (isRefSelector(selectorString)) {
+        return browserFocus(selector, context.executeOptions).map((output) => ({
+          stdout: JSON.stringify(output),
+          duration: Date.now() - startTime,
+        }));
+      }
 
-  // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
-  // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
-  if (isRefSelector(selectorString)) {
-    return (await browserFocus(selectorResult.value, context.executeOptions)).map((output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }));
-  }
-
-  return (await browserScrollIntoView(selectorResult.value, context.executeOptions)).map(
-    (output) => ({
-      stdout: JSON.stringify(output),
-      duration: Date.now() - startTime,
-    }),
+      return browserScrollIntoView(selector, context.executeOptions).map((output) => ({
+        stdout: JSON.stringify(output),
+        duration: Date.now() - startTime,
+      }));
+    },
+    (error) => errAsync(error),
   );
 };

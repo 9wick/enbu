@@ -5,7 +5,7 @@
  * 環境変数の展開、エラー時の処理（bail、スクリーンショット）、実行結果の集約を担当する。
  */
 
-import { type Result, ok, err } from 'neverthrow';
+import { type Result, ResultAsync, ok, okAsync, errAsync } from 'neverthrow';
 import type { Flow } from '../types';
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type {
@@ -225,50 +225,55 @@ const executeAllSteps = async (
  * - Flow.envとoptions.envをマージして使用
  * - 優先順位: options.env > Flow.env（実行時オプションが優先）
  */
-export const executeFlow = async (
+export const executeFlow = (
   flow: Flow,
   options: FlowExecutionOptions,
-): Promise<Result<FlowResult, AgentBrowserError>> => {
+): ResultAsync<FlowResult, AgentBrowserError> => {
+  // 環境変数を展開（未定義変数がある場合はエラーを返す）
+  const context = buildExecutionContext(options, flow);
+  const expandResult = expandEnvVars(flow, context.env);
+
+  if (expandResult.isErr()) {
+    return errAsync(expandResult.error);
+  }
+
+  const expandedFlow = expandResult.value;
   const startTime = Date.now();
   const bail = options.bail ?? true;
   const screenshot = options.screenshot ?? true;
-  const context = buildExecutionContext(options, flow);
 
-  // 環境変数を展開（未定義変数がある場合はエラーを返す）
-  const expandResult = expandEnvVars(flow, context.env);
-  if (expandResult.isErr()) {
-    return err(expandResult.error);
-  }
-  const expandedFlow = expandResult.value;
+  return ResultAsync.fromPromise(
+    executeAllSteps(expandedFlow, context, screenshot, bail, startTime, options.onStepProgress),
+    (error): AgentBrowserError => ({
+      type: 'command_execution_failed',
+      message: 'executeFlow internal error',
+      command: 'executeFlow',
+      rawError: String(error),
+    }),
+  ).andThen(({ steps, hasFailure, firstFailureIndex, earlyResult }) => {
+    if (earlyResult) {
+      return earlyResult.match(
+        (value) => okAsync(value),
+        (error) => errAsync(error),
+      );
+    }
 
-  const { steps, hasFailure, firstFailureIndex, earlyResult } = await executeAllSteps(
-    expandedFlow,
-    context,
-    screenshot,
-    bail,
-    startTime,
-    options.onStepProgress,
-  );
+    const duration = Date.now() - startTime;
 
-  if (earlyResult) {
-    return earlyResult;
-  }
+    if (hasFailure) {
+      const firstFailureStep = steps[firstFailureIndex];
+      return okAsync(
+        buildFailedFlowResult(
+          expandedFlow,
+          context.sessionName,
+          duration,
+          steps,
+          firstFailureStep,
+          firstFailureIndex,
+        ),
+      );
+    }
 
-  const duration = Date.now() - startTime;
-
-  if (hasFailure) {
-    const firstFailureStep = steps[firstFailureIndex];
-    return ok(
-      buildFailedFlowResult(
-        expandedFlow,
-        context.sessionName,
-        duration,
-        steps,
-        firstFailureStep,
-        firstFailureIndex,
-      ),
-    );
-  }
-
-  return ok(buildSuccessFlowResult(expandedFlow, context.sessionName, duration, steps));
+    return okAsync(buildSuccessFlowResult(expandedFlow, context.sessionName, duration, steps));
+  });
 };

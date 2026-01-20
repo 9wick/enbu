@@ -1,6 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ok, err } from 'neverthrow';
-import type { Result } from 'neverthrow';
+import { okAsync, errAsync } from 'neverthrow';
 import type { AgentBrowserError } from '../types';
 
 // executeCommand のモック
@@ -27,7 +26,7 @@ describe('closeSession', () => {
   it('S-1: セッションクローズが成功した場合、ok(undefined)を返す', async () => {
     // Arrange
     const mockExecuteCommand = vi.mocked(executeCommand);
-    mockExecuteCommand.mockResolvedValue(ok(''));
+    mockExecuteCommand.mockReturnValue(okAsync(''));
 
     // Act
     const result = await closeSession('test-session');
@@ -67,7 +66,7 @@ describe('closeSession', () => {
       stderr: '',
       rawError: 'Session not found',
     };
-    mockExecuteCommand.mockResolvedValue(err(expectedError) as Result<string, AgentBrowserError>);
+    mockExecuteCommand.mockReturnValue(errAsync(expectedError));
 
     // Act
     const result = await closeSession('non-existent-session');
@@ -112,7 +111,7 @@ describe('closeSession', () => {
       args: [],
       timeoutMs: 30000,
     };
-    mockExecuteCommand.mockResolvedValue(err(expectedError) as Result<string, AgentBrowserError>);
+    mockExecuteCommand.mockReturnValue(errAsync(expectedError));
 
     // Act
     const result = await closeSession('timeout-session');
@@ -152,7 +151,7 @@ describe('closeSession', () => {
       type: 'not_installed',
       message: 'agent-browser is not installed',
     };
-    mockExecuteCommand.mockResolvedValue(err(expectedError) as Result<string, AgentBrowserError>);
+    mockExecuteCommand.mockReturnValue(errAsync(expectedError));
 
     // Act
     const result = await closeSession('any-session');

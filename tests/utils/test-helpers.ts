@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { Result, ok } from 'neverthrow';
+import { ResultAsync, okAsync } from 'neverthrow';
 import { join } from 'node:path';
 import { writeFile, unlink, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -27,7 +27,7 @@ export type CliResult = {
  * 副作用として子プロセスの起動と終了を伴います。
  *
  * @param args - CLIに渡すコマンドライン引数の配列
- * @returns CLIの実行結果を含むPromise<Result>
+ * @returns CLIの実行結果を含むResultAsync
  *
  * @example
  * ```typescript
@@ -40,55 +40,52 @@ export type CliResult = {
  * console.log(result2.value.exitCode); // 0（成功）
  * ```
  */
-export const runCli = async (args: string[]): Promise<Result<CliResult, never>> => {
-  return new Promise((resolve) => {
-    // CLIのエントリーポイントのパスを解決
-    const cliEntryPoint = join(process.cwd(), 'apps', 'cli', 'src', 'main.ts');
+export const runCli = (args: string[]): ResultAsync<CliResult, never> =>
+  ResultAsync.fromSafePromise(
+    new Promise<CliResult>((resolve) => {
+      // CLIのエントリーポイントのパスを解決
+      const cliEntryPoint = join(process.cwd(), 'apps', 'cli', 'src', 'main.ts');
 
-    // tsxを使ってTypeScriptファイルを直接実行
-    // 本番環境ではビルド済みのJSファイルを使用することを想定
-    const proc = spawn('tsx', [cliEntryPoint, ...args], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      cwd: process.cwd(),
-      env: process.env,
-    });
+      // tsxを使ってTypeScriptファイルを直接実行
+      // 本番環境ではビルド済みのJSファイルを使用することを想定
+      const proc = spawn('tsx', [cliEntryPoint, ...args], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: process.cwd(),
+        env: process.env,
+      });
 
-    let stdout = '';
-    let stderr = '';
+      let stdout = '';
+      let stderr = '';
 
-    // 標準出力を収集
-    proc.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
+      // 標準出力を収集
+      proc.stdout.on('data', (data: Buffer) => {
+        stdout += data.toString();
+      });
 
-    // 標準エラー出力を収集
-    proc.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
+      // 標準エラー出力を収集
+      proc.stderr.on('data', (data: Buffer) => {
+        stderr += data.toString();
+      });
 
-    // プロセス終了時に結果を返す
-    proc.on('close', (exitCode: number | null) => {
-      resolve(
-        ok({
+      // プロセス終了時に結果を返す
+      proc.on('close', (exitCode: number | null) => {
+        resolve({
           exitCode: exitCode ?? 1,
           stdout,
           stderr,
-        }),
-      );
-    });
+        });
+      });
 
-    // プロセスエラー時も終了コード1として扱う
-    proc.on('error', () => {
-      resolve(
-        ok({
+      // プロセスエラー時も終了コード1として扱う
+      proc.on('error', () => {
+        resolve({
           exitCode: 1,
           stdout,
           stderr: stderr || 'プロセスの起動に失敗しました',
-        }),
-      );
-    });
-  });
-};
+        });
+      });
+    }),
+  );
 
 /**
  * テスト用の一時フローファイルを作成する
