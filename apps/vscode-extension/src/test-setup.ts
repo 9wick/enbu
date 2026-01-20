@@ -10,8 +10,8 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
-// apps/vscode-extension/src/__tests__ -> モノレポルート
-const monorepoRoot = resolve(currentDir, '../../../..');
+// apps/vscode-extension/src -> モノレポルート
+const monorepoRoot = resolve(currentDir, '../../..');
 const nodeModulesBin = resolve(monorepoRoot, 'node_modules', '.bin');
 const enbuBinPath = resolve(nodeModulesBin, 'enbu');
 const cliMainPath = resolve(monorepoRoot, 'apps', 'cli', 'dist', 'main.mjs');
@@ -21,9 +21,13 @@ if (!existsSync(nodeModulesBin)) {
   mkdirSync(nodeModulesBin, { recursive: true });
 }
 
-// 既存のenbuリンク/ファイルがあれば削除
-if (existsSync(enbuBinPath)) {
-  unlinkSync(enbuBinPath);
+// 既存のenbuリンク/ファイルがあれば削除（レースコンディション対策で例外をキャッチ）
+try {
+  if (existsSync(enbuBinPath)) {
+    unlinkSync(enbuBinPath);
+  }
+} catch {
+  // 別のテストが先に削除した場合は無視
 }
 
 // シェルスクリプトを作成（macOS/Linux用）
