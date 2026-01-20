@@ -172,7 +172,7 @@ const findAndLoadFlows = (
  * - 最初のエラーで処理を停止
  *
  * @example
- * const result = await loadFlows('./.abflow', {
+ * const result = await loadFlows('./.enbuflow', {
  *   processEnv: process.env,
  *   dotEnvPath: './.env'
  * });

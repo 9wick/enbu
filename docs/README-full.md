@@ -28,10 +28,10 @@ npx enbu
 npx enbu init
 ```
 
-これにより `.abflow/` ディレクトリ、サンプルフロー、設定ファイルが作成されます：
+これにより `.enbuflow/` ディレクトリ、サンプルフロー、設定ファイルが作成されます：
 
 ```
-.abflow/
+.enbuflow/
 ├── abflow.config.yaml      # 設定ファイル
 ├── example.enbu.yaml       # サンプルフロー
 └── shared/
@@ -40,7 +40,7 @@ npx enbu init
 
 ### 2. フローの作成
 
-`.abflow/checkout.enbu.yaml`:
+`.enbuflow/checkout.enbu.yaml`:
 
 ```yaml
 # ECサイトのチェックアウトフローのテスト
@@ -71,7 +71,7 @@ npx enbu init
 npx enbu
 
 # 特定のフローを実行
-npx enbu .abflow/checkout.enbu.yaml
+npx enbu .enbuflow/checkout.enbu.yaml
 
 # 並列実行
 npx enbu --parallel 4
@@ -263,7 +263,7 @@ npx enbu --reporter junit --output results.xml
 
 ### サブフローの定義
 
-`.abflow/shared/login.enbu.yaml`:
+`.enbuflow/shared/login.enbu.yaml`:
 
 ```yaml
 # ログインサブフロー
@@ -386,7 +386,7 @@ return true;
 **1. .envファイル**
 
 ```bash
-# .abflow/.env
+# .enbuflow/.env
 BASE_URL=https://staging.example.com
 TEST_EMAIL=test@example.com
 TEST_PASSWORD=secret123
@@ -418,7 +418,7 @@ npx enbu
 
 ## 設定ファイル
 
-`.abflow/abflow.config.yaml`:
+`.enbuflow/abflow.config.yaml`:
 
 ```yaml
 # デフォルト設定
@@ -506,7 +506,7 @@ npx enbu doctor
 出力例:
 ✓ agent-browser v1.2.0 がインストールされています
 ✓ Chromium が利用可能です
-✓ .abflow/ ディレクトリが存在します
+✓ .enbuflow/ ディレクトリが存在します
 ✓ 3 個のフローファイルが見つかりました
 ```
 
@@ -522,7 +522,7 @@ npx enbu record https://example.com -o login.enbu.yaml
 
 ```
 your-project/
-├── .abflow/
+├── .enbuflow/
 │   ├── abflow.config.yaml    # 設定ファイル
 │   ├── .env                  # 環境変数（.gitignoreに追加推奨）
 │   ├── login.enbu.yaml       # ログインフロー

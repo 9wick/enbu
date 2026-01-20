@@ -74,7 +74,7 @@ const checkEnvironment = (): ResultAsync<void, OrchestratorError> =>
 /**
  * ファイルパスまたはglobパターンからフローファイルを検出する
  *
- * @param files - ファイルパスまたはglobパターンの配列（空の場合は.abflow/*.enbu.yamlを検索）
+ * @param files - ファイルパスまたはglobパターンの配列（空の場合は.enbuflow/*.enbu.yamlを検索）
  * @param cwd - 作業ディレクトリ
  * @returns 成功時: 解決されたファイルパスの配列、失敗時: OrchestratorError
  */
@@ -87,8 +87,8 @@ const discoverFlowFiles = (
     return okAsync(files.map((f) => resolve(cwd, f)));
   }
 
-  // 指定がない場合、.abflow/ 配下を検索
-  const pattern = join(cwd, '.abflow', '*.enbu.yaml');
+  // 指定がない場合、.enbuflow/ 配下を検索
+  const pattern = join(cwd, '.enbuflow', '*.enbu.yaml');
   return ResultAsync.fromPromise(
     glob(pattern),
     (error): OrchestratorError => ({

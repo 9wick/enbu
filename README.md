@@ -36,11 +36,11 @@ npx enbu
 npx enbu init
 ```
 
-これにより `.abflow/` ディレクトリとサンプルフローが作成されます。
+これにより `.enbuflow/` ディレクトリとサンプルフローが作成されます。
 
 ### 2. フローの作成
 
-`.abflow/login.enbu.yaml`:
+`.enbuflow/login.enbu.yaml`:
 
 ```yaml
 # ログインフローのテスト
@@ -64,7 +64,7 @@ steps:
 npx enbu
 
 # 特定のフローを実行
-npx enbu .abflow/login.enbu.yaml
+npx enbu .enbuflow/login.enbu.yaml
 ```
 
 ## コマンドリファレンス
@@ -232,7 +232,7 @@ npx enbu --env PASSWORD=secret123
 
 #### YAML内で定義
 
-`.abflow/login.enbu.yaml`:
+`.enbuflow/login.enbu.yaml`:
 ```yaml
 env:
   BASE_URL: https://staging.example.com
@@ -259,7 +259,7 @@ npx enbu [options] [flow-files...]
 
 ```
 your-project/
-├── .abflow/
+├── .enbuflow/
 │   ├── login.enbu.yaml
 │   ├── checkout.enbu.yaml
 │   └── shared/

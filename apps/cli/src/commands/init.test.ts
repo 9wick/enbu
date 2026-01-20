@@ -46,7 +46,7 @@ describe('runInitCommand', () => {
   /**
    * I-2: 既存ディレクトリがある場合（force=false）
    *
-   * 前提条件: .abflow/ が既に存在
+   * 前提条件: .enbuflow/ が既に存在
    * 検証項目: createDirectory がスキップされ、ok(undefined) が返される
    */
   it('I-2: 既存ディレクトリがある場合、スキップする', async () => {
@@ -64,7 +64,7 @@ describe('runInitCommand', () => {
   /**
    * I-3: 既存ディレクトリがある場合（force=true）
    *
-   * 前提条件: .abflow/ が既に存在、force=true
+   * 前提条件: .enbuflow/ が既に存在、force=true
    * 検証項目: 上書きされ、ok(undefined) が返される
    */
   it('I-3: force=trueの場合、既存ディレクトリを上書きする', async () => {

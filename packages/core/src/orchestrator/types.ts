@@ -53,7 +53,7 @@ export type FlowProgressCallback = (
  * フロー実行パイプラインに渡すオプションを表す。
  */
 export type RunFlowsInput = {
-  /** ファイルパスまたはglobパターンの配列（空の場合は.abflow/*.enbu.yamlを検索） */
+  /** ファイルパスまたはglobパターンの配列（空の場合は.enbuflow/*.enbu.yamlを検索） */
   files: string[];
   /** ファイル解決の基準となる作業ディレクトリ */
   cwd: string;

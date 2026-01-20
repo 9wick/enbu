@@ -6,7 +6,7 @@ import { OutputFormatter } from '../output/formatter';
 import { fileExists, createDirectory, writeFileContent, readFileContent } from '../utils/fs';
 
 /** 生成するディレクトリ */
-const ABFLOW_DIR = '.abflow';
+const ENBUFLOW_DIR = '.enbuflow';
 
 /** サンプルフローファイルの内容 */
 const SAMPLE_FLOW_YAML = `# enbuのサンプルフロー
@@ -20,7 +20,7 @@ steps:
  * initコマンドを実行
  *
  * プロジェクトの初期化を行い、以下の処理を実行する:
- * 1. .abflow/ ディレクトリを作成
+ * 1. .enbuflow/ ディレクトリを作成
  * 2. サンプルフローファイル example.enbu.yaml を生成
  * 3. .gitignore への追記を対話的に提案
  *
@@ -40,8 +40,8 @@ export const runInitCommand = (args: {
 
   formatter.info('Initializing enbu project...');
 
-  // .abflow/ ディレクトリとサンプルファイルを作成
-  return setupAbflowDirectory(args.force, formatter).andThen(() => {
+  // .enbuflow/ ディレクトリとサンプルファイルを作成
+  return setupEnbuflowDirectory(args.force, formatter).andThen(() => {
     // .gitignore への追記を提案
     return ResultAsync.fromPromise(
       promptGitignoreUpdate(formatter),
@@ -53,64 +53,64 @@ export const runInitCommand = (args: {
     ).map(() => {
       formatter.newline();
       formatter.info('Initialization complete!');
-      formatter.info(`Try: npx enbu ${ABFLOW_DIR}/example.enbu.yaml`);
+      formatter.info(`Try: npx enbu ${ENBUFLOW_DIR}/example.enbu.yaml`);
       return undefined;
     });
   });
 };
 
 /**
- * .abflow/ ディレクトリとサンプルファイルを作成
+ * .enbuflow/ ディレクトリとサンプルファイルを作成
  *
- * .abflow/ ディレクトリを作成し、その中にサンプルフローファイルを生成する。
+ * .enbuflow/ ディレクトリを作成し、その中にサンプルフローファイルを生成する。
  * forceフラグがfalseで既存ファイルが存在する場合はスキップする。
  *
  * @param force - 既存ファイルを強制的に上書きするかどうか
  * @param formatter - 出力フォーマッター
  * @returns 成功時: void、失敗時: CliError
  */
-const setupAbflowDirectory = (
+const setupEnbuflowDirectory = (
   force: boolean,
   formatter: OutputFormatter,
 ): ResultAsync<void, CliError> => {
-  // .abflow/ ディレクトリを作成
-  const abflowPath = resolve(process.cwd(), ABFLOW_DIR);
+  // .enbuflow/ ディレクトリを作成
+  const enbuflowPath = resolve(process.cwd(), ENBUFLOW_DIR);
 
   return ResultAsync.fromPromise(
-    fileExists(abflowPath),
+    fileExists(enbuflowPath),
     (error): CliError => ({
       type: 'execution_error' as const,
       message: 'Failed to check if directory exists',
       cause: error,
     }),
   )
-    .andThen((abflowExists) => {
-      if (abflowExists && !force) {
-        formatter.success(`Directory already exists: ${ABFLOW_DIR}`);
+    .andThen((enbuflowExists) => {
+      if (enbuflowExists && !force) {
+        formatter.success(`Directory already exists: ${ENBUFLOW_DIR}`);
         return okAsync(undefined);
       }
-      return createDirectory(abflowPath).map(() => {
-        formatter.success(`Created ${ABFLOW_DIR}/ directory`);
+      return createDirectory(enbuflowPath).map(() => {
+        formatter.success(`Created ${ENBUFLOW_DIR}/ directory`);
         return undefined;
       });
     })
-    .andThen(() => createExampleFlowIfNeeded(abflowPath, force, formatter));
+    .andThen(() => createExampleFlowIfNeeded(enbuflowPath, force, formatter));
 };
 
 /**
  * example.enbu.yaml を必要に応じて作成
  *
- * @param abflowPath - .abflow ディレクトリのパス
+ * @param enbuflowPath - .enbuflow ディレクトリのパス
  * @param force - 強制上書きフラグ
  * @param formatter - 出力フォーマッター
  * @returns 成功時: void、失敗時: CliError
  */
 const createExampleFlowIfNeeded = (
-  abflowPath: string,
+  enbuflowPath: string,
   force: boolean,
   formatter: OutputFormatter,
 ): ResultAsync<void, CliError> => {
-  const exampleFlowPath = resolve(abflowPath, 'example.enbu.yaml');
+  const exampleFlowPath = resolve(enbuflowPath, 'example.enbu.yaml');
   return ResultAsync.fromPromise(
     fileExists(exampleFlowPath),
     (error): CliError => ({
@@ -120,11 +120,11 @@ const createExampleFlowIfNeeded = (
     }),
   ).andThen((exampleFlowExists) => {
     if (exampleFlowExists && !force) {
-      formatter.success(`File already exists: ${ABFLOW_DIR}/example.enbu.yaml`);
+      formatter.success(`File already exists: ${ENBUFLOW_DIR}/example.enbu.yaml`);
       return okAsync(undefined);
     }
     return writeFileContent(exampleFlowPath, SAMPLE_FLOW_YAML).map(() => {
-      formatter.success(`Created ${ABFLOW_DIR}/example.enbu.yaml`);
+      formatter.success(`Created ${ENBUFLOW_DIR}/example.enbu.yaml`);
       return undefined;
     });
   });
@@ -133,7 +133,7 @@ const createExampleFlowIfNeeded = (
 /**
  * .gitignore への追記を対話的に提案
  *
- * ユーザーに .gitignore への追記を提案し、了承された場合に .abflow/ を追記する。
+ * ユーザーに .gitignore への追記を提案し、了承された場合に .enbuflow/ を追記する。
  * .gitignore の更新に失敗した場合は、エラーメッセージと手動での追記方法を表示する。
  *
  * @param formatter - 出力フォーマッター
@@ -141,7 +141,7 @@ const createExampleFlowIfNeeded = (
 const promptGitignoreUpdate = async (formatter: OutputFormatter): Promise<void> => {
   formatter.newline();
   const shouldUpdateGitignore = await askYesNo(
-    'Would you like to add .abflow/ to .gitignore? (y/N): ',
+    'Would you like to add .enbuflow/ to .gitignore? (y/N): ',
   );
 
   if (shouldUpdateGitignore) {
@@ -152,7 +152,7 @@ const promptGitignoreUpdate = async (formatter: OutputFormatter): Promise<void> 
       () => formatter.success('Updated .gitignore'),
       (error) => {
         formatter.error(`Failed to update .gitignore: ${error.message}`);
-        formatter.indent('You can manually add ".abflow/" to your .gitignore file', 1);
+        formatter.indent('You can manually add ".enbuflow/" to your .gitignore file', 1);
       },
     );
   }
@@ -187,19 +187,19 @@ const askYesNo = (question: string): Promise<boolean> => {
 };
 
 /**
- * .gitignore に .abflow/ を追記
+ * .gitignore に .enbuflow/ を追記
  *
- * .gitignoreファイルに .abflow/ エントリを追加する。
+ * .gitignoreファイルに .enbuflow/ エントリを追加する。
  * 以下の条件に応じて処理が分岐する:
  *
  * 1. .gitignoreが存在しない場合:
- *    - 新規に.gitignoreファイルを作成し、.abflow/を記述する
+ *    - 新規に.gitignoreファイルを作成し、.enbuflow/を記述する
  *
- * 2. .gitignoreが存在し、既に.abflow/が含まれている場合:
+ * 2. .gitignoreが存在し、既に.enbuflow/が含まれている場合:
  *    - 何もせずに成功を返す（重複追記を防ぐ）
  *
- * 3. .gitignoreが存在し、.abflow/が含まれていない場合:
- *    - ファイル末尾に.abflow/を追記する
+ * 3. .gitignoreが存在し、.enbuflow/が含まれていない場合:
+ *    - ファイル末尾に.enbuflow/を追記する
  *    - 元のファイルが改行で終わっていない場合は、改行を追加してから追記する
  *
  * @param path - .gitignoreファイルのパス
@@ -214,7 +214,7 @@ const askYesNo = (question: string): Promise<boolean> => {
  */
 const appendToExistingGitignore = (path: string, entry: string): ResultAsync<void, CliError> =>
   readFileContent(path).andThen((content) => {
-    // 既に .abflow/ が含まれている場合はスキップ
+    // 既に .enbuflow/ が含まれている場合はスキップ
     if (content.includes(entry)) {
       return okAsync(undefined);
     }
@@ -225,7 +225,7 @@ const appendToExistingGitignore = (path: string, entry: string): ResultAsync<voi
   });
 
 const updateGitignore = (path: string): ResultAsync<void, CliError> => {
-  const entry = '.abflow/';
+  const entry = '.enbuflow/';
 
   return ResultAsync.fromPromise(
     fileExists(path),
