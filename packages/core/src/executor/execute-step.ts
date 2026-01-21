@@ -35,7 +35,7 @@ import type {
   AssertNotVisibleCommand,
   ScrollIntoViewCommand,
 } from '../types';
-import { getCommandHandler } from './commands';
+import { executeResolvedCommand } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
 import type { ExecutionContext, ExecutorError, ScreenshotResult, StepResult } from './result';
 import { type WaitResult, waitForSelector } from './selector-wait';
@@ -622,10 +622,7 @@ export const executeStep = async (
 
   // セレクタ待機 → ハンドラ実行 → 結果変換 のResultAsyncチェーン
   const result = await processSelectorWait(command, context)
-    .andThen((resolvedCommand) => {
-      const handler = getCommandHandler(command.command);
-      return handler(resolvedCommand, context);
-    })
+    .andThen((resolvedCommand) => executeResolvedCommand(resolvedCommand, context))
     .match<Promise<StepResult>>(
       async (commandResult) => ({
         index,

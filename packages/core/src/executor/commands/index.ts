@@ -4,4 +4,4 @@
  * コマンドハンドラのエクスポート
  */
 
-export { getCommandHandler } from './handler-registry';
+export { executeResolvedCommand } from './handler-registry';

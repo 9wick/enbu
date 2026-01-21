@@ -23,7 +23,7 @@ import { handleWait } from './wait';
  * exhaustive()により、ResolvedCommand型の全バリアントがカバーされていることを型レベルで保証する。
  * returnType で戻り型を明示することで、各ハンドラのエラー型が ExecutorError に拡大される。
  */
-const routeCommand: CommandHandler<ResolvedCommand> = (command, context) =>
+export const executeResolvedCommand: CommandHandler<ResolvedCommand> = (command, context) =>
   match(command)
     .returnType<ResultAsync<CommandResult, ExecutorError>>()
     // ナビゲーション・入力系
@@ -48,10 +48,3 @@ const routeCommand: CommandHandler<ResolvedCommand> = (command, context) =>
     .with({ command: 'assertEnabled' }, (cmd) => handleAssertEnabled(cmd, context))
     .with({ command: 'assertChecked' }, (cmd) => handleAssertChecked(cmd, context))
     .exhaustive();
-
-export const getCommandHandler = (_commandName: string): CommandHandler<ResolvedCommand> => {
-  // コマンド名によるルーティング
-  // 型の共変性の問題により、各ハンドラを直接返すことはできない
-  // そのため、ラッパー関数を使って型を適合させる
-  return routeCommand;
-};

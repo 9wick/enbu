@@ -436,9 +436,8 @@ type XpathSelector = string & { __brand: 'XpathSelector' };
 ```typescript
 // executeStep内の処理フロー
 // ※入力Commandは検証済み、再検証しない
-1. processAutoWait()     // refセレクタの場合、要素待機
-2. getCommandHandler()   // 'click' → handleClick を取得
-3. handler(command, context)  // ハンドラ実行
+1. processSelectorWait()        // セレクタ待機 → ResolvedCommand
+2. executeResolvedCommand()     // matchでハンドラにルーティング・実行
 ```
 
 ---
