@@ -12,7 +12,12 @@ import {
   browserType,
 } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
-import type { ClickCommand, FillCommand, PressCommand, TypeCommand } from '../../types';
+import type {
+  PressCommand,
+  ResolvedClickCommand,
+  ResolvedFillCommand,
+  ResolvedTypeCommand,
+} from '../../types';
 import type { CommandResult, ExecutionContext } from '../result';
 import { resolveCliSelector } from './cli-selector-utils';
 
@@ -20,14 +25,14 @@ import { resolveCliSelector } from './cli-selector-utils';
  * click コマンドのハンドラ
  *
  * 指定されたセレクタの要素をクリックする。
- * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
  *
- * @param command - click コマンドのパラメータ
+ * @param command - click コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResultAsync型
  */
 export const handleClick = (
-  command: ClickCommand,
+  command: ResolvedClickCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
@@ -44,14 +49,14 @@ export const handleClick = (
  * type コマンドのハンドラ
  *
  * 指定されたセレクタの要素にテキストを入力する。
- * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
  *
- * @param command - type コマンドのパラメータ
+ * @param command - type コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResultAsync型
  */
 export const handleType = (
-  command: TypeCommand,
+  command: ResolvedTypeCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
@@ -69,14 +74,14 @@ export const handleType = (
  *
  * 指定されたセレクタのフォーム要素にテキストを入力する。
  * 既存のテキストは自動的にクリアされる。
- * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
  *
- * @param command - fill コマンドのパラメータ
+ * @param command - fill コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResultAsync型
  */
 export const handleFill = (
-  command: FillCommand,
+  command: ResolvedFillCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();

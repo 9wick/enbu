@@ -126,7 +126,6 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
     env: mergedEnv,
     autoWaitTimeoutMs: options.autoWaitTimeoutMs,
     autoWaitIntervalMs: options.autoWaitIntervalMs,
-    resolvedRefState: { status: 'notApplied' },
   };
 };
 

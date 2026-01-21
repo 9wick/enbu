@@ -4,7 +4,7 @@
 
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
-import type { Command, Flow } from '../types';
+import type { Command, Flow, ResolvedCommand } from '../types';
 
 // ==========================================
 // Core層のエラー型定義
@@ -270,25 +270,6 @@ export type FailedFlowResult = {
 export type FlowResult = PassedFlowResult | FailedFlowResult;
 
 /**
- * ref解決の状態を表すタグ付きユニオン型
- *
- * autoWaitによる要素の解決状態を型安全に表現する。
- * - resolved: autoWaitで要素が見つかり、@ref形式に解決済み
- * - notApplied: autoWaitが未実行、またはスキップされた状態
- */
-export type ResolvedRefState =
-  | {
-      /** ref解決状態: 解決済み */
-      readonly status: 'resolved';
-      /** 解決されたref形式のセレクタ（例: "@e1"） */
-      readonly ref: string;
-    }
-  | {
-      /** ref解決状態: 未適用 */
-      readonly status: 'notApplied';
-    };
-
-/**
  * コマンド実行のコンテキスト（内部使用）
  *
  * executeFlowの実行中に使用される内部コンテキスト情報。
@@ -314,13 +295,6 @@ export type ExecutionContext = {
   autoWaitTimeoutMs: number;
   /** 自動待機のポーリング間隔（ミリ秒） */
   autoWaitIntervalMs: number;
-  /**
-   * autoWaitによる要素解決の状態
-   *
-   * テキストセレクタをagent-browser内部のref形式に変換した状態を保持する。
-   * コマンドハンドラはセレクタを使用する際、この状態を確認してrefを優先使用すべき。
-   */
-  resolvedRefState: ResolvedRefState;
 };
 
 /**
@@ -340,12 +314,13 @@ export type CommandResult = {
  * コマンドハンドラ関数の型
  *
  * 各コマンドハンドラは、このシグネチャに従って実装される。
- * コマンドを受け取り、実行コンテキストを使用してコマンドを実行し、
+ * ResolvedCommand（セレクタ解決済みコマンド）を受け取り、
+ * 実行コンテキストを使用してコマンドを実行し、
  * 実行結果またはエラーを返す。
  *
- * @template T - Command型またはそのサブタイプ
+ * @template T - ResolvedCommand型またはそのサブタイプ
  */
-export type CommandHandler<T extends Command> = (
+export type CommandHandler<T extends ResolvedCommand> = (
   command: T,
   context: ExecutionContext,
 ) => ResultAsync<CommandResult, ExecutorError>;
@@ -353,24 +328,6 @@ export type CommandHandler<T extends Command> = (
 // ==========================================
 // 型ガード関数
 // ==========================================
-
-/**
- * StepResultが成功したステップかどうかを判定する型ガード関数
- *
- * @param result - 判定対象のStepResult
- * @returns 成功したステップの場合はtrue、失敗したステップの場合はfalse
- *
- * @example
- * ```typescript
- * if (isPassedStepResult(stepResult)) {
- *   // stepResult.errorは存在しない
- *   console.log(stepResult.stdout);
- * }
- * ```
- */
-export const isPassedStepResult = (result: StepResult): result is PassedStepResult => {
-  return result.status === 'passed';
-};
 
 /**
  * StepResultが失敗したステップかどうかを判定する型ガード関数
@@ -406,22 +363,4 @@ export const isFailedStepResult = (result: StepResult): result is FailedStepResu
  */
 export const isPassedFlowResult = (result: FlowResult): result is PassedFlowResult => {
   return result.status === 'passed';
-};
-
-/**
- * FlowResultが失敗したフローかどうかを判定する型ガード関数
- *
- * @param result - 判定対象のFlowResult
- * @returns 失敗したフローの場合はtrue、成功したフローの場合はfalse
- *
- * @example
- * ```typescript
- * if (isFailedFlowResult(flowResult)) {
- *   // flowResult.errorは必ず存在する
- *   console.log(`Failed at step ${flowResult.error.stepIndex}: ${flowResult.error.message}`);
- * }
- * ```
- */
-export const isFailedFlowResult = (result: FlowResult): result is FailedFlowResult => {
-  return result.status === 'failed';
 };

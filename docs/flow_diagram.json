@@ -1,0 +1,911 @@
+{
+  "meta": {
+    "description": "Railway Oriented Programming データフロー図",
+    "purpose": "デバッグ用",
+    "generatedAt": "2026-01-21",
+    "commands": ["open", "click", "type", "assertVisible"],
+    "note": "各ステップのoutTypeは次のステップのinTypeと一致する（ROPの原則）"
+  },
+  "flows": [
+    {
+      "command": "open",
+      "yamlInput": "open: \"https://example.com\"",
+      "description": "シンプルなセレクタなしコマンド。URLをそのまま処理。",
+      "flow": [
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 72,
+          "funcName": "safeYamlParse",
+          "inType": { "name": "string", "description": "YAML文字列" },
+          "outType": { "name": "unknown", "description": "パース済みJSオブジェクト" },
+          "description": "YAML文字列をJavaScriptオブジェクトに変換"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 96,
+          "funcName": "validateRootStructure",
+          "inType": { "name": "unknown", "description": "パース済みJSオブジェクト" },
+          "outType": {
+            "name": "Record<string, unknown>",
+            "description": "steps配列を含むオブジェクト"
+          },
+          "description": "ルート構造がオブジェクトでsteps配列を含むか検証"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 172,
+          "funcName": "buildRawFlowData",
+          "inType": {
+            "name": "Record<string, unknown>",
+            "description": "steps配列を含むオブジェクト"
+          },
+          "outType": {
+            "name": "RawFlowData",
+            "fields": {
+              "env": "Record<string, string>",
+              "steps": "unknown[]"
+            }
+          },
+          "description": "envとstepsを抽出してRawFlowDataを構築"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/env-resolver.ts",
+          "line": 161,
+          "funcName": "resolveEnvVariables",
+          "inType": {
+            "name": "RawFlowData",
+            "fields": { "env": "Record<string, string>", "steps": "unknown[]" }
+          },
+          "outType": {
+            "name": "RawFlowData",
+            "fields": { "env": "Record<string, string>", "steps": "unknown[]" },
+            "description": "環境変数解決済み"
+          },
+          "description": "steps内の${VAR}形式を環境変数値に置換"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 255,
+          "funcName": "validateCommands",
+          "inType": { "name": "unknown[]", "description": "RawFlowData.steps" },
+          "outType": {
+            "name": "Command[]",
+            "example": "[OpenCommand]",
+            "fields": { "command": "\"open\"", "url": "Url(Branded)" }
+          },
+          "description": "各ステップをvalibotスキーマで検証しBranded Type化"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 421,
+          "funcName": "buildFlow",
+          "inType": {
+            "name": "tuple",
+            "fields": ["RawFlowData", "Command[]"]
+          },
+          "outType": {
+            "name": "Flow",
+            "fields": {
+              "name": "string",
+              "env": "Record<string, string>",
+              "steps": "Command[]"
+            }
+          },
+          "description": "Flow構造を構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 478,
+          "funcName": "executeStep",
+          "inType": {
+            "name": "OpenCommand",
+            "fields": { "command": "\"open\"", "url": "Url" }
+          },
+          "outType": { "name": "Promise<StepResult>" },
+          "description": "ステップ実行のエントリーポイント"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 384,
+          "funcName": "processSelectorWait",
+          "inType": {
+            "name": "OpenCommand",
+            "fields": { "command": "\"open\"", "url": "Url" }
+          },
+          "outType": {
+            "name": "SelectorWaitProcessResult",
+            "fields": {
+              "success": true,
+              "commandToExecute": "OpenCommand"
+            }
+          },
+          "description": "openはセレクタ非保有。toResolvedCommandWithoutSelectorでそのまま返す"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/handler-registry.ts",
+          "line": 26,
+          "funcName": "routeCommand",
+          "inType": {
+            "name": "OpenCommand",
+            "description": "SelectorWaitProcessResult.commandToExecute"
+          },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "ts-pattern.match()でhandleOpenへルーティング"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/navigation.ts",
+          "line": 17,
+          "funcName": "handleOpen",
+          "inType": {
+            "name": "OpenCommand",
+            "fields": { "command": "\"open\"", "url": "Url" }
+          },
+          "outType": { "name": "ResultAsync<CommandResult, AgentBrowserError>" },
+          "description": "browserOpen(command.url)を呼び出し"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/commands/navigation.ts",
+          "line": 23,
+          "funcName": "browserOpen",
+          "inType": { "name": "Url", "description": "Branded Type" },
+          "outType": { "name": "ResultAsync<OpenData, AgentBrowserError>" },
+          "description": "executeCommand('open', [url, '--json']).andThen(validateAndExtractData)"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/executor.ts",
+          "line": 24,
+          "funcName": "executeCommand",
+          "inType": {
+            "name": "tuple",
+            "fields": ["command: string", "args: string[]", "options: ExecuteOptions"]
+          },
+          "outType": {
+            "name": "ResultAsync<string, AgentBrowserError>",
+            "description": "stdout文字列"
+          },
+          "description": "spawn('npx', ['agent-browser', ...])でCLI実行"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/validator.ts",
+          "line": 123,
+          "funcName": "validateAndExtractData",
+          "inType": { "name": "string", "description": "stdout文字列" },
+          "outType": {
+            "name": "OpenData",
+            "fields": { "url": "string", "title": "string" }
+          },
+          "description": "JSONパース→スキーマ検証→data抽出"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/navigation.ts",
+          "line": 24,
+          "funcName": "handleOpen.map",
+          "inType": {
+            "name": "OpenData",
+            "fields": { "url": "string", "title": "string" }
+          },
+          "outType": {
+            "name": "CommandResult",
+            "fields": { "stdout": "string", "duration": "number" }
+          },
+          "description": "OpenDataをJSON.stringify()してCommandResultに変換"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 505,
+          "funcName": "result.match",
+          "inType": {
+            "name": "CommandResult",
+            "fields": { "stdout": "string", "duration": "number" }
+          },
+          "outType": {
+            "name": "StepResult",
+            "fields": {
+              "index": "number",
+              "command": "Command",
+              "status": "\"passed\"",
+              "duration": "number",
+              "stdout": "string"
+            }
+          },
+          "description": "CommandResultをStepResultに変換"
+        }
+      ]
+    },
+    {
+      "command": "click",
+      "yamlInput": "click: \"ログイン\"",
+      "description": "テキストセレクタ。セレクタ待機あり。snapshot経由でref変換。",
+      "flow": [
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 72,
+          "funcName": "safeYamlParse",
+          "inType": { "name": "string", "description": "YAML文字列" },
+          "outType": { "name": "unknown" },
+          "description": "YAML文字列をオブジェクト化"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 96,
+          "funcName": "validateRootStructure",
+          "inType": { "name": "unknown" },
+          "outType": { "name": "Record<string, unknown>" },
+          "description": "ルート構造検証"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 172,
+          "funcName": "buildRawFlowData",
+          "inType": { "name": "Record<string, unknown>" },
+          "outType": { "name": "RawFlowData" },
+          "description": "RawFlowData構築"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/env-resolver.ts",
+          "line": 161,
+          "funcName": "resolveEnvVariables",
+          "inType": { "name": "RawFlowData" },
+          "outType": { "name": "RawFlowData", "description": "環境変数解決済み" },
+          "description": "環境変数置換"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 255,
+          "funcName": "validateCommands",
+          "inType": { "name": "unknown[]", "description": "RawFlowData.steps" },
+          "outType": {
+            "name": "Command[]",
+            "example": "[ClickCommand]",
+            "fields": { "command": "\"click\"", "text": "TextSelector(Branded)" }
+          },
+          "description": "簡略形式click: \"ログイン\"をTextSelector化"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 421,
+          "funcName": "buildFlow",
+          "inType": { "name": "tuple", "fields": ["RawFlowData", "Command[]"] },
+          "outType": { "name": "Flow" },
+          "description": "Flow構造構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 478,
+          "funcName": "executeStep",
+          "inType": {
+            "name": "ClickCommand",
+            "fields": { "command": "\"click\"", "text": "TextSelector" }
+          },
+          "outType": { "name": "Promise<StepResult>" },
+          "description": "ステップ実行エントリー"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 384,
+          "funcName": "processSelectorWait",
+          "inType": {
+            "name": "ClickCommand",
+            "fields": { "text": "TextSelector" }
+          },
+          "outType": { "name": "Promise<SelectorWaitProcessResult>" },
+          "description": "clickはセレクタ待機対象。waitForSelectorを呼び出し"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 409,
+          "funcName": "extractSelectorSpec",
+          "inType": {
+            "name": "ClickCommand",
+            "fields": { "text": "TextSelector" }
+          },
+          "outType": {
+            "name": "SelectorSpec",
+            "fields": { "text": "TextSelector" }
+          },
+          "description": "コマンドからセレクタ情報を抽出"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/selector-wait.ts",
+          "line": 96,
+          "funcName": "waitForSelector",
+          "inType": {
+            "name": "SelectorSpec",
+            "fields": { "text": "TextSelector" }
+          },
+          "outType": {
+            "name": "ResultAsync<WaitResult, AgentBrowserError>",
+            "fields": { "type": "\"ref\"", "ref": "RefSelector" }
+          },
+          "description": "textセレクタ→snapshotでref取得"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 435,
+          "funcName": "waitResultToResolvedSelectorSpec",
+          "inType": {
+            "name": "WaitResult",
+            "fields": { "type": "\"ref\"", "ref": "RefSelector" }
+          },
+          "outType": {
+            "name": "ResolvedSelectorSpec",
+            "fields": { "ref": "RefSelector" }
+          },
+          "description": "WaitResultをResolvedSelectorSpecに変換"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 218,
+          "funcName": "resolveCommandWithSelector",
+          "inType": {
+            "name": "tuple",
+            "fields": ["ClickCommand", "ResolvedSelectorSpec"]
+          },
+          "outType": {
+            "name": "ResolvedClickCommand",
+            "fields": { "command": "\"click\"", "ref": "RefSelector" }
+          },
+          "description": "Command+SelectorSpecをResolvedCommandに合成"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/handler-registry.ts",
+          "line": 31,
+          "funcName": "routeCommand",
+          "inType": {
+            "name": "ResolvedClickCommand",
+            "fields": { "ref": "RefSelector" }
+          },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "handleClickへルーティング"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/interaction.ts",
+          "line": 34,
+          "funcName": "handleClick",
+          "inType": {
+            "name": "ResolvedClickCommand",
+            "fields": { "ref": "RefSelector" }
+          },
+          "outType": { "name": "ResultAsync<CommandResult, AgentBrowserError>" },
+          "description": "resolveCliSelector(ref)してbrowserClick呼び出し"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/commands/interaction.ts",
+          "line": 21,
+          "funcName": "browserClick",
+          "inType": { "name": "CliSelector", "example": "@e1" },
+          "outType": { "name": "ResultAsync<EmptyData, AgentBrowserError>" },
+          "description": "executeCommand('click', ['@e1', '--json'])"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/executor.ts",
+          "line": 24,
+          "funcName": "executeCommand",
+          "inType": { "name": "tuple", "fields": ["command", "args", "options"] },
+          "outType": { "name": "ResultAsync<string, AgentBrowserError>" },
+          "description": "CLI実行"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/validator.ts",
+          "line": 123,
+          "funcName": "validateAndExtractData",
+          "inType": { "name": "string", "description": "stdout" },
+          "outType": { "name": "EmptyData", "fields": {} },
+          "description": "空レスポンス検証"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/interaction.ts",
+          "line": 38,
+          "funcName": "handleClick.map",
+          "inType": { "name": "EmptyData" },
+          "outType": {
+            "name": "CommandResult",
+            "fields": { "stdout": "string", "duration": "number" }
+          },
+          "description": "CommandResult構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 505,
+          "funcName": "result.match",
+          "inType": { "name": "CommandResult" },
+          "outType": {
+            "name": "StepResult",
+            "fields": {
+              "index": "number",
+              "command": "Command",
+              "status": "\"passed\"",
+              "duration": "number",
+              "stdout": "string"
+            }
+          },
+          "description": "最終結果構築"
+        }
+      ]
+    },
+    {
+      "command": "type",
+      "yamlInput": "type: { css: \"#input\", value: \"xxx\" }",
+      "description": "CSSセレクタ+value。セレクタ待機あり。可視性チェック後実行。",
+      "flow": [
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 72,
+          "funcName": "safeYamlParse",
+          "inType": { "name": "string" },
+          "outType": { "name": "unknown" },
+          "description": "YAMLパース"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 96,
+          "funcName": "validateRootStructure",
+          "inType": { "name": "unknown" },
+          "outType": { "name": "Record<string, unknown>" },
+          "description": "ルート構造検証"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 172,
+          "funcName": "buildRawFlowData",
+          "inType": { "name": "Record<string, unknown>" },
+          "outType": { "name": "RawFlowData" },
+          "description": "RawFlowData構築"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/env-resolver.ts",
+          "line": 161,
+          "funcName": "resolveEnvVariables",
+          "inType": { "name": "RawFlowData" },
+          "outType": { "name": "RawFlowData" },
+          "description": "環境変数置換"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 255,
+          "funcName": "validateCommands",
+          "inType": { "name": "unknown[]" },
+          "outType": {
+            "name": "Command[]",
+            "example": "[TypeCommand]",
+            "fields": { "command": "\"type\"", "css": "CssSelector(Branded)", "value": "string" }
+          },
+          "description": "TypeCssSchemaで検証"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 421,
+          "funcName": "buildFlow",
+          "inType": { "name": "tuple", "fields": ["RawFlowData", "Command[]"] },
+          "outType": { "name": "Flow" },
+          "description": "Flow構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 478,
+          "funcName": "executeStep",
+          "inType": {
+            "name": "TypeCommand",
+            "fields": { "command": "\"type\"", "css": "CssSelector", "value": "string" }
+          },
+          "outType": { "name": "Promise<StepResult>" },
+          "description": "ステップ実行エントリー"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 384,
+          "funcName": "processSelectorWait",
+          "inType": { "name": "TypeCommand" },
+          "outType": { "name": "Promise<SelectorWaitProcessResult>" },
+          "description": "typeはセレクタ待機対象"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 409,
+          "funcName": "extractSelectorSpec",
+          "inType": { "name": "TypeCommand" },
+          "outType": {
+            "name": "SelectorSpec",
+            "fields": { "css": "CssSelector" }
+          },
+          "description": "セレクタ情報抽出"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/selector-wait.ts",
+          "line": 36,
+          "funcName": "waitForSelector",
+          "inType": {
+            "name": "SelectorSpec",
+            "fields": { "css": "CssSelector" }
+          },
+          "outType": {
+            "name": "ResultAsync<WaitResult, AgentBrowserError>",
+            "fields": { "type": "\"css\"", "visible": true }
+          },
+          "description": "browserIsVisibleで可視性確認"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 435,
+          "funcName": "waitResultToResolvedSelectorSpec",
+          "inType": {
+            "name": "WaitResult",
+            "fields": { "type": "\"css\"", "visible": true }
+          },
+          "outType": {
+            "name": "ResolvedSelectorSpec",
+            "fields": { "css": "CssSelector" }
+          },
+          "description": "CSSセレクタはそのまま保持"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 218,
+          "funcName": "resolveCommandWithSelector",
+          "inType": {
+            "name": "tuple",
+            "fields": ["TypeCommand", "ResolvedSelectorSpec"]
+          },
+          "outType": {
+            "name": "ResolvedTypeCommand",
+            "fields": { "command": "\"type\"", "css": "CssSelector", "value": "string" }
+          },
+          "description": "セレクタ+valueを合成"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/handler-registry.ts",
+          "line": 32,
+          "funcName": "routeCommand",
+          "inType": { "name": "ResolvedTypeCommand" },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "handleTypeへルーティング"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/interaction.ts",
+          "line": 58,
+          "funcName": "handleType",
+          "inType": {
+            "name": "ResolvedTypeCommand",
+            "fields": { "css": "CssSelector", "value": "string" }
+          },
+          "outType": { "name": "ResultAsync<CommandResult, AgentBrowserError>" },
+          "description": "browserType(selector, value)呼び出し"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/commands/interaction.ts",
+          "line": 37,
+          "funcName": "browserType",
+          "inType": {
+            "name": "tuple",
+            "fields": ["CliSelector", "string"]
+          },
+          "outType": { "name": "ResultAsync<EmptyData, AgentBrowserError>" },
+          "description": "executeCommand('type', [selector, value, '--json'])"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/executor.ts",
+          "line": 24,
+          "funcName": "executeCommand",
+          "inType": { "name": "tuple", "fields": ["command", "args", "options"] },
+          "outType": { "name": "ResultAsync<string, AgentBrowserError>" },
+          "description": "CLI実行"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/validator.ts",
+          "line": 123,
+          "funcName": "validateAndExtractData",
+          "inType": { "name": "string" },
+          "outType": { "name": "EmptyData" },
+          "description": "レスポンス検証"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/interaction.ts",
+          "line": 62,
+          "funcName": "handleType.map",
+          "inType": { "name": "EmptyData" },
+          "outType": { "name": "CommandResult" },
+          "description": "CommandResult構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 505,
+          "funcName": "result.match",
+          "inType": { "name": "CommandResult" },
+          "outType": { "name": "StepResult" },
+          "description": "最終結果構築"
+        }
+      ]
+    },
+    {
+      "command": "assertVisible",
+      "yamlInput": "assertVisible: \"ようこそ\"",
+      "description": "テキストセレクタ。セレクタ待機なし（即座判定）。直接テキスト確認。",
+      "flow": [
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 72,
+          "funcName": "safeYamlParse",
+          "inType": { "name": "string" },
+          "outType": { "name": "unknown" },
+          "description": "YAMLパース"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 96,
+          "funcName": "validateRootStructure",
+          "inType": { "name": "unknown" },
+          "outType": { "name": "Record<string, unknown>" },
+          "description": "ルート構造検証"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 172,
+          "funcName": "buildRawFlowData",
+          "inType": { "name": "Record<string, unknown>" },
+          "outType": { "name": "RawFlowData" },
+          "description": "RawFlowData構築"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/env-resolver.ts",
+          "line": 161,
+          "funcName": "resolveEnvVariables",
+          "inType": { "name": "RawFlowData" },
+          "outType": { "name": "RawFlowData" },
+          "description": "環境変数置換"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 255,
+          "funcName": "validateCommands",
+          "inType": { "name": "unknown[]" },
+          "outType": {
+            "name": "Command[]",
+            "example": "[AssertVisibleCommand]",
+            "fields": { "command": "\"assertVisible\"", "text": "TextSelector(Branded)" }
+          },
+          "description": "簡略形式→TextSelector化"
+        },
+        {
+          "layer": "Parser",
+          "filepath": "packages/core/src/parser/yaml-parser.ts",
+          "line": 421,
+          "funcName": "buildFlow",
+          "inType": { "name": "tuple", "fields": ["RawFlowData", "Command[]"] },
+          "outType": { "name": "Flow" },
+          "description": "Flow構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 478,
+          "funcName": "executeStep",
+          "inType": {
+            "name": "AssertVisibleCommand",
+            "fields": { "command": "\"assertVisible\"", "text": "TextSelector" }
+          },
+          "outType": { "name": "Promise<StepResult>" },
+          "description": "ステップ実行エントリー"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 384,
+          "funcName": "processSelectorWait",
+          "inType": { "name": "AssertVisibleCommand" },
+          "outType": { "name": "Promise<SelectorWaitProcessResult>" },
+          "description": "assertVisibleはセレクタ待機対象外"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 417,
+          "funcName": "shouldWaitForSelector",
+          "inType": { "name": "AssertVisibleCommand" },
+          "outType": { "name": "boolean", "value": false },
+          "description": "assertVisibleは待機不要と判定"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 327,
+          "funcName": "tryDirectResolve",
+          "inType": {
+            "name": "SelectorSpec",
+            "fields": { "text": "TextSelector" }
+          },
+          "outType": {
+            "name": "DirectResolveResult",
+            "fields": { "type": "\"resolved\"", "spec": "{ text: TextSelector }" }
+          },
+          "description": "allowText=trueなのでtextセレクタを直接解決"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 218,
+          "funcName": "resolveCommandWithSelector",
+          "inType": {
+            "name": "tuple",
+            "fields": ["AssertVisibleCommand", "ResolvedSelectorSpec"]
+          },
+          "outType": {
+            "name": "ResolvedAssertVisibleCommand",
+            "fields": { "command": "\"assertVisible\"", "text": "TextSelector" }
+          },
+          "description": "textフィールドそのまま保持"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/handler-registry.ts",
+          "line": 46,
+          "funcName": "routeCommand",
+          "inType": { "name": "ResolvedAssertVisibleCommand" },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "handleAssertVisibleへルーティング"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/assertions.ts",
+          "line": 184,
+          "funcName": "handleAssertVisible",
+          "inType": {
+            "name": "ResolvedAssertVisibleCommand",
+            "fields": { "text": "TextSelector" }
+          },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "isTextSelector判定→handleTextSelectorVisible分岐"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/assertions.ts",
+          "line": 143,
+          "funcName": "handleTextSelectorVisible",
+          "inType": { "name": "string", "example": "\"ようこそ\"" },
+          "outType": { "name": "ResultAsync<CommandResult, ExecutorError>" },
+          "description": "browserWaitForText呼び出し"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/commands/wait.ts",
+          "line": 58,
+          "funcName": "browserWaitForText",
+          "inType": { "name": "string", "example": "\"ようこそ\"" },
+          "outType": { "name": "ResultAsync<EmptyData, AgentBrowserError>" },
+          "description": "executeCommand('wait', ['--text', text, '--json'])"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/executor.ts",
+          "line": 24,
+          "funcName": "executeCommand",
+          "inType": { "name": "tuple", "fields": ["command", "args", "options"] },
+          "outType": { "name": "ResultAsync<string, AgentBrowserError>" },
+          "description": "CLI実行"
+        },
+        {
+          "layer": "Adapter",
+          "filepath": "packages/agent-browser-adapter/src/validator.ts",
+          "line": 123,
+          "funcName": "validateAndExtractData",
+          "inType": { "name": "string" },
+          "outType": { "name": "EmptyData" },
+          "description": "レスポンス検証"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/commands/assertions.ts",
+          "line": 148,
+          "funcName": "handleTextSelectorVisible.map",
+          "inType": { "name": "EmptyData" },
+          "outType": {
+            "name": "CommandResult",
+            "fields": { "stdout": "JSON.stringify({ visible: true })" }
+          },
+          "description": "CommandResult構築"
+        },
+        {
+          "layer": "Executor",
+          "filepath": "packages/core/src/executor/execute-step.ts",
+          "line": 505,
+          "funcName": "result.match",
+          "inType": { "name": "CommandResult" },
+          "outType": {
+            "name": "StepResult",
+            "fields": {
+              "index": "number",
+              "command": "Command",
+              "status": "\"passed\"",
+              "duration": "number",
+              "stdout": "string"
+            }
+          },
+          "description": "最終結果構築"
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "selectorWait": {
+      "open": { "required": false, "reason": "セレクタ非保有" },
+      "click": { "required": true, "method": "snapshot経由でTextSelector→RefSelector変換" },
+      "type": { "required": true, "method": "browserIsVisibleでCSSセレクタの可視性チェック" },
+      "assertVisible": { "required": false, "reason": "allowText=trueで直接解決、snapshotスキップ" }
+    },
+    "typeTransformations": {
+      "open": "string → unknown → Record → RawFlowData → Command[OpenCommand] → Flow → OpenCommand → OpenCommand → CommandResult → StepResult",
+      "click": "string → unknown → Record → RawFlowData → Command[ClickCommand] → Flow → ClickCommand → SelectorSpec → WaitResult → ResolvedSelectorSpec → ResolvedClickCommand → CommandResult → StepResult",
+      "type": "string → unknown → Record → RawFlowData → Command[TypeCommand] → Flow → TypeCommand → SelectorSpec → WaitResult → ResolvedSelectorSpec → ResolvedTypeCommand → CommandResult → StepResult",
+      "assertVisible": "string → unknown → Record → RawFlowData → Command[AssertVisibleCommand] → Flow → AssertVisibleCommand → DirectResolveResult → ResolvedAssertVisibleCommand → CommandResult → StepResult"
+    },
+    "keyDifferences": [
+      {
+        "comparison": "click vs assertVisible (同じTextSelector入力)",
+        "click": "waitForSelector呼び出し→snapshot実行→WaitResult{type:ref}→RefSelectorに変換",
+        "assertVisible": "shouldWaitForSelector=false→tryDirectResolve→DirectResolveResult{type:resolved}→TextSelectorのまま保持"
+      },
+      {
+        "comparison": "click vs type (セレクタ待機あり同士)",
+        "click": "TextSelector → WaitResult{type:ref, ref:RefSelector} → ResolvedSelectorSpec{ref}",
+        "type": "CssSelector → WaitResult{type:css, visible:true} → ResolvedSelectorSpec{css} + valueフィールド保持"
+      }
+    ]
+  }
+}

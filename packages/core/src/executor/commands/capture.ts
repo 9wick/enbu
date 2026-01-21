@@ -1,7 +1,7 @@
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
-import { browserScreenshot, browserSnapshot } from '@packages/agent-browser-adapter';
+import { browserScreenshot } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
-import type { ScreenshotCommand, SnapshotCommand } from '../../types';
+import type { ScreenshotCommand } from '../../types';
 import { UseDefault } from '../../types/utility-types';
 import type { CommandResult, ExecutionContext } from '../result';
 
@@ -29,28 +29,6 @@ export const handleScreenshot = (
     ...context.executeOptions,
     fullPage,
   }).map((output) => ({
-    stdout: JSON.stringify(output),
-    duration: Date.now() - startTime,
-  }));
-};
-
-/**
- * snapshot コマンドのハンドラ
- *
- * ページの構造をスナップショットとして取得する。
- * agent-browser の snapshot コマンドを実行し、ページの要素構造を返す。
- *
- * @param command - snapshot コマンドのパラメータ
- * @param context - 実行コンテキスト
- * @returns コマンド実行結果を含むResult型
- */
-export const handleSnapshot = (
-  command: SnapshotCommand,
-  context: ExecutionContext,
-): ResultAsync<CommandResult, AgentBrowserError> => {
-  const startTime = Date.now();
-
-  return browserSnapshot(context.executeOptions).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));

@@ -7,7 +7,7 @@
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import { browserHover, browserSelect } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
-import type { HoverCommand, SelectCommand } from '../../types';
+import type { ResolvedHoverCommand, ResolvedSelectCommand } from '../../types';
 import type { CommandResult, ExecutionContext } from '../result';
 import { resolveCliSelector } from './cli-selector-utils';
 
@@ -15,14 +15,14 @@ import { resolveCliSelector } from './cli-selector-utils';
  * hover コマンドのハンドラ
  *
  * 指定されたセレクタの要素にマウスホバーする。
- * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
  *
- * @param command - hover コマンドのパラメータ
+ * @param command - hover コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
 export const handleHover = (
-  command: HoverCommand,
+  command: ResolvedHoverCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();
@@ -39,14 +39,14 @@ export const handleHover = (
  * select コマンドのハンドラ
  *
  * 指定されたセレクタのセレクトボックスから値を選択する。
- * SelectorSpec (css/ref/text) からCLIセレクタを解決して実行する。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
  *
- * @param command - select コマンドのパラメータ
+ * @param command - select コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
 export const handleSelect = (
-  command: SelectCommand,
+  command: ResolvedSelectCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, AgentBrowserError> => {
   const startTime = Date.now();

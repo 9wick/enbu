@@ -82,89 +82,115 @@ const formatCommandDescription = (command: Command): string =>
   match(command)
     .with({ command: 'open', url: P.string }, (cmd) => `open ${cmd.url}`)
     .with({ command: 'click', css: P.string }, (cmd) => `click "${cmd.css}"`)
-    .with({ command: 'click', ref: P.string }, (cmd) => `click ref:"${cmd.ref}"`)
-    .with({ command: 'click', text: P.string }, (cmd) => `click text:"${cmd.text}"`)
+    .with(
+      { command: 'click', interactableText: P.string },
+      (cmd) => `click text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'click', xpath: P.string }, (cmd) => `click xpath:"${cmd.xpath}"`)
     .with(
       { command: 'type', css: P.string, value: P.string },
       (cmd) => `type "${cmd.css}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'type', ref: P.string, value: P.string },
-      (cmd) => `type ref:"${cmd.ref}" = "${cmd.value}"`,
+      { command: 'type', interactableText: P.string, value: P.string },
+      (cmd) => `type text:"${cmd.interactableText}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'type', text: P.string, value: P.string },
-      (cmd) => `type text:"${cmd.text}" = "${cmd.value}"`,
+      { command: 'type', xpath: P.string, value: P.string },
+      (cmd) => `type xpath:"${cmd.xpath}" = "${cmd.value}"`,
     )
     .with(
       { command: 'fill', css: P.string, value: P.string },
       (cmd) => `fill "${cmd.css}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'fill', ref: P.string, value: P.string },
-      (cmd) => `fill ref:"${cmd.ref}" = "${cmd.value}"`,
+      { command: 'fill', interactableText: P.string, value: P.string },
+      (cmd) => `fill text:"${cmd.interactableText}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'fill', text: P.string, value: P.string },
-      (cmd) => `fill text:"${cmd.text}" = "${cmd.value}"`,
+      { command: 'fill', xpath: P.string, value: P.string },
+      (cmd) => `fill xpath:"${cmd.xpath}" = "${cmd.value}"`,
     )
     .with({ command: 'press', key: P.string }, (cmd) => `press ${cmd.key}`)
     .with({ command: 'hover', css: P.string }, (cmd) => `hover "${cmd.css}"`)
-    .with({ command: 'hover', ref: P.string }, (cmd) => `hover ref:"${cmd.ref}"`)
-    .with({ command: 'hover', text: P.string }, (cmd) => `hover text:"${cmd.text}"`)
+    .with(
+      { command: 'hover', interactableText: P.string },
+      (cmd) => `hover text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'hover', xpath: P.string }, (cmd) => `hover xpath:"${cmd.xpath}"`)
     .with(
       { command: 'select', css: P.string, value: P.string },
       (cmd) => `select "${cmd.css}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'select', ref: P.string, value: P.string },
-      (cmd) => `select ref:"${cmd.ref}" = "${cmd.value}"`,
+      { command: 'select', interactableText: P.string, value: P.string },
+      (cmd) => `select text:"${cmd.interactableText}" = "${cmd.value}"`,
     )
     .with(
-      { command: 'select', text: P.string, value: P.string },
-      (cmd) => `select text:"${cmd.text}" = "${cmd.value}"`,
+      { command: 'select', xpath: P.string, value: P.string },
+      (cmd) => `select xpath:"${cmd.xpath}" = "${cmd.value}"`,
     )
     .with(
       { command: 'scroll', direction: P.string, amount: P.number },
       (cmd) => `scroll ${cmd.direction} ${cmd.amount}px`,
     )
     .with({ command: 'scrollIntoView', css: P.string }, (cmd) => `scrollIntoView "${cmd.css}"`)
-    .with({ command: 'scrollIntoView', ref: P.string }, (cmd) => `scrollIntoView ref:"${cmd.ref}"`)
     .with(
-      { command: 'scrollIntoView', text: P.string },
-      (cmd) => `scrollIntoView text:"${cmd.text}"`,
+      { command: 'scrollIntoView', anyText: P.string },
+      (cmd) => `scrollIntoView text:"${cmd.anyText}"`,
+    )
+    .with(
+      { command: 'scrollIntoView', xpath: P.string },
+      (cmd) => `scrollIntoView xpath:"${cmd.xpath}"`,
     )
     .with({ command: 'wait', ms: P.number }, (cmd) => `wait ${cmd.ms}ms`)
     .with({ command: 'wait', css: P.string }, (cmd) => `wait "${cmd.css}"`)
-    .with({ command: 'wait', ref: P.string }, (cmd) => `wait ref:"${cmd.ref}"`)
-    .with({ command: 'wait', text: P.string }, (cmd) => `wait text "${cmd.text}"`)
+    .with({ command: 'wait', anyText: P.string }, (cmd) => `wait text "${cmd.anyText}"`)
+    .with({ command: 'wait', xpath: P.string }, (cmd) => `wait xpath:"${cmd.xpath}"`)
     .with({ command: 'wait', load: P.string }, (cmd) => `wait load ${cmd.load}`)
     .with({ command: 'wait', url: P.string }, (cmd) => `wait url "${cmd.url}"`)
     .with({ command: 'wait', fn: P.string }, (cmd) => `wait fn "${cmd.fn.substring(0, 30)}..."`)
     .with({ command: 'screenshot', path: P.string }, (cmd) => `screenshot ${cmd.path}`)
-    .with({ command: 'snapshot' }, () => 'snapshot')
     .with(
       { command: 'eval', script: P.string },
       (cmd) => `eval "${cmd.script.substring(0, 50)}${cmd.script.length > 50 ? '...' : ''}"`,
     )
     .with({ command: 'assertVisible', css: P.string }, (cmd) => `assertVisible "${cmd.css}"`)
-    .with({ command: 'assertVisible', ref: P.string }, (cmd) => `assertVisible ref:"${cmd.ref}"`)
-    .with({ command: 'assertVisible', text: P.string }, (cmd) => `assertVisible text:"${cmd.text}"`)
+    .with(
+      { command: 'assertVisible', anyText: P.string },
+      (cmd) => `assertVisible text:"${cmd.anyText}"`,
+    )
+    .with(
+      { command: 'assertVisible', xpath: P.string },
+      (cmd) => `assertVisible xpath:"${cmd.xpath}"`,
+    )
     .with({ command: 'assertNotVisible', css: P.string }, (cmd) => `assertNotVisible "${cmd.css}"`)
     .with(
-      { command: 'assertNotVisible', ref: P.string },
-      (cmd) => `assertNotVisible ref:"${cmd.ref}"`,
+      { command: 'assertNotVisible', anyText: P.string },
+      (cmd) => `assertNotVisible text:"${cmd.anyText}"`,
     )
     .with(
-      { command: 'assertNotVisible', text: P.string },
-      (cmd) => `assertNotVisible text:"${cmd.text}"`,
+      { command: 'assertNotVisible', xpath: P.string },
+      (cmd) => `assertNotVisible xpath:"${cmd.xpath}"`,
     )
     .with({ command: 'assertEnabled', css: P.string }, (cmd) => `assertEnabled "${cmd.css}"`)
-    .with({ command: 'assertEnabled', ref: P.string }, (cmd) => `assertEnabled ref:"${cmd.ref}"`)
-    .with({ command: 'assertEnabled', text: P.string }, (cmd) => `assertEnabled text:"${cmd.text}"`)
+    .with(
+      { command: 'assertEnabled', interactableText: P.string },
+      (cmd) => `assertEnabled text:"${cmd.interactableText}"`,
+    )
+    .with(
+      { command: 'assertEnabled', xpath: P.string },
+      (cmd) => `assertEnabled xpath:"${cmd.xpath}"`,
+    )
     .with({ command: 'assertChecked', css: P.string }, (cmd) => `assertChecked "${cmd.css}"`)
-    .with({ command: 'assertChecked', ref: P.string }, (cmd) => `assertChecked ref:"${cmd.ref}"`)
-    .with({ command: 'assertChecked', text: P.string }, (cmd) => `assertChecked text:"${cmd.text}"`)
+    .with(
+      { command: 'assertChecked', interactableText: P.string },
+      (cmd) => `assertChecked text:"${cmd.interactableText}"`,
+    )
+    .with(
+      { command: 'assertChecked', xpath: P.string },
+      (cmd) => `assertChecked xpath:"${cmd.xpath}"`,
+    )
     .exhaustive();
 
 /**

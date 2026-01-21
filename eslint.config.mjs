@@ -5,6 +5,234 @@ import sonarjs from 'eslint-plugin-sonarjs';
 import eslintComments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import boundaries from 'eslint-plugin-boundaries';
 
+// =============================================================================
+// no-restricted-syntax ルール定義
+// =============================================================================
+
+/**
+ * 基底ルール: 全TypeScriptファイルに適用される no-restricted-syntax ルール
+ * 他の設定でこれを継承・拡張・フィルタリングして使用する
+ */
+const BASE_RESTRICTED_SYNTAX_RULES = {
+  /**
+   * throw キーワードを禁止。neverthrow の Result 型を使用すること。
+   * 外部ライブラリの例外は fromThrowable で変換する。
+   */
+  throw: {
+    selector: 'ThrowStatement',
+    message:
+      'throw は禁止です。neverthrow の Result 型（ok/err）を使用してください。外部ライブラリの例外は fromThrowable で変換してください。',
+  },
+  /**
+   * Promise<Result<>> を禁止。ResultAsync を使用すること。
+   * 非同期の Result 処理は ResultAsync で統一し、型の一貫性を保つ。
+   */
+  promiseResult: {
+    selector:
+      'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
+    message:
+      'Promise<Result<>> は禁止です。ResultAsync を使用してください。fromPromise でラップするか、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
+  },
+  /**
+   * neverthrow のチェーン内でのネストを禁止。
+   * andThen のコールバック内で andThen を呼ぶとネストが深くなる。
+   * 代わりにコンテキストオブジェクトを引き回すか、ヘルパー関数に切り出してフラットにする。
+   */
+  nestedAndThen: {
+    selector:
+      'CallExpression[callee.property.name="andThen"] > :matches(ArrowFunctionExpression, FunctionExpression) CallExpression[callee.property.name="andThen"]',
+    message:
+      'neverthrow のチェーン内でのネストは禁止です。コンテキストを引き回すか、ヘルパー関数に切り出してフラットなチェーンにしてください。',
+  },
+  /**
+   * as による型アサーションを禁止（as const は許可）。
+   * 型注釈は代入時に型チェックが行われるため、より型安全。
+   */
+  asAssertion: {
+    selector: 'TSAsExpression:not([typeAnnotation.typeName.name="const"])',
+    message:
+      'as による型アサーションは禁止です（as const は許可）。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
+  },
+  /**
+   * <> による型アサーションを禁止。
+   */
+  angleAssertion: {
+    selector: 'TSTypeAssertion',
+    message:
+      '<> による型アサーションは禁止です。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
+  },
+  /**
+   * in 演算子を禁止（型安全性を破壊するため）。
+   * 'prop' in obj は任意のプロパティ名でチェック可能で、
+   * narrowing 後は unknown 型になり型安全性が失われる。
+   * 代わりに ts-pattern の match を使用すること。
+   */
+  inOperator: {
+    selector: 'BinaryExpression[operator="in"]',
+    message:
+      'in 演算子は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
+      '例: match(value).with({ type: "foo" }, ...).exhaustive()',
+  },
+  /**
+   * Object.hasOwn を禁止（型安全性を破壊するため）。
+   * in 演算子と同様に、任意のプロパティ名でチェック可能で型安全性が失われる。
+   * 代わりに ts-pattern の match を使用すること。
+   */
+  objectHasOwn: {
+    selector: 'CallExpression[callee.object.name="Object"][callee.property.name="hasOwn"]',
+    message:
+      'Object.hasOwn は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
+      '例: match(value).with({ type: "foo" }, ...).exhaustive()',
+  },
+};
+
+/**
+ * ドメイン層追加ルール: packages/core のドメイン層に追加で適用されるルール
+ */
+const DOMAIN_LAYER_ADDITIONAL_RULES = {
+  /**
+   * optional property（?:）を禁止。?: never は discriminated union パターンとして許容。
+   */
+  optionalProperty: {
+    selector: 'TSPropertySignature[optional=true]:not(:has(TSTypeAnnotation > TSNeverKeyword))',
+    message:
+      'ドメイン層でoptional property（?:）は禁止です。' +
+      'NoInput 型を使って明示的に表現してください。' +
+      '例: email: string | NoInput',
+  },
+  /**
+   * | undefined を禁止。
+   */
+  unionUndefined: {
+    selector: 'TSUnionType > TSUndefinedKeyword',
+    message:
+      'ドメイン層で | undefined は禁止です。' +
+      'NoInput 型を使って明示的に表現してください。' +
+      '例: email: string | NoInput',
+  },
+  /**
+   * | null を禁止。
+   */
+  unionNull: {
+    selector: 'TSUnionType > TSNullKeyword',
+    message:
+      'ドメイン層で | null は禁止です。' +
+      'Nothing 型を使って明示的に表現してください。' +
+      '例: result: Data | Nothing',
+  },
+};
+
+/**
+ * E2Eテスト追加ルール: E2Eテストファイルに追加で適用されるルール
+ */
+const E2E_TEST_ADDITIONAL_RULES = {
+  viUsage: {
+    selector: 'CallExpression[callee.object.name="vi"]',
+    message: 'E2Eテストでviの使用は禁止です。実際のシステムを使用してください。',
+  },
+  mockFunction: {
+    selector: 'CallExpression[callee.name="mock"]',
+    message: 'E2Eテストでmock関数の使用は禁止です。',
+  },
+  mockMethod: {
+    selector: 'CallExpression[callee.property.name="mock"]',
+    message: 'E2Eテストでmockメソッドの使用は禁止です。',
+  },
+  mockImplementation: {
+    selector: 'CallExpression[callee.property.name="mockImplementation"]',
+    message: 'E2EテストでmockImplementationの使用は禁止です。',
+  },
+  mockReturnValue: {
+    selector: 'CallExpression[callee.property.name="mockReturnValue"]',
+    message: 'E2EテストでmockReturnValueの使用は禁止です。',
+  },
+  mockResolvedValue: {
+    selector: 'CallExpression[callee.property.name="mockResolvedValue"]',
+    message: 'E2EテストでmockResolvedValueの使用は禁止です。',
+  },
+  spyOn: {
+    selector: 'CallExpression[callee.property.name="spyOn"]',
+    message: 'E2EテストでspyOnの使用は禁止です。',
+  },
+};
+
+/**
+ * index.ts (barrel file) ルール: re-export 以外の記述を禁止
+ */
+const INDEX_FILE_RULES = {
+  variableDeclaration: {
+    selector: 'VariableDeclaration',
+    message: 'index.ts に変数宣言は禁止です。re-export のみ記述してください。',
+  },
+  functionDeclaration: {
+    selector: 'FunctionDeclaration',
+    message: 'index.ts に関数宣言は禁止です。re-export のみ記述してください。',
+  },
+  classDeclaration: {
+    selector: 'ClassDeclaration',
+    message: 'index.ts にクラス宣言は禁止です。re-export のみ記述してください。',
+  },
+  interfaceDeclaration: {
+    selector: 'TSInterfaceDeclaration',
+    message: 'index.ts にinterface宣言は禁止です。re-export のみ記述してください。',
+  },
+  typeDeclaration: {
+    selector: 'TSTypeAliasDeclaration',
+    message: 'index.ts にtype宣言は禁止です。re-export のみ記述してください。',
+  },
+  importDeclaration: {
+    selector: 'ImportDeclaration',
+    message:
+      'index.ts に import 文は禁止です。export * from または export { ... } from を使用してください。',
+  },
+  localVariableExport: {
+    selector: 'ExportNamedDeclaration:not([source]):has(VariableDeclaration)',
+    message: 'index.ts でのローカル変数エクスポートは禁止です。re-export のみ記述してください。',
+  },
+  localFunctionExport: {
+    selector: 'ExportNamedDeclaration:not([source]):has(FunctionDeclaration)',
+    message: 'index.ts でのローカル関数エクスポートは禁止です。re-export のみ記述してください。',
+  },
+  localClassExport: {
+    selector: 'ExportNamedDeclaration:not([source]):has(ClassDeclaration)',
+    message: 'index.ts でのローカルクラスエクスポートは禁止です。re-export のみ記述してください。',
+  },
+  exportDefault: {
+    selector: 'ExportDefaultDeclaration',
+    message: 'index.ts に export default は禁止です。名前付き re-export のみ記述してください。',
+  },
+};
+
+// =============================================================================
+// ヘルパー関数
+// =============================================================================
+
+/**
+ * ルールオブジェクトから ESLint の no-restricted-syntax 配列形式に変換する
+ * @param {Record<string, {selector: string, message: string}>} rules - ルールオブジェクト
+ * @param {string[]} [excludeKeys] - 除外するルールのキー配列
+ * @returns {Array<{selector: string, message: string}>} ESLint ルール配列
+ */
+const buildRestrictedSyntaxRules = (rules, excludeKeys = []) => {
+  const excludeSet = new Set(excludeKeys);
+  return Object.entries(rules)
+    .filter(([key]) => !excludeSet.has(key))
+    .map(([, rule]) => rule);
+};
+
+/**
+ * 複数のルールオブジェクトをマージして ESLint の no-restricted-syntax 配列形式に変換する
+ * @param  {...Record<string, {selector: string, message: string}>} ruleObjects - ルールオブジェクト群
+ * @returns {Array<{selector: string, message: string}>} ESLint ルール配列
+ */
+const mergeRestrictedSyntaxRules = (...ruleObjects) => {
+  return ruleObjects.flatMap((rules) => Object.values(rules));
+};
+
+// =============================================================================
+// レイヤー定義
+// =============================================================================
+
 /**
  * レイヤー定義
  *
@@ -185,6 +413,7 @@ export default tseslint.config(
       complexity: ['error', { max: 7 }],
       'sonarjs/cognitive-complexity': 'error',
       'no-console': 'error',
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/explicit-function-return-type': 'off',
       'import/no-cycle': 'error',
@@ -211,70 +440,12 @@ export default tseslint.config(
         },
       ],
       /**
-       * throw キーワードを禁止。neverthrow の Result 型を使用すること。
-       * 外部ライブラリの例外は fromThrowable で変換する。
+       * 基底ルール（throw禁止、as禁止、in禁止など）を適用
+       * ルール定義は BASE_RESTRICTED_SYNTAX_RULES を参照
        */
       'no-restricted-syntax': [
         'error',
-        {
-          selector: 'ThrowStatement',
-          message:
-            'throw は禁止です。neverthrow の Result 型（ok/err）を使用してください。外部ライブラリの例外は fromThrowable で変換してください。',
-        },
-        /**
-         * Promise<Result<>> を禁止。ResultAsync を使用すること。
-         * 非同期の Result 処理は ResultAsync で統一し、型の一貫性を保つ。
-         */
-        {
-          selector:
-            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
-          message:
-            'Promise<Result<>> は禁止です。ResultAsync を使用してください。fromPromise でラップするか、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
-        },
-        /**
-         * neverthrow のチェーン内でのネストを禁止。
-         * andThen のコールバック内で andThen を呼ぶとネストが深くなる。
-         * 代わりにコンテキストオブジェクトを引き回すか、ヘルパー関数に切り出してフラットにする。
-         */
-        {
-          selector:
-            'CallExpression[callee.property.name="andThen"] > :matches(ArrowFunctionExpression, FunctionExpression) CallExpression[callee.property.name="andThen"]',
-          message:
-            'neverthrow のチェーン内でのネストは禁止です。コンテキストを引き回すか、ヘルパー関数に切り出してフラットなチェーンにしてください。',
-        },
-        {
-          selector: 'TSAsExpression:not([typeAnnotation.typeName.name="const"])',
-          message:
-            'as による型アサーションは禁止です（as const は許可）。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
-        },
-        {
-          selector: 'TSTypeAssertion',
-          message:
-            '<> による型アサーションは禁止です。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
-        },
-        /**
-         * in 演算子を禁止（型安全性を破壊するため）。
-         * 'prop' in obj は任意のプロパティ名でチェック可能で、
-         * narrowing 後は unknown 型になり型安全性が失われる。
-         * 代わりに ts-pattern の match を使用すること。
-         */
-        {
-          selector: 'BinaryExpression[operator="in"]',
-          message:
-            'in 演算子は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
-            '例: match(value).with({ type: "foo" }, ...).exhaustive()',
-        },
-        /**
-         * Object.hasOwn を禁止（型安全性を破壊するため）。
-         * in 演算子と同様に、任意のプロパティ名でチェック可能で型安全性が失われる。
-         * 代わりに ts-pattern の match を使用すること。
-         */
-        {
-          selector: 'CallExpression[callee.object.name="Object"][callee.property.name="hasOwn"]',
-          message:
-            'Object.hasOwn は型安全性を破壊するため禁止です。ts-pattern の match を使用してください。' +
-            '例: match(value).with({ type: "foo" }, ...).exhaustive()',
-        },
+        ...buildRestrictedSyntaxRules(BASE_RESTRICTED_SYNTAX_RULES),
       ],
     },
   },
@@ -282,65 +453,12 @@ export default tseslint.config(
    * index.ts (barrel file) のルール
    * re-export 以外の記述を禁止する
    * 許可: export * from, export { ... } from, export {}, export type { ... } from
+   * ルール定義は INDEX_FILE_RULES を参照
    */
   {
     files: ['**/index.ts'],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        // 変数宣言を禁止
-        {
-          selector: 'VariableDeclaration',
-          message: 'index.ts に変数宣言は禁止です。re-export のみ記述してください。',
-        },
-        // 関数宣言を禁止
-        {
-          selector: 'FunctionDeclaration',
-          message: 'index.ts に関数宣言は禁止です。re-export のみ記述してください。',
-        },
-        // クラス宣言を禁止
-        {
-          selector: 'ClassDeclaration',
-          message: 'index.ts にクラス宣言は禁止です。re-export のみ記述してください。',
-        },
-        // interface/type 宣言を禁止（re-export は許可）
-        {
-          selector: 'TSInterfaceDeclaration',
-          message: 'index.ts にinterface宣言は禁止です。re-export のみ記述してください。',
-        },
-        {
-          selector: 'TSTypeAliasDeclaration',
-          message: 'index.ts にtype宣言は禁止です。re-export のみ記述してください。',
-        },
-        // import文を禁止（re-exportは export ... from で行う）
-        {
-          selector: 'ImportDeclaration',
-          message:
-            'index.ts に import 文は禁止です。export * from または export { ... } from を使用してください。',
-        },
-        // ローカルエクスポート（from なしの export）を禁止（export {} は例外）
-        {
-          selector: 'ExportNamedDeclaration:not([source]):has(VariableDeclaration)',
-          message:
-            'index.ts でのローカル変数エクスポートは禁止です。re-export のみ記述してください。',
-        },
-        {
-          selector: 'ExportNamedDeclaration:not([source]):has(FunctionDeclaration)',
-          message:
-            'index.ts でのローカル関数エクスポートは禁止です。re-export のみ記述してください。',
-        },
-        {
-          selector: 'ExportNamedDeclaration:not([source]):has(ClassDeclaration)',
-          message:
-            'index.ts でのローカルクラスエクスポートは禁止です。re-export のみ記述してください。',
-        },
-        // export default を禁止
-        {
-          selector: 'ExportDefaultDeclaration',
-          message:
-            'index.ts に export default は禁止です。名前付き re-export のみ記述してください。',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...buildRestrictedSyntaxRules(INDEX_FILE_RULES)],
     },
   },
   {
@@ -350,15 +468,18 @@ export default tseslint.config(
       /**
        * テストファイルでは throw と型アサーションの制限を解除するが、
        * Promise<Result<>> の禁止は維持する（ResultAsync を使用すること）。
+       * 除外: throw, asAssertion, angleAssertion, inOperator, objectHasOwn, nestedAndThen
        */
       'no-restricted-syntax': [
         'error',
-        {
-          selector:
-            'TSTypeReference[typeName.name="Promise"] > TSTypeParameterInstantiation > TSTypeReference[typeName.name="Result"]:first-child',
-          message:
-            'Promise<Result<>> は禁止です。ResultAsync を使用し、チェーンメソッド（andThen, map, mapErr）で繋いでください。',
-        },
+        ...buildRestrictedSyntaxRules(BASE_RESTRICTED_SYNTAX_RULES, [
+          'throw',
+          'asAssertion',
+          'angleAssertion',
+          'inOperator',
+          'objectHasOwn',
+          'nestedAndThen',
+        ]),
       ],
       // テストファイルではサブパスインポート制限を解除
       'no-restricted-imports': 'off',
@@ -394,6 +515,16 @@ export default tseslint.config(
     },
   },
   /**
+   * packages/core/src/generator ディレクトリはビルドツールなのでconsole.logのみ許可。
+   * 型アサーションと複雑度は許可しない。
+   */
+  {
+    files: ['packages/core/src/generator/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  /**
    * orchestrator層では複雑度ルールを緩和する。
    * アプリケーション層への境界として、多くのoptional引数を扱うため。
    */
@@ -406,6 +537,7 @@ export default tseslint.config(
   /**
    * packages/core（ドメイン層）でのoptional禁止
    * naoya式関数型DDDに基づき、optional/null/undefined を検出
+   * 基底ルールに加えてドメイン層専用ルールを追加
    *
    * packages/agent-browser-adapter は外界との境界なので除外
    */
@@ -417,39 +549,19 @@ export default tseslint.config(
       'packages/core/src/parser/**/*.ts', // パーサーは外界との境界なので除外
       'packages/core/src/loader/**/*.ts', // ローダーも外界との境界なので除外
       'packages/core/src/orchestrator/**/*.ts', // オーケストレーターはアプリケーション層への公開APIなので除外
+      'packages/core/src/generator/**/*.ts', // ジェネレーターはビルドツールなので除外
     ],
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          // ?: never は discriminated union パターンとして許容
-          selector:
-            'TSPropertySignature[optional=true]:not(:has(TSTypeAnnotation > TSNeverKeyword))',
-          message:
-            'ドメイン層でoptional property（?:）は禁止です。' +
-            'NoInput 型を使って明示的に表現してください。' +
-            '例: email: string | NoInput',
-        },
-        {
-          selector: 'TSUnionType > TSUndefinedKeyword',
-          message:
-            'ドメイン層で | undefined は禁止です。' +
-            'NoInput 型を使って明示的に表現してください。' +
-            '例: email: string | NoInput',
-        },
-        {
-          selector: 'TSUnionType > TSNullKeyword',
-          message:
-            'ドメイン層で | null は禁止です。' +
-            'Nothing 型を使って明示的に表現してください。' +
-            '例: result: Data | Nothing',
-        },
+        ...mergeRestrictedSyntaxRules(BASE_RESTRICTED_SYNTAX_RULES, DOMAIN_LAYER_ADDITIONAL_RULES),
       ],
     },
   },
   /**
    * E2Eテストではモックを禁止する。
    * E2Eテストは実際のシステム動作を検証するため、モックの使用は不適切。
+   * 基底ルール + E2E専用ルールを適用
    */
   {
     files: ['**/*.e2e.test.{ts,tsx}', '**/*.e2e.spec.{ts,tsx}'],
@@ -469,44 +581,7 @@ export default tseslint.config(
       ],
       'no-restricted-syntax': [
         'error',
-        {
-          selector: 'CallExpression[callee.object.name="vi"]',
-          message: 'E2Eテストでviの使用は禁止です。実際のシステムを使用してください。',
-        },
-        {
-          selector: 'CallExpression[callee.name="mock"]',
-          message: 'E2Eテストでmock関数の使用は禁止です。',
-        },
-        {
-          selector: 'CallExpression[callee.property.name="mock"]',
-          message: 'E2Eテストでmockメソッドの使用は禁止です。',
-        },
-        {
-          selector: 'CallExpression[callee.property.name="mockImplementation"]',
-          message: 'E2EテストでmockImplementationの使用は禁止です。',
-        },
-        {
-          selector: 'CallExpression[callee.property.name="mockReturnValue"]',
-          message: 'E2EテストでmockReturnValueの使用は禁止です。',
-        },
-        {
-          selector: 'CallExpression[callee.property.name="mockResolvedValue"]',
-          message: 'E2EテストでmockResolvedValueの使用は禁止です。',
-        },
-        {
-          selector: 'CallExpression[callee.property.name="spyOn"]',
-          message: 'E2EテストでspyOnの使用は禁止です。',
-        },
-        {
-          selector: 'TSAsExpression:not([typeAnnotation.typeName.name="const"])',
-          message:
-            'as による型アサーションは禁止です（as const は許可）。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
-        },
-        {
-          selector: 'TSTypeAssertion',
-          message:
-            '<> による型アサーションは禁止です。代わりに `const a: Type = value` の形式で型注釈を使用してください。型注釈は代入時に型チェックが行われるため、より型安全です。',
-        },
+        ...mergeRestrictedSyntaxRules(BASE_RESTRICTED_SYNTAX_RULES, E2E_TEST_ADDITIONAL_RULES),
       ],
     },
   },

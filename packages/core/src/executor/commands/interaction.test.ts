@@ -42,7 +42,6 @@ describe('handleClick', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**
@@ -132,7 +131,6 @@ describe('handleType', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**
@@ -175,7 +173,6 @@ describe('handleFill', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**
@@ -218,7 +215,6 @@ describe('handlePress', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**

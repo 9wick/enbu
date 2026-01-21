@@ -54,7 +54,6 @@ describe('handleAssertVisible', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**
@@ -212,7 +211,6 @@ describe('handleAssertNotVisible', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**
@@ -368,7 +366,6 @@ describe('handleAssertChecked', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**

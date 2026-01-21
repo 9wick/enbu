@@ -4,22 +4,17 @@
  * ブラウザ要素の状態を確認するコマンドを提供する。
  */
 
-import { type ResultAsync } from 'neverthrow';
-import type { AgentBrowserError, CssSelector, ExecuteOptions, RefSelector } from '../types';
+import type { ResultAsync } from 'neverthrow';
+import { executeCommand } from '../executor';
 import type { IsCheckedData, IsEnabledData, IsVisibleData } from '../schemas';
 import { IsCheckedDataSchema, IsEnabledDataSchema, IsVisibleDataSchema } from '../schemas';
-import { executeCommand } from '../executor';
+import type { AgentBrowserError, CliSelector, ExecuteOptions } from '../types';
 import { validateAndExtractData } from '../validator';
-
-/**
- * CLIに渡せるセレクタ型
- */
-type CliSelector = CssSelector | RefSelector;
 
 /**
  * 指定したセレクタの要素が表示されているかチェックする
  *
- * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
+ * @param selector - チェック対象のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsVisibleData、失敗時: AgentBrowserError
  */
@@ -34,7 +29,7 @@ export const browserIsVisible = (
 /**
  * 指定したセレクタの要素が有効化されているかチェックする
  *
- * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
+ * @param selector - チェック対象のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsEnabledData、失敗時: AgentBrowserError
  */
@@ -49,7 +44,7 @@ export const browserIsEnabled = (
 /**
  * 指定したセレクタのチェックボックスがチェックされているかチェックする
  *
- * @param selector - チェック対象のセレクタ（CssSelector または RefSelector）
+ * @param selector - チェック対象のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
  * @param options - 実行オプション
  * @returns 成功時: IsCheckedData、失敗時: AgentBrowserError
  */

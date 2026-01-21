@@ -8,15 +8,15 @@ steps:
   # Login and go to top page
   - open: ${BASE_URL}/login.html
   - fill:
-      text: Email Address
+      css: "#email"
       value: test@example.com
   - fill:
-      text: Password
+      css: "#password"
       value: password123
   - click: Sign In
   - assertVisible: Welcome, John Smith
   - wait:
-      text: John Smith
+      anyText: John Smith
 
   # Wait for product listing to be displayed
   - assertVisible: Collection

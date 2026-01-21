@@ -93,8 +93,8 @@ describe('parseFlowYaml', () => {
     // Assert
     result.match(
       (flow) => {
-        // 全MVPコマンド（17種類）が含まれることを確認
-        expect(flow.steps.length).toBe(17);
+        // 全MVPコマンド（16種類）が含まれることを確認
+        expect(flow.steps.length).toBe(16);
 
         // 各コマンド型の存在を確認
         const commands = flow.steps.map((step) => step.command);
@@ -109,7 +109,6 @@ describe('parseFlowYaml', () => {
         expect(commands).toContain('scrollIntoView');
         expect(commands).toContain('wait');
         expect(commands).toContain('screenshot');
-        expect(commands).toContain('snapshot');
         expect(commands).toContain('eval');
         expect(commands).toContain('assertVisible');
         expect(commands).toContain('assertNotVisible');
@@ -125,17 +124,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-4: 簡略形式のコマンド
    *
-   * 前提条件: 簡略形式のYAML（- click: { text: "ボタン" }）
+   * 前提条件: 簡略形式のYAML（- click: { interactableText: "ボタン" }）
    * 検証項目:
    * - オブジェクト形式に正規化される
-   * - { command: 'click', text: "ボタン" } となる
+   * - { command: 'click', interactableText: "ボタン" } となる
    */
   it('YP-4: 簡略形式のコマンドが正規化される', () => {
     // Arrange
     const yamlContent = `
 steps:
   - click:
-      text: "ログインボタン"
+      interactableText: "ログインボタン"
   - open: https://example.com
 `;
 
@@ -145,7 +144,7 @@ steps:
     // Assert
     result.match(
       (flow) => {
-        expect(flow.steps[0]).toEqual({ command: 'click', text: 'ログインボタン' });
+        expect(flow.steps[0]).toEqual({ command: 'click', interactableText: 'ログインボタン' });
         expect(flow.steps[1]).toEqual({ command: 'open', url: 'https://example.com' });
       },
       () => {
@@ -314,7 +313,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      text: "同意チェックボックス"
+      interactableText: "同意チェックボックス"
       checked: true
 `;
 
@@ -328,7 +327,9 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
-          expect('text' in command && command.text).toBe('同意チェックボックス');
+          expect('interactableText' in command && command.interactableText).toBe(
+            '同意チェックボックス',
+          );
           expect(command.checked).toBe(true);
         }
       },
@@ -351,7 +352,7 @@ steps:
     const yamlContent = `
 steps:
   - assertChecked:
-      ref: "@termscheckbox"
+      css: "#termscheckbox"
 `;
 
     // Act
@@ -364,7 +365,7 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
-          expect('ref' in command && command.ref).toBe('@termscheckbox');
+          expect('css' in command && command.css).toBe('#termscheckbox');
           expect(command.checked).toBe(UseDefault);
         }
       },

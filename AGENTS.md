@@ -2,6 +2,22 @@
 
 - Think in English, interact with the user in Japanese.
 
+## Codebase Overview
+
+enbu（演武）は、YAMLベースのブラウザE2Eテストフレームワークです。agent-browser（Rust製CLI）をラップし、人間が読みやすいYAML形式でテストフローを記述できます。
+
+**Stack**: TypeScript, Nx, pnpm, Vitest, Valibot, neverthrow, ts-pattern, agent-browser
+
+**Structure**:
+- `apps/cli` - enbu CLI（npm公開）
+- `apps/vscode-extension` - VS Code拡張（Test Explorer統合）
+- `packages/core` - パーサー・エグゼキュータ・オーケストレータ
+- `packages/agent-browser-adapter` - agent-browser CLIアダプター
+- `example/` - 7カテゴリのサンプル（17コマンド対応）
+- `tests/` - E2E・統合・ユニットテスト
+
+For detailed architecture, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).
+
 ## Fundamental Principles (Absolute Rules)
 - **Prioritize actual code and actual data over theory.**
 - Always correspond to the repository, actual code, and actual data.

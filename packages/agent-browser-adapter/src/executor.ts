@@ -134,6 +134,25 @@ export const executeCommand = (
 };
 
 /**
+ * 引数をシェルセーフにエスケープする
+ *
+ * shell: true を使用しているため、特殊文字（ダブルクォート、スペース等）を含む引数は
+ * シェルに解釈されてしまう。シングルクォートで囲むことで保護する。
+ * 引数内のシングルクォートは '\'' でエスケープする。
+ *
+ * @param arg - エスケープする引数
+ * @returns シェルセーフにエスケープされた引数
+ */
+const escapeShellArg = (arg: string): string => {
+  // 特殊文字を含まない単純な引数はそのまま返す
+  if (/^[\w./@-]+$/.test(arg)) {
+    return arg;
+  }
+  // シングルクォートで囲み、引数内のシングルクォートはエスケープする
+  return `'${arg.replace(/'/g, "'\\''")}'`;
+};
+
+/**
  * コマンドライン引数を構築する
  */
 const buildArgs = (
@@ -142,10 +161,11 @@ const buildArgs = (
   sessionName: string | undefined,
   headed: boolean,
 ): string[] => {
-  const result: string[] = [command, ...args];
+  // 各引数をシェルセーフにエスケープ
+  const result: string[] = [command, ...args.map(escapeShellArg)];
 
   if (sessionName !== undefined) {
-    result.push('--session', sessionName);
+    result.push('--session', escapeShellArg(sessionName));
   }
 
   if (headed) {

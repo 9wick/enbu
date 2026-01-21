@@ -1,4 +1,4 @@
-import type { CssSelector, TextSelector, Url } from '@packages/agent-browser-adapter';
+import type { CssSelector, InteractableTextSelector, Url } from '@packages/agent-browser-adapter';
 import { errAsync, okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Flow } from '../types';
@@ -9,7 +9,7 @@ import { isPassedFlowResult, NO_CALLBACK } from './result';
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
 const toUrl = (s: string) => s as Url;
 const toCssSelector = (s: string) => s as CssSelector;
-const toTextSelector = (s: string) => s as TextSelector;
+const toInteractableTextSelector = (s: string) => s as InteractableTextSelector;
 
 /**
  * テスト用のデフォルトFlowExecutionOptionsを生成する
@@ -44,12 +44,14 @@ vi.mock('@packages/agent-browser-adapter', async (importOriginal) => {
     browserSnapshot: vi.fn(),
     browserWaitForMs: vi.fn(),
     browserScreenshot: vi.fn(),
+    browserIsVisible: vi.fn(),
   };
 });
 
 import {
   browserClick,
   browserFill,
+  browserIsVisible,
   browserOpen,
   browserScreenshot,
   browserSnapshot,
@@ -61,6 +63,8 @@ describe('executeFlow', () => {
     vi.clearAllMocks();
     // エラー時スクリーンショット用のデフォルトモック
     vi.mocked(browserScreenshot).mockReturnValue(okAsync({ path: '/tmp/screenshot.png' }));
+    // セレクタ待機用のデフォルトモック（要素が常に表示されている状態）
+    vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
   });
 
   /**
@@ -79,7 +83,7 @@ describe('executeFlow', () => {
       env: {},
       steps: [
         { command: 'open', url: toUrl('https://example.com') },
-        { command: 'click', text: toTextSelector('ログイン') },
+        { command: 'click', interactableText: toInteractableTextSelector('ログイン') },
       ],
     };
 
@@ -103,6 +107,11 @@ describe('executeFlow', () => {
     expect(result.isOk()).toBe(true);
     result.match(
       (flowResult) => {
+        // デバッグ用: 失敗時のエラー内容を確認
+        if (flowResult.status === 'failed') {
+          const failedStep = flowResult.steps.find((s) => s.status === 'failed');
+          throw new Error(`Step failed: ${JSON.stringify(failedStep, null, 2)}`);
+        }
         expect(flowResult.status).toBe('passed');
         expect(flowResult.steps).toHaveLength(2);
         expect(flowResult.steps[0].status).toBe('passed');

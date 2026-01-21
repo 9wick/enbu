@@ -6,25 +6,19 @@
 
 import type {
   AgentBrowserError,
-  CssSelector,
+  CliSelector,
   ScrollDirection,
 } from '@packages/agent-browser-adapter';
 import {
-  browserFocus,
+  asCliTextSelector,
   browserScroll,
   browserScrollIntoView,
   browserWaitForText,
 } from '@packages/agent-browser-adapter';
-import type { ResultAsync } from 'neverthrow';
-import type { ScrollCommand, ScrollIntoViewCommand } from '../../types';
+import { errAsync, type ResultAsync } from 'neverthrow';
+import type { ScrollCommand, ResolvedScrollIntoViewCommand } from '../../types';
 import type { CommandResult, ExecutionContext, ExecutorError } from '../result';
-import {
-  resolveCliSelector,
-  getSelectorString,
-  isRefSelector,
-  isTextSelector,
-  type CliSelector,
-} from './cli-selector-utils';
+import { resolveCliSelector, getSelectorString, isTextSelector } from './cli-selector-utils';
 
 /**
  * scroll コマンドのハンドラ
@@ -69,8 +63,11 @@ const handleTextSelectorScrollIntoView = (
   browserWaitForText(textStr, context.executeOptions)
     .andThen(() => {
       // Playwrightの text= 形式でスクロール
-      const textSelector = `text=${textStr}` as CssSelector;
-      return browserScrollIntoView(textSelector, context.executeOptions);
+      const cliTextSelectorResult = asCliTextSelector(`text=${textStr}`);
+      return cliTextSelectorResult.match(
+        (selector) => browserScrollIntoView(selector, context.executeOptions),
+        (error) => errAsync(error),
+      );
     })
     .map((output) => ({
       stdout: JSON.stringify(output),
@@ -88,34 +85,17 @@ const handleTextSelectorScrollIntoView = (
  * focus コマンドは Playwright の focus() を使用し、要素をビューポートに
  * 表示するためにスクロールする動作を持つ。
  *
- * @param command - scrollIntoView コマンドのパラメータ
+ * @param command - scrollIntoView コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @param startTime - 開始時刻
  * @returns コマンド実行結果
  */
 const handleCssOrRefScrollIntoView = (
-  command: ScrollIntoViewCommand,
+  command: ResolvedScrollIntoViewCommand,
   context: ExecutionContext,
   startTime: number,
 ): ResultAsync<CommandResult, ExecutorError> =>
   resolveCliSelector(command, context).andThen((selector: CliSelector) => {
-    // resolvedRefStateまたは元のセレクタがRef形式かチェック
-    // agent-browser の scrollintoview は @ref 形式をサポートしないバグがあるため、
-    // @ref 形式の場合は focus コマンドで代用する（focus は要素をビューポートに表示する）
-    const selectorString =
-      context.resolvedRefState.status === 'resolved'
-        ? context.resolvedRefState.ref
-        : getSelectorString(command);
-
-    const usesFocusFallback = selectorString.startsWith('@') || isRefSelector(command);
-
-    if (usesFocusFallback) {
-      return browserFocus(selector, context.executeOptions).map((output) => ({
-        stdout: JSON.stringify(output),
-        duration: Date.now() - startTime,
-      }));
-    }
-
     return browserScrollIntoView(selector, context.executeOptions).map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
@@ -129,15 +109,16 @@ const handleCssOrRefScrollIntoView = (
  *
  * 処理の流れ:
  * - TextSelector: browserWaitForTextで存在確認後、text=形式でスクロール
- * - CSSセレクタ/Ref: resolveCliSelectorで解決後、scrollIntoViewを実行
+ *   （注: ResolvedSelectorSpecにはtextは含まれないが、後方互換のためチェック）
+ * - CSSセレクタ/Ref/XPath: resolveCliSelectorで解決後、scrollIntoViewを実行
  *   (@ref形式の場合はfocusコマンドで代用)
  *
- * @param command - scrollIntoView コマンドのパラメータ
+ * @param command - scrollIntoView コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
 export const handleScrollIntoView = (
-  command: ScrollIntoViewCommand,
+  command: ResolvedScrollIntoViewCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();

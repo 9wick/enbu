@@ -14,12 +14,12 @@ steps:
 
   # Enter email address
   - fill:
-      text: Email Address
+      css: "#email"
       value: test@example.com
 
   # Enter password
   - fill:
-      text: Password
+      css: "#password"
       value: password123
 
   # Click login button (type=submit button)
@@ -30,7 +30,7 @@ steps:
 
   # Wait for automatic redirect
   - wait:
-      text: Collection
+      anyText: Collection
 
   # Verify user name is displayed (logged in state)
   - assertVisible: John Smith

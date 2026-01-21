@@ -6,17 +6,17 @@ steps:
 
   # テキスト入力
   - type:
-      text: ユーザー名
+      interactableText: ユーザー名
       value: テストユーザー
 
   # メールアドレス入力
   - type:
-      text: メールアドレス
+      interactableText: メールアドレス
       value: test@example.com
 
   # 年齢入力
   - fill:
-      text: 年齢
+      interactableText: 年齢
       value: "25"
 
   # チェックボックスをクリック

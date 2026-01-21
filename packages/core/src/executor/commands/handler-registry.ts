@@ -1,6 +1,6 @@
 import type { ResultAsync } from 'neverthrow';
 import { match } from 'ts-pattern';
-import type { Command } from '../../types';
+import type { ResolvedCommand } from '../../types';
 import type { CommandHandler, CommandResult, ExecutorError } from '../result';
 import {
   handleAssertChecked,
@@ -8,7 +8,7 @@ import {
   handleAssertNotVisible,
   handleAssertVisible,
 } from './assertions';
-import { handleScreenshot, handleSnapshot } from './capture';
+import { handleScreenshot } from './capture';
 import { handleEval } from './eval';
 import { handleHover, handleSelect } from './hover-select';
 import { handleClick, handleFill, handlePress, handleType } from './interaction';
@@ -20,10 +20,10 @@ import { handleWait } from './wait';
  * コマンドを実行するルーター関数
  *
  * ts-patternのmatchで網羅的にコマンドをルーティングする。
- * exhaustive()により、Command型の全バリアントがカバーされていることを型レベルで保証する。
+ * exhaustive()により、ResolvedCommand型の全バリアントがカバーされていることを型レベルで保証する。
  * returnType で戻り型を明示することで、各ハンドラのエラー型が ExecutorError に拡大される。
  */
-const routeCommand: CommandHandler<Command> = (command, context) =>
+const routeCommand: CommandHandler<ResolvedCommand> = (command, context) =>
   match(command)
     .returnType<ResultAsync<CommandResult, ExecutorError>>()
     // ナビゲーション・入力系
@@ -41,7 +41,6 @@ const routeCommand: CommandHandler<Command> = (command, context) =>
     .with({ command: 'wait' }, (cmd) => handleWait(cmd, context))
     // キャプチャ・eval系
     .with({ command: 'screenshot' }, (cmd) => handleScreenshot(cmd, context))
-    .with({ command: 'snapshot' }, (cmd) => handleSnapshot(cmd, context))
     .with({ command: 'eval' }, (cmd) => handleEval(cmd, context))
     // assertion系
     .with({ command: 'assertVisible' }, (cmd) => handleAssertVisible(cmd, context))
@@ -50,7 +49,7 @@ const routeCommand: CommandHandler<Command> = (command, context) =>
     .with({ command: 'assertChecked' }, (cmd) => handleAssertChecked(cmd, context))
     .exhaustive();
 
-export const getCommandHandler = (_commandName: string): CommandHandler<Command> => {
+export const getCommandHandler = (_commandName: string): CommandHandler<ResolvedCommand> => {
   // コマンド名によるルーティング
   // 型の共変性の問題により、各ハンドラを直接返すことはできない
   // そのため、ラッパー関数を使って型を適合させる

@@ -2,17 +2,64 @@
  * ステップ実行モジュール
  *
  * このモジュールは各ステップの実行ロジックを提供する。
- * コマンドの種類に応じて適切なハンドラを選択し、自動待機や
+ * コマンドの種類に応じて適切なハンドラを選択し、セレクタ待機や
  * エラー時のスクリーンショット撮影を含む実行フローを管理する。
  */
 
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { ResultAsync, okAsync, errAsync } from 'neverthrow';
 import { P, match } from 'ts-pattern';
-import type { Command } from '../types';
-import { autoWait, type SelectorInput } from './auto-wait';
+import type {
+  Command,
+  ResolvedCommand,
+  ResolvedSelectorSpec,
+  SelectorSpec,
+  ResolvedClickCommand,
+  ResolvedTypeCommand,
+  ResolvedFillCommand,
+  ResolvedHoverCommand,
+  ResolvedSelectCommand,
+  ResolvedAssertEnabledCommand,
+  ResolvedAssertCheckedCommand,
+  ResolvedAssertVisibleCommand,
+  ResolvedAssertNotVisibleCommand,
+  ResolvedScrollIntoViewCommand,
+  ClickCommand,
+  TypeCommand,
+  FillCommand,
+  HoverCommand,
+  SelectCommand,
+  AssertEnabledCommand,
+  AssertCheckedCommand,
+  AssertVisibleCommand,
+  AssertNotVisibleCommand,
+  ScrollIntoViewCommand,
+} from '../types';
 import { getCommandHandler } from './commands';
 import { captureErrorScreenshot } from './error-screenshot';
 import type { ExecutionContext, ExecutorError, ScreenshotResult, StepResult } from './result';
+import { type WaitResult, waitForSelector } from './selector-wait';
+
+/**
+ * selector-wait.tsが受け付けるSelectorSpec型
+ * （interactableTextのみ、anyTextは含まない）
+ */
+type WaitableSelectorSpec =
+  | {
+      css: import('@packages/agent-browser-adapter').CssSelector;
+      interactableText?: never;
+      xpath?: never;
+    }
+  | {
+      css?: never;
+      interactableText: import('@packages/agent-browser-adapter').InteractableTextSelector;
+      xpath?: never;
+    }
+  | {
+      css?: never;
+      interactableText?: never;
+      xpath: import('@packages/agent-browser-adapter').XpathSelector;
+    };
 
 /**
  * AgentBrowserErrorからメッセージを取得する
@@ -142,83 +189,419 @@ const getErrorMessage = (error: ExecutorError): string => {
 };
 
 /**
- * 自動待機の結果型
- * 成功時はresolvedRefStateが更新されたコンテキスト、失敗時はエラー情報を持つStepResult
+ * セレクタ待機の失敗情報型
+ *
+ * 失敗時のStepResult生成に必要な情報を保持する。
+ * '_tag'フィールドでExecutorErrorと識別可能なタグ付きユニオンとする。
  */
-type AutoWaitProcessResult =
-  | { success: true; contextWithRef: ExecutionContext }
-  | { success: false; failedResult: StepResult };
+type SelectorWaitFailure = {
+  readonly _tag: 'SelectorWaitFailure';
+  readonly message: string;
+  readonly errorType: ExecutorError['type'];
+};
 
 /**
- * 自動待機を処理する
+ * WaitResultからResolvedSelectorSpecへの型安全な変換
  *
- * コマンドが自動待機を必要とする場合、要素が利用可能になるまで待機し、
- * 解決されたrefをコンテキストに設定する。
+ * @param result - セレクタ待機の結果
+ * @returns ResolvedSelectorSpec
+ */
+const waitResultToResolvedSelectorSpec = (result: WaitResult): ResolvedSelectorSpec =>
+  match(result)
+    .with({ type: 'css' }, (r): ResolvedSelectorSpec => ({ css: r.selector }))
+    .with({ type: 'xpath' }, (r): ResolvedSelectorSpec => ({ xpath: r.selector }))
+    .with({ type: 'ref' }, (r): ResolvedSelectorSpec => ({ ref: r.selector }))
+    .exhaustive();
+
+/**
+ * SelectorSpecからResolvedSelectorSpecへの直接変換の結果型
+ *
+ * - resolved: css/xpath/textセレクタが変換された
+ * - needs_wait: textセレクタで待機が必要（アクション系コマンド用）
+ */
+type DirectResolveResult =
+  | { readonly type: 'resolved'; readonly spec: ResolvedSelectorSpec }
+  | { readonly type: 'needs_wait' };
+
+/**
+ * SelectorSpecからResolvedSelectorSpecへの直接変換を試みる
+ *
+ * css/xpathセレクタはそのまま変換可能。
+ * textセレクタは通常待機が必要だが、assertVisible/assertNotVisibleでは
+ * textのまま保持して直接browserWaitForTextで確認するため、
+ * allowTextオプションで制御する。
+ *
+ * @param spec - セレクタ指定
+ * @param allowText - textセレクタを直接解決するか（assertVisible/assertNotVisible用）
+ * @returns 変換結果
+ */
+const tryDirectResolve = (spec: SelectorSpec, allowText: boolean): DirectResolveResult =>
+  match(spec)
+    .with(
+      { css: P.string },
+      (s): DirectResolveResult => ({ type: 'resolved', spec: { css: s.css } }),
+    )
+    .with(
+      { xpath: P.string },
+      (s): DirectResolveResult => ({ type: 'resolved', spec: { xpath: s.xpath } }),
+    )
+    .with(
+      { interactableText: P.string },
+      (s): DirectResolveResult =>
+        allowText
+          ? { type: 'resolved', spec: { interactableText: s.interactableText } }
+          : { type: 'needs_wait' },
+    )
+    .with(
+      { anyText: P.string },
+      (s): DirectResolveResult =>
+        allowText ? { type: 'resolved', spec: { anyText: s.anyText } } : { type: 'needs_wait' },
+    )
+    .exhaustive();
+
+/**
+ * セレクタ待機が必要なコマンドを処理する
+ *
+ * セレクタの可視性を待機し、ResolvedCommandに変換する。
+ *
+ * @param command - セレクタを持つコマンド
+ * @param spec - 抽出済みWaitableSelectorSpec（interactableTextのみ）
+ * @param context - 実行コンテキスト
+ * @returns 成功時: ResolvedCommand、失敗時: SelectorWaitFailure
+ */
+const processWaitableSelector = <T extends Command>(
+  command: T,
+  spec: WaitableSelectorSpec,
+  context: ExecutionContext,
+  resolveFunc: (cmd: T, resolved: ResolvedSelectorSpec) => ResolvedCommand,
+): ResultAsync<ResolvedCommand, SelectorWaitFailure> =>
+  waitForSelector(spec, context)
+    .map(waitResultToResolvedSelectorSpec)
+    .map((resolved) => resolveFunc(command, resolved))
+    .mapErr(
+      (error): SelectorWaitFailure => ({
+        _tag: 'SelectorWaitFailure',
+        message: `Selector wait timeout: ${getErrorMessage(error)}`,
+        errorType: error.type,
+      }),
+    );
+
+/**
+ * SelectorSpecからWaitableSelectorSpecへの変換
+ *
+ * anyTextが含まれている場合はエラー（待機が必要なコマンドはinteractableTextのみ）
+ */
+const toWaitableSelectorSpec = (
+  spec: SelectorSpec,
+): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> =>
+  match(spec)
+    .with(
+      { css: P.string },
+      (s): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> => okAsync({ css: s.css }),
+    )
+    .with(
+      { interactableText: P.string },
+      (s): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> =>
+        okAsync({ interactableText: s.interactableText }),
+    )
+    .with(
+      { xpath: P.string },
+      (s): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> => okAsync({ xpath: s.xpath }),
+    )
+    .with(
+      { anyText: P.string },
+      (): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> =>
+        errAsync({
+          _tag: 'SelectorWaitFailure',
+          message: 'anyText selector requires waiting, but should be resolved directly',
+          errorType: 'parse_error',
+        }),
+    )
+    .exhaustive();
+
+/**
+ * セレクタ待機不要なコマンドを直接解決する
+ *
+ * css/xpathセレクタはそのまま変換。textセレクタはallowTextに応じて処理。
+ *
+ * @param command - セレクタを持つコマンド
+ * @param spec - 抽出済みSelectorSpec
+ * @param allowText - textセレクタを直接解決するか
+ * @param context - 実行コンテキスト（待機が必要な場合に使用）
+ * @returns 成功時: ResolvedCommand、失敗時: SelectorWaitFailure
+ */
+const processDirectOrWaitSelector = <T extends Command>(
+  command: T,
+  spec: SelectorSpec,
+  allowText: boolean,
+  context: ExecutionContext,
+  resolveFunc: (cmd: T, resolved: ResolvedSelectorSpec) => ResolvedCommand,
+): ResultAsync<ResolvedCommand, SelectorWaitFailure> =>
+  match(tryDirectResolve(spec, allowText))
+    .with({ type: 'resolved' }, ({ spec: resolved }) => okAsync(resolveFunc(command, resolved)))
+    .with({ type: 'needs_wait' }, () =>
+      toWaitableSelectorSpec(spec).andThen((waitableSpec) =>
+        processWaitableSelector(command, waitableSpec, context, resolveFunc),
+      ),
+    )
+    .exhaustive();
+
+/**
+ * ClickCommandのResolvedCommand変換関数
+ */
+const resolveClick = (
+  _cmd: ClickCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedClickCommand => ({
+  command: 'click',
+  ...resolved,
+});
+
+/**
+ * TypeCommandのResolvedCommand変換関数
+ */
+const resolveType = (cmd: TypeCommand, resolved: ResolvedSelectorSpec): ResolvedTypeCommand => ({
+  command: 'type',
+  value: cmd.value,
+  ...resolved,
+});
+
+/**
+ * FillCommandのResolvedCommand変換関数
+ */
+const resolveFill = (cmd: FillCommand, resolved: ResolvedSelectorSpec): ResolvedFillCommand => ({
+  command: 'fill',
+  value: cmd.value,
+  ...resolved,
+});
+
+/**
+ * HoverCommandのResolvedCommand変換関数
+ */
+const resolveHover = (
+  _cmd: HoverCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedHoverCommand => ({
+  command: 'hover',
+  ...resolved,
+});
+
+/**
+ * SelectCommandのResolvedCommand変換関数
+ */
+const resolveSelect = (
+  cmd: SelectCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedSelectCommand => ({
+  command: 'select',
+  value: cmd.value,
+  ...resolved,
+});
+
+/**
+ * AssertEnabledCommandのResolvedCommand変換関数
+ */
+const resolveAssertEnabled = (
+  _cmd: AssertEnabledCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedAssertEnabledCommand => ({
+  command: 'assertEnabled',
+  ...resolved,
+});
+
+/**
+ * AssertCheckedCommandのResolvedCommand変換関数
+ */
+const resolveAssertChecked = (
+  cmd: AssertCheckedCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedAssertCheckedCommand => ({
+  command: 'assertChecked',
+  checked: cmd.checked,
+  ...resolved,
+});
+
+/**
+ * AssertVisibleCommandのResolvedCommand変換関数
+ */
+const resolveAssertVisible = (
+  _cmd: AssertVisibleCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedAssertVisibleCommand => ({
+  command: 'assertVisible',
+  ...resolved,
+});
+
+/**
+ * AssertNotVisibleCommandのResolvedCommand変換関数
+ */
+const resolveAssertNotVisible = (
+  _cmd: AssertNotVisibleCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedAssertNotVisibleCommand => ({
+  command: 'assertNotVisible',
+  ...resolved,
+});
+
+/**
+ * ScrollIntoViewCommandのResolvedCommand変換関数
+ */
+const resolveScrollIntoView = (
+  _cmd: ScrollIntoViewCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedScrollIntoViewCommand => ({
+  command: 'scrollIntoView',
+  ...resolved,
+});
+
+/**
+ * SelectorSpecを抽出し、存在しない場合はエラーを返す
+ */
+const extractSelectorSpecOrFail = (
+  command: Command,
+): ResultAsync<SelectorSpec, SelectorWaitFailure> =>
+  match(extractSelectorSpec(command))
+    .with({ type: 'found' }, ({ spec }) => okAsync(spec))
+    .with({ type: 'not_found' }, () =>
+      errAsync<SelectorSpec, SelectorWaitFailure>({
+        _tag: 'SelectorWaitFailure',
+        message: 'Selector not found in command',
+        errorType: 'parse_error',
+      }),
+    )
+    .exhaustive();
+
+/**
+ * WaitableSelectorSpec（interactableTextのみ）を抽出し、存在しない場合はエラーを返す
+ *
+ * インタラクティブ要素のみを対象とするコマンド（click, type, fill, hover, select）用
+ */
+const extractWaitableSelectorSpecOrFail = (
+  command: Command,
+): ResultAsync<WaitableSelectorSpec, SelectorWaitFailure> =>
+  match(extractSelectorSpec(command))
+    .with({ type: 'found', spec: { css: P.string } }, ({ spec }) =>
+      okAsync<WaitableSelectorSpec, SelectorWaitFailure>({ css: spec.css }),
+    )
+    .with({ type: 'found', spec: { interactableText: P.string } }, ({ spec }) =>
+      okAsync<WaitableSelectorSpec, SelectorWaitFailure>({
+        interactableText: spec.interactableText,
+      }),
+    )
+    .with({ type: 'found', spec: { xpath: P.string } }, ({ spec }) =>
+      okAsync<WaitableSelectorSpec, SelectorWaitFailure>({ xpath: spec.xpath }),
+    )
+    .with({ type: 'found', spec: { anyText: P.string } }, () =>
+      errAsync<WaitableSelectorSpec, SelectorWaitFailure>({
+        _tag: 'SelectorWaitFailure',
+        message:
+          'anyText selector is not supported for interactive commands. Use interactableText instead.',
+        errorType: 'parse_error',
+      }),
+    )
+    .with({ type: 'not_found' }, () =>
+      errAsync<WaitableSelectorSpec, SelectorWaitFailure>({
+        _tag: 'SelectorWaitFailure',
+        message: 'Selector not found in command',
+        errorType: 'parse_error',
+      }),
+    )
+    .exhaustive();
+
+/**
+ * セレクタ待機を処理する（純粋なmatch + ResultAsyncチェーン版）
+ *
+ * コマンドの種類に応じてセレクタ待機を行い、ResolvedCommandを返す。
+ * 各コマンドタイプごとに独立したパイプラインを持ち、静的解析で追跡可能。
  *
  * @param command - 実行するコマンド
  * @param context - 実行コンテキスト
- * @param index - ステップのインデックス
- * @param startTime - 実行開始時刻
- * @param captureScreenshot - スクリーンショットを撮影するか
- * @returns 処理結果（成功時はコンテキスト、失敗時はStepResult）
+ * @returns 成功時: ResolvedCommand、失敗時: SelectorWaitFailure
  */
-const processAutoWait = async (
+const processSelectorWait = (
   command: Command,
   context: ExecutionContext,
-  index: number,
-  startTime: number,
-  captureScreenshot: boolean,
-): Promise<AutoWaitProcessResult> => {
-  // 自動待機が不要な場合は元のコンテキストをそのまま返す
-  if (!shouldAutoWait(command)) {
-    return { success: true, contextWithRef: context };
-  }
+): ResultAsync<ResolvedCommand, SelectorWaitFailure> =>
+  match(command)
+    // ========================================
+    // 非セレクタコマンド群（セレクタ待機不要、そのまま返す）
+    // ========================================
+    .with({ command: 'open' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'press' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'scroll' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'wait' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'screenshot' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'eval' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
 
-  const selectorInput = getSelectorFromCommand(command);
-  const waitResult = await autoWait(selectorInput, context);
+    // ========================================
+    // セレクタ待機が必要なコマンド群
+    // ========================================
+    .with({ command: 'click' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveClick),
+      ),
+    )
+    .with({ command: 'type' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveType),
+      ),
+    )
+    .with({ command: 'fill' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveFill),
+      ),
+    )
+    .with({ command: 'hover' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveHover),
+      ),
+    )
+    .with({ command: 'select' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveSelect),
+      ),
+    )
+    .with({ command: 'assertEnabled' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveAssertEnabled),
+      ),
+    )
+    .with({ command: 'assertChecked' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveAssertChecked),
+      ),
+    )
 
-  return waitResult.match<Promise<AutoWaitProcessResult>>(
-    async (autoWaitResult) => {
-      // autoWaitの結果に応じてコンテキストを更新
-      if (autoWaitResult.type === 'resolved') {
-        // 要素が見つかった場合: refをコンテキストに設定
-        const contextWithRef: ExecutionContext = {
-          ...context,
-          resolvedRefState: { status: 'resolved' as const, ref: autoWaitResult.resolvedRef },
-        };
-        return { success: true, contextWithRef };
-      }
-      // スキップされた場合: コンテキストをそのまま返す
-      return { success: true, contextWithRef: context };
-    },
-    async (error) => {
-      // 自動待機失敗
-      const duration = Date.now() - startTime;
-      const screenshot = await takeErrorScreenshot(context, captureScreenshot);
+    // ========================================
+    // セレクタ待機不要だがセレクタを持つコマンド群
+    // css/xpathは直接解決、textは直接解決可能
+    // ========================================
+    .with({ command: 'assertVisible' }, (cmd) =>
+      extractSelectorSpecOrFail(cmd).andThen((spec) =>
+        processDirectOrWaitSelector(cmd, spec, true, context, resolveAssertVisible),
+      ),
+    )
+    .with({ command: 'assertNotVisible' }, (cmd) =>
+      extractSelectorSpecOrFail(cmd).andThen((spec) =>
+        processDirectOrWaitSelector(cmd, spec, true, context, resolveAssertNotVisible),
+      ),
+    )
 
-      return {
-        success: false,
-        failedResult: {
-          index,
-          command,
-          status: 'failed' as const,
-          duration,
-          error: {
-            message: `Auto-wait timeout: ${getErrorMessage(error)}`,
-            type: error.type,
-            screenshot,
-          },
-        },
-      };
-    },
-  );
-};
+    // ========================================
+    // scrollIntoView: css/xpath/textすべて直接解決可能（text=形式で実行）
+    // ========================================
+    .with({ command: 'scrollIntoView' }, (cmd) =>
+      extractSelectorSpecOrFail(cmd).andThen((spec) =>
+        processDirectOrWaitSelector(cmd, spec, true, context, resolveScrollIntoView),
+      ),
+    )
+    .exhaustive();
 
 /**
  * 単一のステップを実行する
  *
  * ステップの実行は以下の流れで行われる:
- * 1. 自動待機が必要なコマンドの場合は要素が利用可能になるまで待機
+ * 1. セレクタ待機が必要なコマンドの場合は要素が利用可能になるまで待機
  * 2. コマンドハンドラを取得して実行
  * 3. 実行時間を計測
  * 4. エラー発生時はスクリーンショットを撮影（captureScreenshotフラグがtrueの場合のみ）
@@ -237,124 +620,94 @@ export const executeStep = async (
 ): Promise<StepResult> => {
   const startTime = Date.now();
 
-  try {
-    // 自動待機を処理
-    const autoWaitProcessResult = await processAutoWait(
-      command,
-      context,
-      index,
-      startTime,
-      captureScreenshot,
-    );
-    if (!autoWaitProcessResult.success) {
-      return autoWaitProcessResult.failedResult;
-    }
-
-    // コマンドハンドラを取得して実行
-    const handler = getCommandHandler(command.command);
-    const result = await handler(command, autoWaitProcessResult.contextWithRef);
-    const duration = Date.now() - startTime;
-
-    // 結果の処理
-    return result.match(
-      (commandResult) => ({
+  // セレクタ待機 → ハンドラ実行 → 結果変換 のResultAsyncチェーン
+  const result = await processSelectorWait(command, context)
+    .andThen((resolvedCommand) => {
+      const handler = getCommandHandler(command.command);
+      return handler(resolvedCommand, context);
+    })
+    .match<Promise<StepResult>>(
+      async (commandResult) => ({
         index,
         command,
         status: 'passed' as const,
-        duration,
+        duration: Date.now() - startTime,
         stdout: commandResult.stdout,
       }),
       async (error) => {
         const screenshot = await takeErrorScreenshot(context, captureScreenshot);
+        // SelectorWaitFailure | ExecutorError を型安全に分岐
+        const { errorMessage, errorType } = match(error)
+          .with({ _tag: 'SelectorWaitFailure' }, (e) => ({
+            errorMessage: e.message,
+            errorType: e.errorType,
+          }))
+          .otherwise((e) => ({
+            errorMessage: getErrorMessage(e),
+            errorType: e.type,
+          }));
 
         return {
           index,
           command,
           status: 'failed' as const,
-          duration,
+          duration: Date.now() - startTime,
           error: {
-            message: getErrorMessage(error),
-            type: error.type,
+            message: errorMessage,
+            type: errorType,
             screenshot,
           },
         };
       },
     );
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    const screenshot = await takeErrorScreenshot(context, captureScreenshot);
 
-    return {
-      index,
-      command,
-      status: 'failed',
-      duration,
-      error: {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        type: 'parse_error',
-        screenshot,
-      },
-    };
-  }
+  return result;
 };
 
 /**
- * 自動待機が必要なコマンドかどうかを判定する
+ * SelectorSpec抽出の結果型
  *
- * インタラクティブなコマンド（クリック、入力など）は、
- * 要素が利用可能になるまで自動的に待機する必要がある。
- *
- * 注意: 以下のコマンドはautoWait対象外
- * - assertVisible: 静的テキスト要素の確認にも使用されるが、静的テキストは
- *   snapshotのrefsに含まれないため、autoWaitでは見つけられない。
- *   ハンドラ内でPlaywrightのtext=形式に変換して処理する。
- * - assertNotVisible: 要素が存在しないか非表示であることを確認するため、
- *   autoWaitで要素の存在を確認してから実行すると論理的に矛盾する。
- *   agent-browserのis visibleコマンドは独自のタイムアウトを持っている。
- * - scrollIntoView: 画面外の要素にスクロールするコマンドのため、
- *   auto-wait（画面内要素のみをスナップショット）は不適切
- *
- * @param command - 判定するコマンド
- * @returns 自動待機が必要な場合はtrue、不要な場合はfalse
+ * - found: SelectorSpecが見つかった
+ * - not_found: セレクタがない
  */
-const shouldAutoWait = (command: Command): boolean => {
-  const autoWaitCommands = [
-    'click',
-    'type',
-    'fill',
-    'hover',
-    'select',
-    'assertEnabled',
-    'assertChecked',
-  ];
-
-  return autoWaitCommands.includes(command.command);
-};
+type ExtractSelectorResult =
+  | { readonly type: 'found'; readonly spec: SelectorSpec }
+  | { readonly type: 'not_found' };
 
 /**
- * コマンドからセレクタ入力を取得する
- *
- * SelectorSpec形式 (css/ref/text) からセレクタ文字列を抽出する。
- * autoWaitはテキストセレクタを解決するために使用されるため、
- * textセレクタの場合もセレクタを返す。
- *
- * ts-patternで型安全にセレクタを抽出する。
+ * コマンドからSelectorSpecを抽出する
  *
  * @param command - セレクタを取得するコマンド
- * @returns SelectorInput（hasSelector: セレクタあり、noSelector: セレクタなし）
+ * @returns SelectorSpec抽出結果
  */
-const getSelectorFromCommand = (command: Command): SelectorInput =>
-  match(command)
-    .with({ css: P.string }, (cmd) => ({
-      type: 'hasSelector' as const,
-      selector: cmd.css,
-    }))
-    .with({ ref: P.string }, (cmd) => ({
-      type: 'hasSelector' as const,
-      selector: cmd.ref,
-    }))
-    .with({ text: P.string }, (cmd) => ({
-      type: 'hasSelector' as const,
-      selector: cmd.text,
-    }))
-    .otherwise(() => ({ type: 'noSelector' as const }));
+const extractSelectorSpec = (command: Command): ExtractSelectorResult =>
+  match<Command, ExtractSelectorResult>(command)
+    .with(
+      { css: P.string },
+      (cmd): ExtractSelectorResult => ({
+        type: 'found',
+        spec: { css: cmd.css },
+      }),
+    )
+    .with(
+      { interactableText: P.string },
+      (cmd): ExtractSelectorResult => ({
+        type: 'found',
+        spec: { interactableText: cmd.interactableText },
+      }),
+    )
+    .with(
+      { anyText: P.string },
+      (cmd): ExtractSelectorResult => ({
+        type: 'found',
+        spec: { anyText: cmd.anyText },
+      }),
+    )
+    .with(
+      { xpath: P.string },
+      (cmd): ExtractSelectorResult => ({
+        type: 'found',
+        spec: { xpath: cmd.xpath },
+      }),
+    )
+    .otherwise((): ExtractSelectorResult => ({ type: 'not_found' }));

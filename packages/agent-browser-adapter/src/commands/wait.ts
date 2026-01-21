@@ -8,21 +8,15 @@
 import { type ResultAsync } from 'neverthrow';
 import type {
   AgentBrowserError,
-  CssSelector,
+  CliSelector,
   ExecuteOptions,
   JsExpression,
   LoadState,
-  RefSelector,
 } from '../types';
 import type { EmptyData } from '../schemas';
 import { EmptyDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
-
-/**
- * CLIに渡せるセレクタ型
- */
-type CliSelector = CssSelector | RefSelector;
 
 /**
  * 指定したミリ秒だけ待機する
@@ -42,7 +36,7 @@ export const browserWaitForMs = (
 /**
  * 指定したセレクタの要素が出現するまで待機する
  *
- * @param selector - 待機対象のセレクタ（CssSelector または RefSelector）
+ * @param selector - 待機対象のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
  * @param options - 実行オプション
  * @returns 成功時: EmptyData、失敗時: AgentBrowserError
  */

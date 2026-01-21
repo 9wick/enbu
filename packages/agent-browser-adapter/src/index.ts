@@ -68,7 +68,13 @@ export type {
   // セレクタ型（DDD準拠：異なるドメイン概念を分離）
   CssSelector,
   RefSelector,
-  TextSelector,
+  AnyTextSelector,
+  InteractableTextSelector,
+  XpathSelector,
+  // CLI形式セレクタ型（agent-browser CLIに渡す形式）
+  CliTextSelector,
+  CliXpathSelector,
+  CliSelector,
   // その他Brand型
   Url,
   FilePath,
@@ -86,7 +92,29 @@ export type {
 export {
   asCssSelector,
   asRefSelector,
-  asTextSelector,
+  asAnyTextSelector,
+  asInteractableTextSelector,
+  asXpathSelector,
+  // CLI形式セレクタ
+  asCliTextSelector,
+  asCliXpathSelector,
+} from './types';
+
+// セレクタスキーマ（valibotスキーマからの合成用）
+export {
+  CssSelectorSchema,
+  RefSelectorSchema,
+  AnyTextSelectorSchema,
+  InteractableTextSelectorSchema,
+  XpathSelectorSchema,
+  // CLI形式セレクタスキーマ
+  CliTextSelectorSchema,
+  CliXpathSelectorSchema,
+  // その他のBrand型スキーマ
+  UrlSchema,
+  FilePathSchema,
+  KeyboardKeySchema,
+  JsExpressionSchema,
 } from './types';
 
 // その他Brand型ファクトリ関数

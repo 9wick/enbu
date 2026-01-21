@@ -26,7 +26,7 @@ steps:
 
   # ステップ7: 未チェックチェックボックスの確認
   - assertChecked:
-      text: 未チェック
+      interactableText: 未チェック
       checked: false
 
   # ステップ8: トグルボタンをクリック
@@ -43,5 +43,5 @@ steps:
 
   # ステップ12: チェック解除後の確認
   - assertChecked:
-      text: チェック済み
+      interactableText: チェック済み
       checked: false

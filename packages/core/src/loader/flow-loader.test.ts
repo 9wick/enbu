@@ -39,7 +39,7 @@ describe('loadFlows', () => {
 steps:
   - open: https://example.com
   - click:
-      text: "ボタン"
+      interactableText: "ボタン"
 `;
     await writeFile(join(TEST_DIR, 'test.enbu.yaml'), yamlContent);
 
@@ -58,7 +58,7 @@ steps:
         });
         expect(flows[0].steps[1]).toEqual({
           command: 'click',
-          text: 'ボタン',
+          interactableText: 'ボタン',
         });
       },
       () => {

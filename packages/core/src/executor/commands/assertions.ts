@@ -5,7 +5,7 @@
  * 検証系コマンドを処理する。
  */
 
-import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, CliSelector } from '@packages/agent-browser-adapter';
 import {
   browserIsChecked,
   browserIsEnabled,
@@ -16,11 +16,11 @@ import {
 } from '@packages/agent-browser-adapter';
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
 import type {
-  AssertCheckedCommand,
-  AssertEnabledCommand,
-  AssertNotVisibleCommand,
-  AssertVisibleCommand,
-  SelectorSpec,
+  ResolvedAssertCheckedCommand,
+  ResolvedAssertEnabledCommand,
+  ResolvedAssertNotVisibleCommand,
+  ResolvedAssertVisibleCommand,
+  ResolvedSelectorSpec,
 } from '../../types';
 import { UseDefault } from '../../types/utility-types';
 import type {
@@ -30,7 +30,6 @@ import type {
   ExecutorError,
 } from '../result';
 import {
-  type CliSelector,
   getSelectorForErrorMessage,
   getSelectorString,
   isTextSelector,
@@ -48,7 +47,7 @@ import {
  * @returns 成功時はok(undefined)、失敗時はerr(AgentBrowserError)
  */
 const waitForElement = (
-  spec: SelectorSpec,
+  spec: ResolvedSelectorSpec,
   context: ExecutionContext,
 ): ResultAsync<undefined, AgentBrowserError> => {
   // テキストセレクタの場合: browserWaitForText
@@ -101,18 +100,34 @@ const checkVisibility = (
 };
 
 /**
+ * 可視性チェックのコンテキスト型
+ */
+type VisibilityContext = {
+  readonly selector: CliSelector;
+  readonly selectorStr: string;
+  readonly startTime: number;
+};
+
+/**
  * セレクタを取得して表示状態を確認する
  */
 const getAndCheckVisibility = (
-  spec: SelectorSpec,
+  spec: ResolvedSelectorSpec,
   context: ExecutionContext,
   startTime: number,
 ): ResultAsync<CommandResult, ExecutorError> =>
-  resolveCliSelector(spec, context).andThen((selector: CliSelector) =>
-    browserIsVisible(selector, context.executeOptions).andThen((data) =>
-      checkVisibility(getSelectorForErrorMessage(spec, context), data, startTime),
-    ),
-  );
+  resolveCliSelector(spec, context)
+    .map(
+      (selector): VisibilityContext => ({
+        selector,
+        selectorStr: getSelectorForErrorMessage(spec, context),
+        startTime,
+      }),
+    )
+    .andThen((ctx) =>
+      browserIsVisible(ctx.selector, context.executeOptions).map((data) => ({ ctx, data })),
+    )
+    .andThen(({ ctx, data }) => checkVisibility(ctx.selectorStr, data, ctx.startTime));
 
 /**
  * TextSelectorのassertVisible処理
@@ -155,18 +170,19 @@ const handleTextSelectorVisible = (
  *
  * 処理の流れ:
  * - TextSelector: browserWaitForTextで直接確認（成功=表示）
- * - CSSセレクタ/Ref:
+ *   （注: ResolvedSelectorSpecにはtextは含まれないが、後方互換のためチェック）
+ * - CSSセレクタ/Ref/XPath:
  *   1. agent-browserのwaitコマンドで要素の出現を待機
  *   2. agent-browserのis visibleコマンドで表示状態を確認
  *
  * 要素が表示されていない場合は assertion_failed エラーを返す。
  *
- * @param command - assertVisible コマンドのパラメータ
+ * @param command - assertVisible コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
 export const handleAssertVisible = (
-  command: AssertVisibleCommand,
+  command: ResolvedAssertVisibleCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
@@ -177,19 +193,16 @@ export const handleAssertVisible = (
     return handleTextSelectorVisible(selectorStr, context, startTime);
   }
 
-  // CSSセレクタまたはRefセレクタの場合
-  // 1. 要素の出現を待機（autoWaitで解決済みでなければ）
-  const waitStep =
-    context.resolvedRefState.status === 'resolved'
-      ? okAsync<undefined, ExecutorError>(undefined)
-      : waitForElement(command, context).mapErr(
-          (): ExecutorError => ({
-            type: 'timeout',
-            command: 'wait',
-            args: [selectorStr],
-            timeoutMs: context.autoWaitTimeoutMs,
-          }),
-        );
+  // CSSセレクタの場合
+  // 1. 要素の出現を待機
+  const waitStep = waitForElement(command, context).mapErr(
+    (): ExecutorError => ({
+      type: 'timeout',
+      command: 'wait',
+      args: [selectorStr],
+      timeoutMs: context.autoWaitTimeoutMs,
+    }),
+  );
 
   // 2. セレクタを解決して表示状態を確認
   return waitStep.andThen(() => getAndCheckVisibility(command, context, startTime));
@@ -227,15 +240,22 @@ const checkNotVisible = (
  * セレクタを取得して非表示状態を確認する
  */
 const getAndCheckNotVisible = (
-  spec: SelectorSpec,
+  spec: ResolvedSelectorSpec,
   context: ExecutionContext,
   startTime: number,
 ): ResultAsync<CommandResult, ExecutorError> =>
-  resolveCliSelector(spec, context).andThen((selector: CliSelector) =>
-    browserIsVisible(selector, context.executeOptions).andThen((data) =>
-      checkNotVisible(getSelectorForErrorMessage(spec, context), data, startTime),
-    ),
-  );
+  resolveCliSelector(spec, context)
+    .map(
+      (selector): VisibilityContext => ({
+        selector,
+        selectorStr: getSelectorForErrorMessage(spec, context),
+        startTime,
+      }),
+    )
+    .andThen((ctx) =>
+      browserIsVisible(ctx.selector, context.executeOptions).map((data) => ({ ctx, data })),
+    )
+    .andThen(({ ctx, data }) => checkNotVisible(ctx.selectorStr, data, ctx.startTime));
 
 /**
  * 短いタイムアウトでテキストの非表示を確認する
@@ -308,10 +328,9 @@ const handleTextSelectorNotVisible = (
       }),
     )
     .andThen(() =>
-      ResultAsync.fromSafePromise(checkTextNotVisible(selectorStr, context, startTime)).andThen(
-        (result) => result,
-      ),
-    );
+      ResultAsync.fromSafePromise(checkTextNotVisible(selectorStr, context, startTime)),
+    )
+    .andThen((result) => result);
 
 /**
  * assertNotVisible コマンドのハンドラ
@@ -320,18 +339,19 @@ const handleTextSelectorNotVisible = (
  *
  * 処理の流れ:
  * - TextSelector: networkidleを待機後、browserWaitForTextがタイムアウトすれば成功
- * - CSSセレクタ/Ref:
+ *   （注: ResolvedSelectorSpecにはtextは含まれないが、後方互換のためチェック）
+ * - CSSセレクタ/Ref/XPath:
  *   1. agent-browserのwaitコマンドでページの安定状態（networkidle）を待機
  *   2. agent-browserのis visibleコマンドで表示状態を確認
  *
  * 要素が表示されている場合は assertion_failed エラーを返す。
  *
- * @param command - assertNotVisible コマンドのパラメータ
+ * @param command - assertNotVisible コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
 export const handleAssertNotVisible = (
-  command: AssertNotVisibleCommand,
+  command: ResolvedAssertNotVisibleCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
@@ -363,40 +383,57 @@ export const handleAssertNotVisible = (
  * agent-browser の is enabled コマンドを実行し、その結果を検証する。
  * 要素が有効化されていない場合は assertion_failed エラーを返す。
  *
- * @param command - assertEnabled コマンドのパラメータ
+ * @param command - assertEnabled コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
+/**
+ * enabled状態のチェック結果を処理する
+ */
+const checkEnabled = (
+  selectorStr: string,
+  data: { enabled: boolean },
+  startTime: number,
+): ResultAsync<CommandResult, AssertionFailedError> => {
+  const duration = Date.now() - startTime;
+
+  if (!data.enabled) {
+    const error: AssertionFailedError = {
+      type: 'assertion_failed',
+      message: `Element "${selectorStr}" is not enabled`,
+      command: 'assertEnabled',
+      selector: selectorStr,
+      expected: true,
+      actual: false,
+    };
+    return errAsync(error);
+  }
+
+  return okAsync({
+    stdout: JSON.stringify(data),
+    duration,
+  });
+};
+
 export const handleAssertEnabled = (
-  command: AssertEnabledCommand,
+  command: ResolvedAssertEnabledCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
   const selectorStr = getSelectorForErrorMessage(command, context);
 
-  return resolveCliSelector(command, context).andThen((selector: CliSelector) =>
-    browserIsEnabled(selector, context.executeOptions).andThen((data) => {
-      const duration = Date.now() - startTime;
-
-      // アサーション条件を確認
-      if (!data.enabled) {
-        const error: AssertionFailedError = {
-          type: 'assertion_failed',
-          message: `Element "${selectorStr}" is not enabled`,
-          command: 'assertEnabled',
-          selector: selectorStr,
-          expected: true,
-          actual: false,
-        };
-        return errAsync(error);
-      }
-
-      return okAsync({
-        stdout: JSON.stringify(data),
-        duration,
-      });
-    }),
-  );
+  return resolveCliSelector(command, context)
+    .map(
+      (selector): VisibilityContext => ({
+        selector,
+        selectorStr,
+        startTime,
+      }),
+    )
+    .andThen((ctx) =>
+      browserIsEnabled(ctx.selector, context.executeOptions).map((data) => ({ ctx, data })),
+    )
+    .andThen(({ ctx, data }) => checkEnabled(ctx.selectorStr, data, ctx.startTime));
 };
 
 /**
@@ -406,42 +443,68 @@ export const handleAssertEnabled = (
  * agent-browser の is checked コマンドを実行し、その結果を検証する。
  * 期待値と実際の状態が一致しない場合は assertion_failed エラーを返す。
  *
- * @param command - assertChecked コマンドのパラメータ
+ * @param command - assertChecked コマンドのパラメータ（解決済み）
  * @param context - 実行コンテキスト
  * @returns コマンド実行結果を含むResult型
  */
+/**
+ * checked状態のチェック結果を処理する
+ */
+const checkChecked = (
+  selectorStr: string,
+  data: { checked: boolean },
+  startTime: number,
+  expectedChecked: boolean,
+): ResultAsync<CommandResult, AssertionFailedError> => {
+  const duration = Date.now() - startTime;
+  const actualChecked = data.checked;
+
+  if (actualChecked !== expectedChecked) {
+    const error: AssertionFailedError = {
+      type: 'assertion_failed',
+      message: `Element "${selectorStr}" checked state is ${actualChecked}, expected ${expectedChecked}`,
+      command: 'assertChecked',
+      selector: selectorStr,
+      expected: expectedChecked,
+      actual: actualChecked,
+    };
+    return errAsync(error);
+  }
+
+  return okAsync({
+    stdout: JSON.stringify(data),
+    duration,
+  });
+};
+
+/**
+ * checkedチェック用のコンテキスト型
+ */
+type CheckedContext = VisibilityContext & {
+  readonly expectedChecked: boolean;
+};
+
 export const handleAssertChecked = (
-  command: AssertCheckedCommand,
+  command: ResolvedAssertCheckedCommand,
   context: ExecutionContext,
 ): ResultAsync<CommandResult, ExecutorError> => {
   const startTime = Date.now();
   const selectorStr = getSelectorForErrorMessage(command, context);
+  const expectedChecked: boolean = command.checked === UseDefault ? true : command.checked;
 
-  return resolveCliSelector(command, context).andThen((selector: CliSelector) =>
-    browserIsChecked(selector, context.executeOptions).andThen((data) => {
-      const duration = Date.now() - startTime;
-
-      // アサーション条件を確認
-      // UseDefaultの場合はデフォルト値trueを使用
-      const expectedChecked: boolean = command.checked === UseDefault ? true : command.checked;
-      const actualChecked = data.checked;
-
-      if (actualChecked !== expectedChecked) {
-        const error: AssertionFailedError = {
-          type: 'assertion_failed',
-          message: `Element "${selectorStr}" checked state is ${actualChecked}, expected ${expectedChecked}`,
-          command: 'assertChecked',
-          selector: selectorStr,
-          expected: expectedChecked,
-          actual: actualChecked,
-        };
-        return errAsync(error);
-      }
-
-      return okAsync({
-        stdout: JSON.stringify(data),
-        duration,
-      });
-    }),
-  );
+  return resolveCliSelector(command, context)
+    .map(
+      (selector): CheckedContext => ({
+        selector,
+        selectorStr,
+        startTime,
+        expectedChecked,
+      }),
+    )
+    .andThen((ctx) =>
+      browserIsChecked(ctx.selector, context.executeOptions).map((data) => ({ ctx, data })),
+    )
+    .andThen(({ ctx, data }) =>
+      checkChecked(ctx.selectorStr, data, ctx.startTime, ctx.expectedChecked),
+    );
 };

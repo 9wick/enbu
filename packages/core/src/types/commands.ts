@@ -5,7 +5,7 @@
  * 各コマンドは共通の `command` フィールドで判別され、
  * コマンド固有のプロパティがフラットな構造で定義される。
  *
- * セレクタは css, ref, text のいずれか1つを明示的に指定する。
+ * セレクタは css, ref, text, xpath のいずれか1つを明示的に指定する。
  * これによりDDDの「異なるドメイン概念を同じ型で扱わない」原則を満たす。
  *
  * 全てのフィールドはparser層で検証済みのBranded Typeを使用する。
@@ -13,15 +13,17 @@
  */
 
 import type {
+  AnyTextSelector,
   CssSelector,
   FilePath,
+  InteractableTextSelector,
   JsExpression,
   KeyboardKey,
   LoadState,
   RefSelector,
   ScrollDirection,
-  TextSelector,
   Url,
+  XpathSelector,
 } from '@packages/agent-browser-adapter';
 import type { UseDefault } from './utility-types';
 
@@ -33,26 +35,65 @@ export type { LoadState } from '@packages/agent-browser-adapter';
 // ==========================================
 
 /**
- * セレクタ指定の共通型
+ * インタラクティブ要素用セレクタ指定
  *
- * css, ref, text のいずれか1つのみを指定する。
- * これにより「CSSセレクタ」「Ref参照」「テキスト検索」という
- * 異なるドメイン概念を型で明確に分離する。
+ * click, fill, type, hover, select, assertEnabled, assertChecked で使用。
+ * css, interactableText, xpath のいずれか1つのみを指定する。
+ * interactableTextセレクタはsnapshot経由で@refに変換される。
  */
+export type InteractableSelectorSpec =
+  | { css: CssSelector; interactableText?: never; xpath?: never }
+  | { css?: never; interactableText: InteractableTextSelector; xpath?: never }
+  | { css?: never; interactableText?: never; xpath: XpathSelector };
 
-export type SelectorSpec =
-  | { css: CssSelector; ref?: never; text?: never }
-  | { css?: never; ref: RefSelector; text?: never }
-  | { css?: never; ref?: never; text: TextSelector };
+/**
+ * 全要素用セレクタ指定
+ *
+ * assertVisible, assertNotVisible, scrollIntoView で使用。
+ * css, anyText, xpath のいずれか1つのみを指定する。
+ * anyTextセレクタはtext=形式で直接処理される。
+ */
+export type AnySelectorSpec =
+  | { css: CssSelector; anyText?: never; xpath?: never }
+  | { css?: never; anyText: AnyTextSelector; xpath?: never }
+  | { css?: never; anyText?: never; xpath: XpathSelector };
+
+/**
+ * セレクタ指定の共通型（後方互換用）
+ * @deprecated 将来的にInteractableSelectorSpecまたはAnySelectorSpecを直接使用すること
+ */
+export type SelectorSpec = InteractableSelectorSpec | AnySelectorSpec;
+
+/**
+ * 解決済みセレクタ指定型（executor実行時）
+ *
+ * waitForSelectorで要素の存在を確認した後、CLIに渡すセレクタ。
+ * - css/xpath: そのまま使用
+ * - ref: interactableTextセレクタがsnapshotで解決された結果（@e1形式）
+ * - anyText/interactableText: assertVisible/assertNotVisible/scrollIntoView用。
+ *            browserWaitForTextで直接確認するため、anyText/interactableTextのまま保持する。
+ */
+export type ResolvedSelectorSpec =
+  | { css: CssSelector; interactableText?: never; anyText?: never; xpath?: never; ref?: never }
+  | {
+      css?: never;
+      interactableText: InteractableTextSelector;
+      anyText?: never;
+      xpath?: never;
+      ref?: never;
+    }
+  | { css?: never; interactableText?: never; anyText: AnyTextSelector; xpath?: never; ref?: never }
+  | { css?: never; interactableText?: never; anyText?: never; xpath: XpathSelector; ref?: never }
+  | { css?: never; interactableText?: never; anyText?: never; xpath?: never; ref: RefSelector };
 
 /**
  * 未検証のセレクタ指定型（YAMLパース直後）
  */
-
 export type RawSelectorSpec =
-  | { css: string; ref?: never; text?: never }
-  | { css?: never; ref: string; text?: never }
-  | { css?: never; ref?: never; text: string };
+  | { css: string; interactableText?: never; anyText?: never; xpath?: never }
+  | { css?: never; interactableText: string; anyText?: never; xpath?: never }
+  | { css?: never; interactableText?: never; anyText: string; xpath?: never }
+  | { css?: never; interactableText?: never; anyText?: never; xpath: string };
 
 // ==========================================
 // コマンド型定義
@@ -82,12 +123,12 @@ export type OpenCommand = {
  * @example
  * // YAML:
  * // - click:
- * //     text: "ログイン"
- * { command: 'click', text: 'ログイン' }
+ * //     InteractableText: "ログイン"
+ * { command: 'click', InteractableText: 'ログイン' }
  */
 export type ClickCommand = {
   command: 'click';
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * テキストを入力（既存のテキストをクリアしない）
@@ -102,7 +143,7 @@ export type ClickCommand = {
 export type TypeCommand = {
   command: 'type';
   value: string;
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * フォームにテキストを入力（既存のテキストをクリア）
@@ -117,7 +158,7 @@ export type TypeCommand = {
 export type FillCommand = {
   command: 'fill';
   value: string;
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * キーボードキーを押す
@@ -142,7 +183,7 @@ export type PressCommand = {
  */
 export type HoverCommand = {
   command: 'hover';
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * セレクトボックスから選択
@@ -157,7 +198,7 @@ export type HoverCommand = {
 export type SelectCommand = {
   command: 'select';
   value: string;
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * ページをスクロール
@@ -186,15 +227,15 @@ export type ScrollCommand = {
  */
 export type ScrollIntoViewCommand = {
   command: 'scrollIntoView';
-} & SelectorSpec;
+} & AnySelectorSpec;
 
 /**
  * 待機コマンド
  *
  * agent-browserのwaitコマンドと1:1対応:
  * - ms: 指定ミリ秒待機 (wait <ms>)
- * - css/ref: CSSセレクタまたはRefで要素出現を待つ (wait <selector>)
- * - text: テキスト出現を待つ (wait --text <text>)
+ * - css/xpath: CSSセレクタまたはXPathで要素出現を待つ (wait <selector>)
+ * - AnyText: テキスト出現を待つ (wait --text <text>)
  * - load: ロード状態を待つ (wait --load <state>)
  * - url: URL変化を待つ (wait --url <pattern>)
  * - fn: JS式がtruthyになるのを待つ (wait --fn <expression>)
@@ -211,7 +252,15 @@ export type ScrollIntoViewCommand = {
  */
 export type WaitCommand = {
   command: 'wait';
-} & ({ ms: number } | SelectorSpec | { load: LoadState } | { url: string } | { fn: JsExpression });
+} & (
+  | { ms: number }
+  | { css: CssSelector; xpath?: never; anyText?: never }
+  | { css?: never; xpath: XpathSelector; anyText?: never }
+  | { css?: never; xpath?: never; anyText: AnyTextSelector }
+  | { load: LoadState }
+  | { url: string }
+  | { fn: JsExpression }
+);
 
 /**
  * スクリーンショットを保存
@@ -225,17 +274,6 @@ export type ScreenshotCommand = {
   path: FilePath;
   /** ページ全体のスクリーンショットを撮影。未指定時はUseDefaultを設定。 */
   full: boolean | UseDefault;
-};
-
-/**
- * ページの構造をスナップショット
- *
- * @example
- * // YAML: - snapshot: {}
- * { command: 'snapshot' }
- */
-export type SnapshotCommand = {
-  command: 'snapshot';
 };
 
 /**
@@ -261,7 +299,7 @@ export type EvalCommand = {
  */
 export type AssertVisibleCommand = {
   command: 'assertVisible';
-} & SelectorSpec;
+} & AnySelectorSpec;
 
 /**
  * 要素が表示されていないことを確認
@@ -274,7 +312,7 @@ export type AssertVisibleCommand = {
  */
 export type AssertNotVisibleCommand = {
   command: 'assertNotVisible';
-} & SelectorSpec;
+} & AnySelectorSpec;
 
 /**
  * 要素が有効化されていることを確認
@@ -287,7 +325,7 @@ export type AssertNotVisibleCommand = {
  */
 export type AssertEnabledCommand = {
   command: 'assertEnabled';
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * チェックボックスがチェックされていることを確認
@@ -309,7 +347,7 @@ export type AssertCheckedCommand = {
   command: 'assertChecked';
   /** 期待されるチェック状態。未指定時はUseDefaultを設定。 */
   checked: boolean | UseDefault;
-} & SelectorSpec;
+} & InteractableSelectorSpec;
 
 /**
  * 全てのコマンド型のユニオン
@@ -326,12 +364,97 @@ export type Command =
   | ScrollIntoViewCommand
   | WaitCommand
   | ScreenshotCommand
-  | SnapshotCommand
   | EvalCommand
   | AssertVisibleCommand
   | AssertNotVisibleCommand
   | AssertEnabledCommand
   | AssertCheckedCommand;
+
+// ==========================================
+// 解決済みコマンド型定義（executor実行時）
+// SelectorSpecがResolvedSelectorSpecに変換されたもの
+// ==========================================
+
+/** 解決済みClickCommand */
+export type ResolvedClickCommand = {
+  command: 'click';
+} & ResolvedSelectorSpec;
+
+/** 解決済みTypeCommand */
+export type ResolvedTypeCommand = {
+  command: 'type';
+  value: string;
+} & ResolvedSelectorSpec;
+
+/** 解決済みFillCommand */
+export type ResolvedFillCommand = {
+  command: 'fill';
+  value: string;
+} & ResolvedSelectorSpec;
+
+/** 解決済みHoverCommand */
+export type ResolvedHoverCommand = {
+  command: 'hover';
+} & ResolvedSelectorSpec;
+
+/** 解決済みSelectCommand */
+export type ResolvedSelectCommand = {
+  command: 'select';
+  value: string;
+} & ResolvedSelectorSpec;
+
+/** 解決済みScrollIntoViewCommand */
+export type ResolvedScrollIntoViewCommand = {
+  command: 'scrollIntoView';
+} & ResolvedSelectorSpec;
+
+/** 解決済みAssertVisibleCommand */
+export type ResolvedAssertVisibleCommand = {
+  command: 'assertVisible';
+} & ResolvedSelectorSpec;
+
+/** 解決済みAssertNotVisibleCommand */
+export type ResolvedAssertNotVisibleCommand = {
+  command: 'assertNotVisible';
+} & ResolvedSelectorSpec;
+
+/** 解決済みAssertEnabledCommand */
+export type ResolvedAssertEnabledCommand = {
+  command: 'assertEnabled';
+} & ResolvedSelectorSpec;
+
+/** 解決済みAssertCheckedCommand */
+export type ResolvedAssertCheckedCommand = {
+  command: 'assertChecked';
+  /** 期待されるチェック状態。未指定時はUseDefaultを設定。 */
+  checked: boolean | UseDefault;
+} & ResolvedSelectorSpec;
+
+/**
+ * 解決済みコマンド型のユニオン
+ *
+ * executor層でコマンドハンドラに渡される型。
+ * セレクタを持つコマンドはResolvedSelectorSpecを使用。
+ * セレクタを持たないコマンド（open, press, scroll, wait, screenshot, eval）は
+ * そのまま使用される。
+ */
+export type ResolvedCommand =
+  | OpenCommand
+  | ResolvedClickCommand
+  | ResolvedTypeCommand
+  | ResolvedFillCommand
+  | PressCommand
+  | ResolvedHoverCommand
+  | ResolvedSelectCommand
+  | ScrollCommand
+  | ResolvedScrollIntoViewCommand
+  | WaitCommand
+  | ScreenshotCommand
+  | EvalCommand
+  | ResolvedAssertVisibleCommand
+  | ResolvedAssertNotVisibleCommand
+  | ResolvedAssertEnabledCommand
+  | ResolvedAssertCheckedCommand;
 
 // ==========================================
 // Raw型定義（YAMLパース直後の未検証型）
@@ -343,11 +466,6 @@ export type RawOpenCommand = {
   command: 'open';
   url: string;
 };
-
-/** 未検証のClickCommand */
-export type RawClickCommand = {
-  command: 'click';
-} & RawSelectorSpec;
 
 /** 未検証のTypeCommand */
 export type RawTypeCommand = {
@@ -393,18 +511,21 @@ export type RawScrollIntoViewCommand = {
 /** 未検証のWaitCommand */
 export type RawWaitCommand = {
   command: 'wait';
-} & ({ ms: number } | RawSelectorSpec | { load: LoadState } | { url: string } | { fn: string });
+} & (
+  | { ms: number }
+  | { css: string }
+  | { xpath: string }
+  | { AnyText: string }
+  | { load: LoadState }
+  | { url: string }
+  | { fn: string }
+);
 
 /** 未検証のScreenshotCommand */
 export type RawScreenshotCommand = {
   command: 'screenshot';
   path: string;
   full: boolean | UseDefault;
-};
-
-/** 未検証のSnapshotCommand */
-export type RawSnapshotCommand = {
-  command: 'snapshot';
 };
 
 /** 未検証のEvalCommand */
@@ -435,14 +556,18 @@ export type RawAssertCheckedCommand = {
 } & RawSelectorSpec;
 
 /**
- * 未検証コマンド型のユニオン（parser層で使用）
+ * 未検証コマンド型のユニオン
  *
  * YAMLパース後、Branded Type検証前の状態を表す。
  * command-validatorでBranded Typeに変換される。
+ *
+ * 注意: Clickはvalibotスキーマから導出されるため、
+ * parser層のraw-command.tsで定義されたRawCommandを使用すること。
+ * この型は後方互換のためにtypes層に残しているが、
+ * 将来的に全コマンドがスキーマ化された際に削除予定。
  */
 export type RawCommand =
   | RawOpenCommand
-  | RawClickCommand
   | RawTypeCommand
   | RawFillCommand
   | RawPressCommand
@@ -452,7 +577,6 @@ export type RawCommand =
   | RawScrollIntoViewCommand
   | RawWaitCommand
   | RawScreenshotCommand
-  | RawSnapshotCommand
   | RawEvalCommand
   | RawAssertVisibleCommand
   | RawAssertNotVisibleCommand

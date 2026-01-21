@@ -1,121 +1,117 @@
 /**
  * CLIセレクタユーティリティ
  *
- * SelectorSpec (css/ref/text) からCLIに渡すセレクタを取得する。
- * agent-browser CLIは CssSelector | RefSelector のみをサポートするため、
- * TextSelectorはautoWaitでRefSelectorに解決された後に使用する。
+ * SelectorSpec (css/text/xpath) からCLIに渡すセレクタを取得する。
+ * agent-browser CLIは以下の形式をサポート:
+ * - CssSelector: "#id", ".class" などのCSS形式（そのまま渡す）
+ * - CliTextSelector: "text=xxx" 形式でテキスト検索
+ * - CliXpathSelector: "xpath=//xxx" 形式でXPath検索
  */
 
-import type { AgentBrowserError, CssSelector, RefSelector } from '@packages/agent-browser-adapter';
-import { asRefSelector } from '@packages/agent-browser-adapter';
+import type { AgentBrowserError, CliSelector } from '@packages/agent-browser-adapter';
+import { asCliTextSelector, asCliXpathSelector } from '@packages/agent-browser-adapter';
 import { errAsync, okAsync, type ResultAsync } from 'neverthrow';
-import type { SelectorSpec } from '../../types';
+import { match, P } from 'ts-pattern';
+import type { ResolvedSelectorSpec, SelectorSpec } from '../../types';
 import type { ExecutionContext } from '../result';
 
 /**
- * CLIに渡せるセレクタ型
- *
- * agent-browser CLIは CssSelector または RefSelector のみをサポートする。
- * TextSelectorはautoWaitで解決後にRefSelectorとして渡される。
- */
-export type CliSelector = CssSelector | RefSelector;
-
-/**
- * SelectorSpecからセレクタ文字列を取得する
+ * SelectorSpecまたはResolvedSelectorSpecからセレクタ文字列を取得する
  *
  * autoWaitの入力やエラーメッセージで使用する文字列表現を返す。
- * css/ref/textのいずれかから値を取り出す。
+ * css/text/xpath/refのいずれかから値を取り出す。
  *
  * @param spec - セレクタ指定
  * @returns セレクタ文字列
  */
-export const getSelectorString = (spec: SelectorSpec): string => {
-  if ('css' in spec && spec.css !== undefined) {
-    return spec.css;
-  }
-  if ('ref' in spec && spec.ref !== undefined) {
-    return spec.ref;
-  }
-  if ('text' in spec && spec.text !== undefined) {
-    return spec.text;
-  }
-  // TypeScriptの型システムによりここには到達しないが、安全のため
-  return '';
-};
+export const getSelectorString = (spec: SelectorSpec | ResolvedSelectorSpec): string =>
+  match(spec)
+    .with({ css: P.string }, (s) => s.css)
+    .with({ interactableText: P.string }, (s) => s.interactableText)
+    .with({ anyText: P.string }, (s) => s.anyText)
+    .with({ xpath: P.string }, (s) => s.xpath)
+    .with({ ref: P.string }, (s) => s.ref)
+    .exhaustive();
 
 /**
- * SelectorSpecがTextSelectorかどうかを判定する
+ * SelectorSpecまたはResolvedSelectorSpecがTextSelectorかどうかを判定する
  *
  * @param spec - セレクタ指定
- * @returns TextSelectorの場合true
+ * @returns InteractableTextSelectorまたはAnyTextSelectorの場合true
  */
-export const isTextSelector = (spec: SelectorSpec): boolean => {
-  return 'text' in spec && spec.text !== undefined;
-};
+export const isTextSelector = (spec: SelectorSpec | ResolvedSelectorSpec): boolean =>
+  match(spec)
+    .with({ interactableText: P.string }, () => true)
+    .with({ anyText: P.string }, () => true)
+    .otherwise(() => false);
 
 /**
- * SelectorSpecがRefSelectorかどうかを判定する
+ * SelectorSpecまたはResolvedSelectorSpecからCLIセレクタを取得する
  *
- * @param spec - セレクタ指定
- * @returns RefSelectorの場合true
- */
-export const isRefSelector = (spec: SelectorSpec): boolean => {
-  return 'ref' in spec && spec.ref !== undefined;
-};
-
-/**
- * SelectorSpecがCssSelectorかどうかを判定する
+ * agent-browser CLIに渡すセレクタ文字列を生成する。
+ * - CssSelector: そのまま使用
+ * - RefSelector: そのまま使用
+ * - TextSelector: "text=" プレフィックスを付与してCliTextSelectorに変換
+ * - XpathSelector: "xpath=" プレフィックスを付与してCliXpathSelectorに変換
  *
- * @param spec - セレクタ指定
- * @returns CssSelectorの場合true
- */
-export const isCssSelector = (spec: SelectorSpec): boolean => {
-  return 'css' in spec && spec.css !== undefined;
-};
-
-/**
- * SelectorSpecからCLIセレクタを取得する
- *
- * TextSelectorの場合は、autoWaitで解決されたRefを優先使用する。
- * CssSelectorまたはRefSelectorの場合はそのまま使用する。
+ * autoWaitで解決されたRefがある場合はそれを優先使用する。
  *
  * @param spec - セレクタ指定
  * @param context - 実行コンテキスト
  * @returns CLIセレクタのResultAsync
  */
 export const resolveCliSelector = (
-  spec: SelectorSpec,
-  context: ExecutionContext,
-): ResultAsync<CliSelector, AgentBrowserError> => {
-  // autoWaitで解決されたRefがあればそれを優先使用
-  if (context.resolvedRefState.status === 'resolved') {
-    return asRefSelector(context.resolvedRefState.ref).match(
-      (ref) => okAsync(ref as CliSelector),
-      (error) => errAsync(error),
-    );
-  }
-
-  // CssSelectorまたはRefSelectorの場合はそのまま使用
-  if ('css' in spec && spec.css !== undefined) {
-    return okAsync(spec.css as CliSelector);
-  }
-  if ('ref' in spec && spec.ref !== undefined) {
-    return okAsync(spec.ref as CliSelector);
-  }
-
-  // TextSelectorでautoWaitが解決されていない場合はエラー
-  return errAsync({
-    type: 'command_execution_failed',
-    message: `TextSelector "${getSelectorString(spec)}" was not resolved by autoWait`,
-    command: 'resolveCliSelector',
-    rawError: 'TextSelector requires autoWait resolution',
-  });
-};
+  spec: SelectorSpec | ResolvedSelectorSpec,
+  _context: ExecutionContext,
+): ResultAsync<CliSelector, AgentBrowserError> =>
+  match(spec)
+    .with({ css: P.string }, (s) => {
+      const selector: CliSelector = s.css;
+      return okAsync(selector);
+    })
+    .with({ ref: P.string }, (s) => {
+      const selector: CliSelector = s.ref;
+      return okAsync(selector);
+    })
+    .with({ interactableText: P.string }, (s) => {
+      // InteractableTextSelector → CliTextSelector に変換
+      const cliTextSelectorValue = `text=${s.interactableText}`;
+      return asCliTextSelector(cliTextSelectorValue).match(
+        (cliTextSelector) => {
+          const selector: CliSelector = cliTextSelector;
+          return okAsync(selector);
+        },
+        (error) => errAsync(error),
+      );
+    })
+    .with({ anyText: P.string }, (s) => {
+      // AnyTextSelector → CliTextSelector に変換
+      const cliTextSelectorValue = `text=${s.anyText}`;
+      return asCliTextSelector(cliTextSelectorValue).match(
+        (cliTextSelector) => {
+          const selector: CliSelector = cliTextSelector;
+          return okAsync(selector);
+        },
+        (error) => errAsync(error),
+      );
+    })
+    .with({ xpath: P.string }, (s) => {
+      // XpathSelector → CliXpathSelector に変換
+      const cliXpathSelectorValue = `xpath=${s.xpath}`;
+      return asCliXpathSelector(cliXpathSelectorValue).match(
+        (cliXpathSelector) => {
+          const selector: CliSelector = cliXpathSelector;
+          return okAsync(selector);
+        },
+        (error) => errAsync(error),
+      );
+    })
+    .exhaustive();
 
 /**
  * エラーメッセージ用のセレクタ文字列を取得する
  *
- * SelectorSpecから、エラーメッセージに含めるセレクタ文字列を取得する。
+ * SelectorSpecまたはResolvedSelectorSpecから、エラーメッセージに含めるセレクタ文字列を取得する。
  * autoWaitで解決されている場合はその値を、そうでない場合は元の値を返す。
  *
  * @param spec - セレクタ指定
@@ -123,11 +119,8 @@ export const resolveCliSelector = (
  * @returns セレクタ文字列
  */
 export const getSelectorForErrorMessage = (
-  spec: SelectorSpec,
-  context: ExecutionContext,
+  spec: SelectorSpec | ResolvedSelectorSpec,
+  _context: ExecutionContext,
 ): string => {
-  if (context.resolvedRefState.status === 'resolved') {
-    return context.resolvedRefState.ref;
-  }
   return getSelectorString(spec);
 };

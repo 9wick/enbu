@@ -15,5 +15,5 @@ steps:
 
   # 未チェックのチェックボックス（checked: falseで検証）
   - assertChecked:
-      text: 未チェックチェックボックス
+      interactableText: 未チェックチェックボックス
       checked: false

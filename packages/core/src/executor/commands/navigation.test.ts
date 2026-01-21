@@ -32,7 +32,6 @@ describe('handleOpen', () => {
     env: {},
     autoWaitTimeoutMs: 30000,
     autoWaitIntervalMs: 100,
-    resolvedRefState: { status: 'notApplied' },
   };
 
   /**

@@ -20,7 +20,7 @@ steps:
 
   # Enter "Scarf" in search box (using aria-label="Search products")
   - fill:
-      text: Search products
+      css: '[aria-label="Search products"]'
       value: Scarf
 
   # Press Enter to search
@@ -37,5 +37,5 @@ steps:
 
   # Verify product detail page is displayed (product description and cart button)
   - wait:
-      text: premium cashmere wool
+      anyText: premium cashmere wool
   - assertVisible: Add to Cart

@@ -232,11 +232,12 @@ describe('executeCommand', () => {
     await resultPromise;
 
     // Assert
+    // escapeShellArg により、特殊文字（:）を含む引数はシングルクォートで囲まれる
     const [, args] = vi.mocked(spawn).mock.calls[0];
     expect(args).toEqual([
       'agent-browser',
       'open',
-      'https://example.com',
+      "'https://example.com'",
       '--json',
       '--session',
       'sess',

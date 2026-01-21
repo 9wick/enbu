@@ -8,12 +8,12 @@ steps:
 
   # メールアドレスを入力
   - type:
-      text: メールアドレス
+      interactableText: メールアドレス
       value: test@example.com
 
   # パスワードを入力
   - type:
-      text: パスワード
+      interactableText: パスワード
       value: password123
 
   # ログインボタンをクリック
