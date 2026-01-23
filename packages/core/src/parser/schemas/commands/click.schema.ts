@@ -15,16 +15,16 @@
  * - ClickCommand: スキーマから導出されるBranded Type
  */
 
-import * as v from 'valibot';
 import {
+  type CssSelector,
   InteractableTextSelectorSchema as InteractableTextBrandedSchema,
   type InteractableTextSelector,
-  type CssSelector,
   type XpathSelector,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 import {
-  InteractableSelectorSpecSchema,
   type InteractableSelectorSpecOutput,
+  InteractableSelectorSpecSchema,
 } from '../selector.schema';
 
 /**
@@ -50,11 +50,11 @@ const ClickShorthandSchema = v.pipe(
   v.object({
     click: v.pipe(
       InteractableTextBrandedSchema,
-      v.metadata({ exampleValues: ['ログイン', '送信ボタン'] }),
+      v.metadata({ exampleValues: ['Login', 'Submit button'] }),
     ),
   }),
   v.metadata({
-    description: 'テキストで要素を指定してクリック',
+    description: 'Click on element specified by text',
   }),
   v.transform(
     (input): ClickWithInteractableText => ({
@@ -78,7 +78,7 @@ const ClickDetailedSchema = v.pipe(
     click: InteractableSelectorSpecSchema,
   }),
   v.metadata({
-    description: 'セレクタで要素を指定してクリック',
+    description: 'Click on element specified by selector',
   }),
   v.transform((input): ClickWithCss | ClickWithInteractableText | ClickWithXpath => {
     const selector: InteractableSelectorSpecOutput = input.click;
@@ -102,7 +102,7 @@ const ClickDetailedSchema = v.pipe(
 export const ClickYamlSchema = v.pipe(
   v.union([ClickShorthandSchema, ClickDetailedSchema]),
   v.description('要素をクリックする'),
-  v.metadata({ category: 'インタラクション' }),
+  v.metadata({ category: 'Interaction' }),
 );
 
 /**

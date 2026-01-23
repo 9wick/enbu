@@ -15,7 +15,9 @@
                   "description": "CSSセレクタ形式で要素を指定"
                 }
               },
-              "required": ["css"]
+              "required": [
+                "css"
+              ]
             },
             {
               "type": "object",
@@ -26,7 +28,9 @@
                   "description": "インタラクティブ要素をテキスト内容で検索"
                 }
               },
-              "required": ["interactableText"]
+              "required": [
+                "interactableText"
+              ]
             },
             {
               "type": "object",
@@ -38,7 +42,9 @@
                   "description": "XPath形式で要素を指定"
                 }
               },
-              "required": ["xpath"]
+              "required": [
+                "xpath"
+              ]
             }
           ]
         },
@@ -54,7 +60,9 @@
                   "description": "CSSセレクタ形式で要素を指定"
                 }
               },
-              "required": ["css"]
+              "required": [
+                "css"
+              ]
             },
             {
               "type": "object",
@@ -65,7 +73,9 @@
                   "description": "全要素をテキスト内容で検索"
                 }
               },
-              "required": ["anyText"]
+              "required": [
+                "anyText"
+              ]
             },
             {
               "type": "object",
@@ -77,7 +87,9 @@
                   "description": "XPath形式で要素を指定"
                 }
               },
-              "required": ["xpath"]
+              "required": [
+                "xpath"
+              ]
             }
           ]
         }
@@ -93,7 +105,9 @@
           "description": "開くURL"
         }
       },
-      "required": ["open"],
+      "required": [
+        "open"
+      ],
       "description": "URLを開く",
       "$schema": "http://json-schema.org/draft-07/schema#"
     },
@@ -104,7 +118,12 @@
           "type": "object",
           "properties": {
             "direction": {
-              "enum": ["up", "down", "left", "right"],
+              "enum": [
+                "up",
+                "down",
+                "left",
+                "right"
+              ],
               "description": "スクロール方向"
             },
             "amount": {
@@ -112,10 +131,15 @@
               "description": "スクロール量（ピクセル）"
             }
           },
-          "required": ["direction", "amount"]
+          "required": [
+            "direction",
+            "amount"
+          ]
         }
       },
-      "required": ["scroll"],
+      "required": [
+        "scroll"
+      ],
       "description": "ページをスクロールする",
       "$schema": "http://json-schema.org/draft-07/schema#"
     },
@@ -129,7 +153,9 @@
               "minLength": 1
             }
           },
-          "required": ["scrollIntoView"],
+          "required": [
+            "scrollIntoView"
+          ],
           "description": "テキストで要素を指定してスクロール"
         },
         {
@@ -147,7 +173,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -158,7 +186,9 @@
                       "description": "全要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["anyText"]
+                  "required": [
+                    "anyText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -170,12 +200,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["scrollIntoView"],
+          "required": [
+            "scrollIntoView"
+          ],
           "description": "セレクタで要素を指定してスクロール"
         }
       ],
@@ -192,7 +226,9 @@
               "minLength": 1
             }
           },
-          "required": ["click"],
+          "required": [
+            "click"
+          ],
           "description": "テキストで要素を指定してクリック"
         },
         {
@@ -210,7 +246,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -221,7 +259,9 @@
                       "description": "インタラクティブ要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["interactableText"]
+                  "required": [
+                    "interactableText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -233,12 +273,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["click"],
+          "required": [
+            "click"
+          ],
           "description": "セレクタで要素を指定してクリック"
         }
       ],
@@ -255,7 +299,9 @@
               "minLength": 1
             }
           },
-          "required": ["hover"],
+          "required": [
+            "hover"
+          ],
           "description": "テキストで要素を指定してホバー"
         },
         {
@@ -273,7 +319,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -284,7 +332,9 @@
                       "description": "インタラクティブ要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["interactableText"]
+                  "required": [
+                    "interactableText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -296,12 +346,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["hover"],
+          "required": [
+            "hover"
+          ],
           "description": "セレクタで要素を指定してホバー"
         }
       ],
@@ -327,10 +381,15 @@
                   "description": "入力するテキスト"
                 }
               },
-              "required": ["css", "value"]
+              "required": [
+                "css",
+                "value"
+              ]
             }
           },
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "description": "CSSセレクタで要素を指定して入力"
         },
         {
@@ -349,10 +408,15 @@
                   "description": "入力するテキスト"
                 }
               },
-              "required": ["interactableText", "value"]
+              "required": [
+                "interactableText",
+                "value"
+              ]
             }
           },
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "description": "テキストで要素を指定して入力"
         },
         {
@@ -372,10 +436,15 @@
                   "description": "入力するテキスト"
                 }
               },
-              "required": ["xpath", "value"]
+              "required": [
+                "xpath",
+                "value"
+              ]
             }
           },
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "description": "XPathで要素を指定して入力"
         }
       ],
@@ -401,10 +470,15 @@
                   "description": "入力するテキスト（既存テキストをクリアして入力）"
                 }
               },
-              "required": ["css", "value"]
+              "required": [
+                "css",
+                "value"
+              ]
             }
           },
-          "required": ["fill"],
+          "required": [
+            "fill"
+          ],
           "description": "CSSセレクタで要素を指定して入力"
         },
         {
@@ -423,10 +497,15 @@
                   "description": "入力するテキスト（既存テキストをクリアして入力）"
                 }
               },
-              "required": ["interactableText", "value"]
+              "required": [
+                "interactableText",
+                "value"
+              ]
             }
           },
-          "required": ["fill"],
+          "required": [
+            "fill"
+          ],
           "description": "テキストで要素を指定して入力"
         },
         {
@@ -446,10 +525,15 @@
                   "description": "入力するテキスト（既存テキストをクリアして入力）"
                 }
               },
-              "required": ["xpath", "value"]
+              "required": [
+                "xpath",
+                "value"
+              ]
             }
           },
-          "required": ["fill"],
+          "required": [
+            "fill"
+          ],
           "description": "XPathで要素を指定して入力"
         }
       ],
@@ -475,10 +559,15 @@
                   "description": "選択するオプションの値"
                 }
               },
-              "required": ["css", "value"]
+              "required": [
+                "css",
+                "value"
+              ]
             }
           },
-          "required": ["select"],
+          "required": [
+            "select"
+          ],
           "description": "CSSセレクタで要素を指定して選択"
         },
         {
@@ -497,10 +586,15 @@
                   "description": "選択するオプションの値"
                 }
               },
-              "required": ["interactableText", "value"]
+              "required": [
+                "interactableText",
+                "value"
+              ]
             }
           },
-          "required": ["select"],
+          "required": [
+            "select"
+          ],
           "description": "テキストで要素を指定して選択"
         },
         {
@@ -520,10 +614,15 @@
                   "description": "選択するオプションの値"
                 }
               },
-              "required": ["xpath", "value"]
+              "required": [
+                "xpath",
+                "value"
+              ]
             }
           },
-          "required": ["select"],
+          "required": [
+            "select"
+          ],
           "description": "XPathで要素を指定して選択"
         }
       ],
@@ -539,7 +638,9 @@
           "description": "押すキー"
         }
       },
-      "required": ["press"],
+      "required": [
+        "press"
+      ],
       "description": "キーを押す",
       "$schema": "http://json-schema.org/draft-07/schema#"
     },
@@ -553,7 +654,9 @@
               "description": "待機時間（ミリ秒）"
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "指定ミリ秒待機"
         },
         {
@@ -569,10 +672,14 @@
                   "description": "CSSセレクタ形式で要素を指定"
                 }
               },
-              "required": ["css"]
+              "required": [
+                "css"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "CSSセレクタで指定した要素が表示されるまで待機"
         },
         {
@@ -587,10 +694,14 @@
                   "description": "全要素をテキスト内容で検索"
                 }
               },
-              "required": ["anyText"]
+              "required": [
+                "anyText"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "テキストで指定した要素が表示されるまで待機"
         },
         {
@@ -606,10 +717,14 @@
                   "description": "XPath形式で要素を指定"
                 }
               },
-              "required": ["xpath"]
+              "required": [
+                "xpath"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "XPathで指定した要素が表示されるまで待機"
         },
         {
@@ -619,14 +734,22 @@
               "type": "object",
               "properties": {
                 "load": {
-                  "enum": ["load", "domcontentloaded", "networkidle"],
+                  "enum": [
+                    "load",
+                    "domcontentloaded",
+                    "networkidle"
+                  ],
                   "description": "ページの読み込み状態"
                 }
               },
-              "required": ["load"]
+              "required": [
+                "load"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "ページの読み込み状態が指定の状態になるまで待機"
         },
         {
@@ -640,10 +763,14 @@
                   "description": "待機するURL（部分一致）"
                 }
               },
-              "required": ["url"]
+              "required": [
+                "url"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "URLが指定の文字列を含むまで待機"
         },
         {
@@ -658,10 +785,14 @@
                   "description": "待機条件の関数"
                 }
               },
-              "required": ["fn"]
+              "required": [
+                "fn"
+              ]
             }
           },
-          "required": ["wait"],
+          "required": [
+            "wait"
+          ],
           "description": "関数が真を返すまで待機"
         }
       ],
@@ -679,7 +810,9 @@
               "description": "スクリーンショットの保存パス"
             }
           },
-          "required": ["screenshot"]
+          "required": [
+            "screenshot"
+          ]
         },
         {
           "type": "object",
@@ -697,10 +830,14 @@
                   "description": "フルページスクリーンショットを取得するか"
                 }
               },
-              "required": ["path"]
+              "required": [
+                "path"
+              ]
             }
           },
-          "required": ["screenshot"]
+          "required": [
+            "screenshot"
+          ]
         }
       ],
       "description": "スクリーンショットを取得する",
@@ -716,7 +853,9 @@
               "minLength": 1
             }
           },
-          "required": ["assertVisible"],
+          "required": [
+            "assertVisible"
+          ],
           "description": "テキストで要素を指定して表示を検証"
         },
         {
@@ -734,7 +873,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -745,7 +886,9 @@
                       "description": "全要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["anyText"]
+                  "required": [
+                    "anyText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -757,12 +900,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["assertVisible"],
+          "required": [
+            "assertVisible"
+          ],
           "description": "セレクタで要素を指定して表示を検証"
         }
       ],
@@ -779,7 +926,9 @@
               "minLength": 1
             }
           },
-          "required": ["assertNotVisible"],
+          "required": [
+            "assertNotVisible"
+          ],
           "description": "テキストで要素を指定して非表示を検証"
         },
         {
@@ -797,7 +946,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -808,7 +959,9 @@
                       "description": "全要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["anyText"]
+                  "required": [
+                    "anyText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -820,12 +973,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["assertNotVisible"],
+          "required": [
+            "assertNotVisible"
+          ],
           "description": "セレクタで要素を指定して非表示を検証"
         }
       ],
@@ -842,7 +999,9 @@
               "minLength": 1
             }
           },
-          "required": ["assertEnabled"],
+          "required": [
+            "assertEnabled"
+          ],
           "description": "テキストで要素を指定して有効を検証"
         },
         {
@@ -860,7 +1019,9 @@
                       "description": "CSSセレクタ形式で要素を指定"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 },
                 {
                   "type": "object",
@@ -871,7 +1032,9 @@
                       "description": "インタラクティブ要素をテキスト内容で検索"
                     }
                   },
-                  "required": ["interactableText"]
+                  "required": [
+                    "interactableText"
+                  ]
                 },
                 {
                   "type": "object",
@@ -883,12 +1046,16 @@
                       "description": "XPath形式で要素を指定"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               ]
             }
           },
-          "required": ["assertEnabled"],
+          "required": [
+            "assertEnabled"
+          ],
           "description": "セレクタで要素を指定して有効を検証"
         }
       ],
@@ -905,7 +1072,9 @@
               "minLength": 1
             }
           },
-          "required": ["assertChecked"],
+          "required": [
+            "assertChecked"
+          ],
           "description": "テキストで要素を指定してチェック状態を検証"
         },
         {
@@ -927,10 +1096,14 @@
                       "description": "期待されるチェック状態（省略時はtrue）"
                     }
                   },
-                  "required": ["css"]
+                  "required": [
+                    "css"
+                  ]
                 }
               },
-              "required": ["assertChecked"],
+              "required": [
+                "assertChecked"
+              ],
               "description": "CSSセレクタで要素を指定してチェック状態を検証"
             },
             {
@@ -949,10 +1122,14 @@
                       "description": "期待されるチェック状態（省略時はtrue）"
                     }
                   },
-                  "required": ["interactableText"]
+                  "required": [
+                    "interactableText"
+                  ]
                 }
               },
-              "required": ["assertChecked"],
+              "required": [
+                "assertChecked"
+              ],
               "description": "テキストで要素を指定してチェック状態を検証"
             },
             {
@@ -972,10 +1149,14 @@
                       "description": "期待されるチェック状態（省略時はtrue）"
                     }
                   },
-                  "required": ["xpath"]
+                  "required": [
+                    "xpath"
+                  ]
                 }
               },
-              "required": ["assertChecked"],
+              "required": [
+                "assertChecked"
+              ],
               "description": "XPathで要素を指定してチェック状態を検証"
             }
           ]
@@ -993,7 +1174,9 @@
           "description": "実行するJavaScriptコード"
         }
       },
-      "required": ["eval"],
+      "required": [
+        "eval"
+      ],
       "description": "JavaScriptを実行する",
       "$schema": "http://json-schema.org/draft-07/schema#"
     }

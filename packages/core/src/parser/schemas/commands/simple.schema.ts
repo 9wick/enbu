@@ -18,17 +18,17 @@
  * - OpenCommand, PressCommand, SnapshotCommand, ScreenshotCommand, EvalCommand: スキーマから導出される型
  */
 
-import * as v from 'valibot';
 import {
-  UrlSchema,
-  type Url,
-  KeyboardKeySchema,
-  type KeyboardKey,
-  FilePathSchema,
   type FilePath,
-  JsExpressionSchema,
+  FilePathSchema,
   type JsExpression,
+  JsExpressionSchema,
+  type KeyboardKey,
+  KeyboardKeySchema,
+  type Url,
+  UrlSchema,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 import { UseDefault } from '../../../types/utility-types';
 
 // ============================================================================
@@ -46,12 +46,12 @@ export const OpenYamlSchema = v.pipe(
   v.object({
     open: v.pipe(
       UrlSchema,
-      v.description('開くURL'),
+      v.description('URL to open'),
       v.metadata({ exampleValues: ['https://example.com', 'https://google.com'] }),
     ),
   }),
   v.description('URLを開く'),
-  v.metadata({ category: 'ナビゲーション' }),
+  v.metadata({ category: 'Navigation' }),
   v.transform((input): { command: 'open'; url: Url } => ({
     command: 'open',
     url: input.open,
@@ -83,12 +83,12 @@ export const PressYamlSchema = v.pipe(
   v.object({
     press: v.pipe(
       KeyboardKeySchema,
-      v.description('押すキー'),
+      v.description('Key to press'),
       v.metadata({ exampleValues: ['Enter', 'Escape', 'Tab', 'ArrowDown'] }),
     ),
   }),
   v.description('キーを押す'),
-  v.metadata({ category: 'インタラクション' }),
+  v.metadata({ category: 'Interaction' }),
   v.transform((input): { command: 'press'; key: KeyboardKey } => ({
     command: 'press',
     key: input.press,
@@ -121,7 +121,7 @@ const ScreenshotShorthandSchema = v.pipe(
   v.object({
     screenshot: v.pipe(
       FilePathSchema,
-      v.description('スクリーンショットの保存パス'),
+      v.description('Screenshot save path'),
       v.metadata({ exampleValues: ['./screenshot.png', './output/screen.png'] }),
     ),
   }),
@@ -145,13 +145,13 @@ const ScreenshotDetailedSchema = v.pipe(
     screenshot: v.object({
       path: v.pipe(
         FilePathSchema,
-        v.description('スクリーンショットの保存パス'),
+        v.description('Screenshot save path'),
         v.metadata({ exampleValues: ['./screenshot.png', './output/screen.png'] }),
       ),
       full: v.optional(
         v.pipe(
           v.boolean(),
-          v.description('フルページスクリーンショットを取得するか'),
+          v.description('Whether to take a full-page screenshot'),
           v.metadata({ exampleValues: [true, false] }),
         ),
       ),
@@ -178,7 +178,7 @@ const ScreenshotDetailedSchema = v.pipe(
 export const ScreenshotYamlSchema = v.pipe(
   v.union([ScreenshotShorthandSchema, ScreenshotDetailedSchema]),
   v.description('スクリーンショットを取得する'),
-  v.metadata({ category: 'キャプチャ' }),
+  v.metadata({ category: 'Capture' }),
 );
 
 /**
@@ -206,12 +206,12 @@ export const EvalYamlSchema = v.pipe(
   v.object({
     eval: v.pipe(
       JsExpressionSchema,
-      v.description('実行するJavaScriptコード'),
+      v.description('JavaScript code to execute'),
       v.metadata({ exampleValues: ['console.log("hello")', 'document.title'] }),
     ),
   }),
   v.description('JavaScriptを実行する'),
-  v.metadata({ category: 'その他' }),
+  v.metadata({ category: 'Other' }),
   v.transform((input): { command: 'eval'; script: JsExpression } => ({
     command: 'eval',
     script: input.eval,

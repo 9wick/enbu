@@ -1,14 +1,14 @@
-# YAML フローリファレンス
+# YAML Flow Reference
 
-このドキュメントはvalibotスキーマから自動生成されています。
+This document is auto-generated from Valibot schemas.
 
 ## open
 
-**カテゴリ**: ナビゲーション
+**Category**: Navigation
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - open: https://example.com
@@ -18,15 +18,15 @@
 
 ## scroll
 
-**カテゴリ**: ナビゲーション
+**Category**: Navigation
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - scroll:
-    direction: <unknown>
+    direction: up
     amount: <number>
 ```
 
@@ -34,14 +34,14 @@
 
 ## scrollIntoView
 
-**カテゴリ**: ナビゲーション
+**Category**: Navigation
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- scrollIntoView: 送信ボタン
+- scrollIntoView: Submit button
 
 - scrollIntoView:
     css: "#login-button"
@@ -57,20 +57,20 @@
 
 ## click
 
-**カテゴリ**: インタラクション
+**Category**: Interaction
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- click: ログイン
+- click: Login
 
 - click:
     css: "#login-button"
 
 - click:
-    interactableText: ログイン
+    interactableText: Login
 
 - click:
     xpath: //button[@type='submit']
@@ -80,20 +80,20 @@
 
 ## hover
 
-**カテゴリ**: インタラクション
+**Category**: Interaction
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- hover: ログイン
+- hover: Login
 
 - hover:
     css: "#login-button"
 
 - hover:
-    interactableText: ログイン
+    interactableText: Login
 
 - hover:
     xpath: //button[@type='submit']
@@ -103,59 +103,59 @@
 
 ## type
 
-**カテゴリ**: 入力
+**Category**: Input
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - type:
     css: "#username"
-    value: ユーザー名
+    value: Username
 
 - type:
-    interactableText: メールアドレス
-    value: ユーザー名
+    interactableText: Email address
+    value: Username
 
 - type:
     xpath: //input[@name='email']
-    value: ユーザー名
+    value: Username
 ```
 
 ---
 
 ## fill
 
-**カテゴリ**: 入力
+**Category**: Input
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - fill:
     css: "#email"
-    value: 新しいユーザー名
+    value: New username
 
 - fill:
-    interactableText: メールアドレス
-    value: 新しいユーザー名
+    interactableText: Email address
+    value: New username
 
 - fill:
     xpath: //input[@type='password']
-    value: 新しいユーザー名
+    value: New username
 ```
 
 ---
 
 ## select
 
-**カテゴリ**: 入力
+**Category**: Input
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - select:
@@ -163,7 +163,7 @@
     value: japan
 
 - select:
-    interactableText: 国を選択
+    interactableText: Select country
     value: japan
 
 - select:
@@ -175,11 +175,11 @@
 
 ## press
 
-**カテゴリ**: インタラクション
+**Category**: Interaction
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - press: Enter
@@ -189,11 +189,11 @@
 
 ## wait
 
-**カテゴリ**: 待機
+**Category**: Wait
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - wait: <number>
@@ -202,7 +202,7 @@
     css: "#login-button"
 
 - wait:
-    anyText: ログイン
+    anyText: Login
 
 - wait:
     xpath: //button[@type='submit']
@@ -221,32 +221,32 @@
 
 ## screenshot
 
-**カテゴリ**: キャプチャ
+**Category**: Capture
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - screenshot: ./screenshot.png
 
 - screenshot:
     path: ./screenshot.png
-    full: <unknown>
+    full: <boolean>
 ```
 
 ---
 
 ## assertVisible
 
-**カテゴリ**: 検証
+**Category**: Assertion
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- assertVisible: ログインボタン
+- assertVisible: Login button
 
 - assertVisible:
     css: "#login-button"
@@ -262,14 +262,14 @@
 
 ## assertNotVisible
 
-**カテゴリ**: 検証
+**Category**: Assertion
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- assertNotVisible: エラーメッセージ
+- assertNotVisible: Error message
 
 - assertNotVisible:
     css: "#login-button"
@@ -285,20 +285,20 @@
 
 ## assertEnabled
 
-**カテゴリ**: 検証
+**Category**: Assertion
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- assertEnabled: 送信ボタン
+- assertEnabled: Submit button
 
 - assertEnabled:
     css: "#login-button"
 
 - assertEnabled:
-    interactableText: ログイン
+    interactableText: Login
 
 - assertEnabled:
     xpath: //button[@type='submit']
@@ -308,37 +308,37 @@
 
 ## assertChecked
 
-**カテゴリ**: 検証
+**Category**: Assertion
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
-- assertChecked: 利用規約に同意
+- assertChecked: Agree to terms
 
 - assertChecked:
     css: "#agree-checkbox"
-    checked: <unknown>
+    checked: <boolean>
 
 - assertChecked:
-    interactableText: 利用規約に同意
-    checked: <unknown>
+    interactableText: Agree to terms
+    checked: <boolean>
 
 - assertChecked:
     xpath: //input[@type='checkbox']
-    checked: <unknown>
+    checked: <boolean>
 ```
 
 ---
 
 ## eval
 
-**カテゴリ**: その他
+**Category**: Other
 
 
 
-### 使用例
+### Usage Examples
 
 ```yaml
 - eval: console.log("hello")

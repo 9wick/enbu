@@ -9,7 +9,7 @@
  * エラーが発生した場合はexit(1)でビルド失敗とする。
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commandSchemas } from '../parser/schemas/command-registry';
@@ -22,8 +22,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * 出力ディレクトリのパス
  */
 const CORE_ROOT = resolve(__dirname, '../..');
+const REPO_ROOT = resolve(CORE_ROOT, '../..');
 const SCHEMAS_DIR = resolve(CORE_ROOT, 'schemas');
-const DOCS_DIR = resolve(CORE_ROOT, 'docs');
+const DOCS_DIR = resolve(REPO_ROOT, 'docs');
 
 /**
  * 出力ファイルのパス

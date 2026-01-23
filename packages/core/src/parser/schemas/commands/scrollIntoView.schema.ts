@@ -15,14 +15,14 @@
  * - ScrollIntoViewCommand: スキーマから導出されるBranded Type
  */
 
-import * as v from 'valibot';
 import {
   AnyTextSelectorSchema as AnyTextBrandedSchema,
   type AnyTextSelector,
   type CssSelector,
   type XpathSelector,
 } from '@packages/agent-browser-adapter';
-import { AnySelectorSpecSchema, type AnySelectorSpecOutput } from '../selector.schema';
+import * as v from 'valibot';
+import { type AnySelectorSpecOutput, AnySelectorSpecSchema } from '../selector.schema';
 
 /**
  * 各セレクタ型を明示的に定義（transform出力の型安全性のため）
@@ -47,11 +47,11 @@ const ScrollIntoViewShorthandSchema = v.pipe(
   v.object({
     scrollIntoView: v.pipe(
       AnyTextBrandedSchema,
-      v.metadata({ exampleValues: ['送信ボタン', 'フッター'] }),
+      v.metadata({ exampleValues: ['Submit button', 'Footer'] }),
     ),
   }),
   v.metadata({
-    description: 'テキストで要素を指定してスクロール',
+    description: 'Scroll to element specified by text',
   }),
   v.transform(
     (input): ScrollIntoViewWithAnyText => ({
@@ -75,7 +75,7 @@ const ScrollIntoViewDetailedSchema = v.pipe(
     scrollIntoView: AnySelectorSpecSchema,
   }),
   v.metadata({
-    description: 'セレクタで要素を指定してスクロール',
+    description: 'Scroll to element specified by selector',
   }),
   v.transform(
     (input): ScrollIntoViewWithCss | ScrollIntoViewWithAnyText | ScrollIntoViewWithXpath => {
@@ -101,7 +101,7 @@ const ScrollIntoViewDetailedSchema = v.pipe(
 export const ScrollIntoViewYamlSchema = v.pipe(
   v.union([ScrollIntoViewShorthandSchema, ScrollIntoViewDetailedSchema]),
   v.description('要素が表示されるまでスクロール'),
-  v.metadata({ category: 'ナビゲーション' }),
+  v.metadata({ category: 'Navigation' }),
 );
 
 /**

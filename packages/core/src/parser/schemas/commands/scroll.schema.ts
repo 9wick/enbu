@@ -22,7 +22,7 @@ import * as v from 'valibot';
  */
 const ScrollDirectionSchema = v.pipe(
   v.picklist(['up', 'down', 'left', 'right']),
-  v.description('スクロール方向'),
+  v.description('Scroll direction'),
 );
 
 /**
@@ -41,7 +41,7 @@ export const ScrollYamlSchema = v.pipe(
         direction: ScrollDirectionSchema,
         amount: v.pipe(
           v.number(),
-          v.description('スクロール量（ピクセル）'),
+          v.description('Scroll amount (pixels)'),
           v.metadata({ exampleValues: [100, 500] }),
         ),
       }),
@@ -54,7 +54,7 @@ export const ScrollYamlSchema = v.pipe(
     ),
   }),
   v.description('ページをスクロールする'),
-  v.metadata({ category: 'ナビゲーション' }),
+  v.metadata({ category: 'Navigation' }),
   v.transform(
     (
       input,

@@ -5,8 +5,8 @@
  * スキーマの構造からYAML例を自動生成し、exampleValuesで具体的な値を埋める。
  */
 
-import type { GenericSchema } from 'valibot';
 import { match, P } from 'ts-pattern';
+import type { GenericSchema } from 'valibot';
 import { stringify } from 'yaml';
 
 /**
@@ -290,6 +290,37 @@ const buildUnionStructureInternal = (
 };
 
 /**
+ * picklist型スキーマから構造を構築（内部実装）
+ *
+ * @param schema - スキーマ（unknown型として処理）
+ * @returns 最初のオプション、またはundefined
+ */
+const buildPicklistStructureInternal = (schema: unknown): string | undefined => {
+  return match(schema)
+    .with({ type: 'picklist', options: P.array().select() }, (options) => {
+      if (options.length > 0) {
+        return String(options[0]);
+      }
+      return undefined;
+    })
+    .otherwise(() => undefined);
+};
+
+/**
+ * optional型スキーマから構造を構築（内部実装）
+ *
+ * @param schema - スキーマ（unknown型として処理）
+ * @returns ラップされた型の構造、またはundefined
+ */
+const buildOptionalStructureInternal = (schema: unknown): unknown | undefined => {
+  return match(schema)
+    .with({ type: 'optional', wrapped: P.select() }, (wrapped) => {
+      return buildStructureInternal(wrapped);
+    })
+    .otherwise(() => undefined);
+};
+
+/**
  * プリミティブ型スキーマから構造を構築（内部実装）
  *
  * @param schema - スキーマ（unknown型として処理）
@@ -332,6 +363,18 @@ const buildStructureInternal = (schema: unknown): unknown => {
   const unionResult = buildUnionStructureInternal(schema);
   if (unionResult !== undefined) {
     return unionResult;
+  }
+
+  // optional型
+  const optionalResult = buildOptionalStructureInternal(schema);
+  if (optionalResult !== undefined) {
+    return optionalResult;
+  }
+
+  // picklist型
+  const picklistResult = buildPicklistStructureInternal(schema);
+  if (picklistResult !== undefined) {
+    return picklistResult;
   }
 
   // プリミティブ型
@@ -469,11 +512,11 @@ const generateCommandDoc = (schemaInfo: SchemaInfo): string => {
 
   return `## ${schemaInfo.name}
 
-**カテゴリ**: ${schemaInfo.category}
+**Category**: ${schemaInfo.category}
 
 ${description}
 
-### 使用例
+### Usage Examples
 
 \`\`\`yaml
 ${examples.join('\n\n')}
@@ -488,9 +531,9 @@ ${examples.join('\n\n')}
  * @returns 完全なMarkdownドキュメント
  */
 const generateMarkdown = (schemas: SchemaInfo[]): string => {
-  const header = `# YAML フローリファレンス
+  const header = `# YAML Flow Reference
 
-このドキュメントはvalibotスキーマから自動生成されています。
+This document is auto-generated from Valibot schemas.
 
 `;
 
@@ -529,9 +572,9 @@ const getCategory = (schema: GenericSchema): string => {
   return match(schemaAsUnknown)
     .with({ pipe: P.array().select() }, (pipe) => {
       const category = extractCategoryFromPipe(pipe);
-      return category ?? getMetadataInternal(schema).category ?? 'その他';
+      return category ?? getMetadataInternal(schema).category ?? 'Other';
     })
-    .otherwise(() => getMetadataInternal(schema).category ?? 'その他');
+    .otherwise(() => getMetadataInternal(schema).category ?? 'Other');
 };
 
 /**

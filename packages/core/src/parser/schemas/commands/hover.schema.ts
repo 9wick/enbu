@@ -15,16 +15,16 @@
  * - HoverCommand: スキーマから導出されるBranded Type
  */
 
-import * as v from 'valibot';
 import {
+  type CssSelector,
   InteractableTextSelectorSchema as InteractableTextBrandedSchema,
   type InteractableTextSelector,
-  type CssSelector,
   type XpathSelector,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 import {
-  InteractableSelectorSpecSchema,
   type InteractableSelectorSpecOutput,
+  InteractableSelectorSpecSchema,
 } from '../selector.schema';
 
 /**
@@ -48,13 +48,10 @@ type HoverWithXpath = { command: 'hover'; xpath: XpathSelector };
  */
 const HoverShorthandSchema = v.pipe(
   v.object({
-    hover: v.pipe(
-      InteractableTextBrandedSchema,
-      v.metadata({ exampleValues: ['ログイン', 'メニュー'] }),
-    ),
+    hover: v.pipe(InteractableTextBrandedSchema, v.metadata({ exampleValues: ['Login', 'Menu'] })),
   }),
   v.metadata({
-    description: 'テキストで要素を指定してホバー',
+    description: 'Hover over element specified by text',
   }),
   v.transform(
     (input): HoverWithInteractableText => ({
@@ -78,7 +75,7 @@ const HoverDetailedSchema = v.pipe(
     hover: InteractableSelectorSpecSchema,
   }),
   v.metadata({
-    description: 'セレクタで要素を指定してホバー',
+    description: 'Hover over element specified by selector',
   }),
   v.transform((input): HoverWithCss | HoverWithInteractableText | HoverWithXpath => {
     const selector: InteractableSelectorSpecOutput = input.hover;
@@ -102,7 +99,7 @@ const HoverDetailedSchema = v.pipe(
 export const HoverYamlSchema = v.pipe(
   v.union([HoverShorthandSchema, HoverDetailedSchema]),
   v.description('要素にホバーする'),
-  v.metadata({ category: 'インタラクション' }),
+  v.metadata({ category: 'Interaction' }),
 );
 
 /**

@@ -19,15 +19,15 @@
  * - TypeCommand, FillCommand, SelectCommand: スキーマから導出されるBranded Type
  */
 
-import * as v from 'valibot';
 import {
+  type CssSelector,
+  CssSelectorSchema,
   InteractableTextSelectorSchema as InteractableTextBrandedSchema,
   type InteractableTextSelector,
-  type CssSelector,
   type XpathSelector,
-  CssSelectorSchema,
   XpathSelectorSchema,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 
 // ============================================================================
 // TypeCommand
@@ -51,8 +51,8 @@ type TypeWithXpath = { command: 'type'; xpath: XpathSelector; value: string };
  */
 const TypeValueSchema = v.pipe(
   v.string(),
-  v.description('入力するテキスト'),
-  v.metadata({ exampleValues: ['ユーザー名', 'test@example.com'] }),
+  v.description('Text to input'),
+  v.metadata({ exampleValues: ['Username', 'test@example.com'] }),
 );
 
 /**
@@ -63,13 +63,13 @@ const TypeCssSchema = v.pipe(
     type: v.object({
       css: v.pipe(
         CssSelectorSchema,
-        v.description('CSSセレクタ形式で要素を指定'),
+        v.description('Specify element by CSS selector'),
         v.metadata({ exampleValues: ['#username', '.email-input'] }),
       ),
       value: TypeValueSchema,
     }),
   }),
-  v.metadata({ description: 'CSSセレクタで要素を指定して入力' }),
+  v.metadata({ description: 'Input to element specified by CSS selector' }),
   v.transform(
     (input): TypeWithCss => ({
       command: 'type',
@@ -87,13 +87,13 @@ const TypeInteractableTextSchema = v.pipe(
     type: v.object({
       interactableText: v.pipe(
         InteractableTextBrandedSchema,
-        v.description('インタラクティブ要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['メールアドレス', 'ユーザー名'] }),
+        v.description('Search for interactive elements by text content'),
+        v.metadata({ exampleValues: ['Email address', 'Username'] }),
       ),
       value: TypeValueSchema,
     }),
   }),
-  v.metadata({ description: 'テキストで要素を指定して入力' }),
+  v.metadata({ description: 'Input to element specified by text' }),
   v.transform(
     (input): TypeWithInteractableText => ({
       command: 'type',
@@ -111,13 +111,13 @@ const TypeXpathSchema = v.pipe(
     type: v.object({
       xpath: v.pipe(
         XpathSelectorSchema,
-        v.description('XPath形式で要素を指定'),
+        v.description('Specify element by XPath'),
         v.metadata({ exampleValues: ["//input[@name='email']"] }),
       ),
       value: TypeValueSchema,
     }),
   }),
-  v.metadata({ description: 'XPathで要素を指定して入力' }),
+  v.metadata({ description: 'Input to element specified by XPath' }),
   v.transform(
     (input): TypeWithXpath => ({
       command: 'type',
@@ -138,7 +138,7 @@ const TypeXpathSchema = v.pipe(
 export const TypeYamlSchema = v.pipe(
   v.union([TypeCssSchema, TypeInteractableTextSchema, TypeXpathSchema]),
   v.description('要素にテキストを入力する（既存テキストに追加）'),
-  v.metadata({ category: '入力' }),
+  v.metadata({ category: 'Input' }),
 );
 
 /**
@@ -173,8 +173,8 @@ type FillWithXpath = { command: 'fill'; xpath: XpathSelector; value: string };
  */
 const FillValueSchema = v.pipe(
   v.string(),
-  v.description('入力するテキスト（既存テキストをクリアして入力）'),
-  v.metadata({ exampleValues: ['新しいユーザー名', 'new@example.com'] }),
+  v.description('Text to input (clears existing text)'),
+  v.metadata({ exampleValues: ['New username', 'new@example.com'] }),
 );
 
 /**
@@ -185,13 +185,13 @@ const FillCssSchema = v.pipe(
     fill: v.object({
       css: v.pipe(
         CssSelectorSchema,
-        v.description('CSSセレクタ形式で要素を指定'),
+        v.description('Specify element by CSS selector'),
         v.metadata({ exampleValues: ['#email', '.password-input'] }),
       ),
       value: FillValueSchema,
     }),
   }),
-  v.metadata({ description: 'CSSセレクタで要素を指定して入力' }),
+  v.metadata({ description: 'Fill element specified by CSS selector' }),
   v.transform(
     (input): FillWithCss => ({
       command: 'fill',
@@ -209,13 +209,13 @@ const FillInteractableTextSchema = v.pipe(
     fill: v.object({
       interactableText: v.pipe(
         InteractableTextBrandedSchema,
-        v.description('インタラクティブ要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['メールアドレス', 'パスワード'] }),
+        v.description('Search for interactive elements by text content'),
+        v.metadata({ exampleValues: ['Email address', 'Password'] }),
       ),
       value: FillValueSchema,
     }),
   }),
-  v.metadata({ description: 'テキストで要素を指定して入力' }),
+  v.metadata({ description: 'Fill element specified by text' }),
   v.transform(
     (input): FillWithInteractableText => ({
       command: 'fill',
@@ -233,13 +233,13 @@ const FillXpathSchema = v.pipe(
     fill: v.object({
       xpath: v.pipe(
         XpathSelectorSchema,
-        v.description('XPath形式で要素を指定'),
+        v.description('Specify element by XPath'),
         v.metadata({ exampleValues: ["//input[@type='password']"] }),
       ),
       value: FillValueSchema,
     }),
   }),
-  v.metadata({ description: 'XPathで要素を指定して入力' }),
+  v.metadata({ description: 'Fill element specified by XPath' }),
   v.transform(
     (input): FillWithXpath => ({
       command: 'fill',
@@ -260,7 +260,7 @@ const FillXpathSchema = v.pipe(
 export const FillYamlSchema = v.pipe(
   v.union([FillCssSchema, FillInteractableTextSchema, FillXpathSchema]),
   v.description('要素にテキストを入力する（既存テキストをクリアして入力）'),
-  v.metadata({ category: '入力' }),
+  v.metadata({ category: 'Input' }),
 );
 
 /**
@@ -295,7 +295,7 @@ type SelectWithXpath = { command: 'select'; xpath: XpathSelector; value: string 
  */
 const SelectValueSchema = v.pipe(
   v.string(),
-  v.description('選択するオプションの値'),
+  v.description('Option value to select'),
   v.metadata({ exampleValues: ['japan', 'option1'] }),
 );
 
@@ -307,13 +307,13 @@ const SelectCssSchema = v.pipe(
     select: v.object({
       css: v.pipe(
         CssSelectorSchema,
-        v.description('CSSセレクタ形式で要素を指定'),
+        v.description('Specify element by CSS selector'),
         v.metadata({ exampleValues: ['#country', '.language-select'] }),
       ),
       value: SelectValueSchema,
     }),
   }),
-  v.metadata({ description: 'CSSセレクタで要素を指定して選択' }),
+  v.metadata({ description: 'Select option from element specified by CSS selector' }),
   v.transform(
     (input): SelectWithCss => ({
       command: 'select',
@@ -331,13 +331,13 @@ const SelectInteractableTextSchema = v.pipe(
     select: v.object({
       interactableText: v.pipe(
         InteractableTextBrandedSchema,
-        v.description('インタラクティブ要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['国を選択', '言語'] }),
+        v.description('Search for interactive elements by text content'),
+        v.metadata({ exampleValues: ['Select country', 'Language'] }),
       ),
       value: SelectValueSchema,
     }),
   }),
-  v.metadata({ description: 'テキストで要素を指定して選択' }),
+  v.metadata({ description: 'Select option from element specified by text' }),
   v.transform(
     (input): SelectWithInteractableText => ({
       command: 'select',
@@ -355,13 +355,13 @@ const SelectXpathSchema = v.pipe(
     select: v.object({
       xpath: v.pipe(
         XpathSelectorSchema,
-        v.description('XPath形式で要素を指定'),
+        v.description('Specify element by XPath'),
         v.metadata({ exampleValues: ["//select[@name='country']"] }),
       ),
       value: SelectValueSchema,
     }),
   }),
-  v.metadata({ description: 'XPathで要素を指定して選択' }),
+  v.metadata({ description: 'Select option from element specified by XPath' }),
   v.transform(
     (input): SelectWithXpath => ({
       command: 'select',
@@ -382,7 +382,7 @@ const SelectXpathSchema = v.pipe(
 export const SelectYamlSchema = v.pipe(
   v.union([SelectCssSchema, SelectInteractableTextSchema, SelectXpathSchema]),
   v.description('セレクトボックスからオプションを選択する'),
-  v.metadata({ category: '入力' }),
+  v.metadata({ category: 'Input' }),
 );
 
 /**

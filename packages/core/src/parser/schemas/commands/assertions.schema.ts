@@ -25,24 +25,24 @@
  * - Assert*Command: スキーマから導出されるBranded Type
  */
 
-import * as v from 'valibot';
 import {
   AnyTextSelectorSchema as AnyTextBrandedSchema,
-  InteractableTextSelectorSchema as InteractableTextBrandedSchema,
-  CssSelectorSchema,
-  XpathSelectorSchema,
   type AnyTextSelector,
-  type InteractableTextSelector,
   type CssSelector,
+  CssSelectorSchema,
+  InteractableTextSelectorSchema as InteractableTextBrandedSchema,
+  type InteractableTextSelector,
   type XpathSelector,
+  XpathSelectorSchema,
 } from '@packages/agent-browser-adapter';
-import {
-  AnySelectorSpecSchema,
-  InteractableSelectorSpecSchema,
-  type AnySelectorSpecOutput,
-  type InteractableSelectorSpecOutput,
-} from '../selector.schema';
+import * as v from 'valibot';
 import { UseDefault } from '../../../types/utility-types';
+import {
+  type AnySelectorSpecOutput,
+  AnySelectorSpecSchema,
+  type InteractableSelectorSpecOutput,
+  InteractableSelectorSpecSchema,
+} from '../selector.schema';
 
 // ============================================================================
 // AssertVisible
@@ -71,7 +71,7 @@ const AssertVisibleShorthandSchema = v.pipe(
   v.object({
     assertVisible: v.pipe(
       AnyTextBrandedSchema,
-      v.metadata({ exampleValues: ['ログインボタン', '送信完了'] }),
+      v.metadata({ exampleValues: ['Login button', 'Submit completed'] }),
     ),
   }),
   v.metadata({
@@ -123,7 +123,7 @@ const AssertVisibleDetailedSchema = v.pipe(
 export const AssertVisibleYamlSchema = v.pipe(
   v.union([AssertVisibleShorthandSchema, AssertVisibleDetailedSchema]),
   v.description('要素が表示されていることを検証する'),
-  v.metadata({ category: '検証' }),
+  v.metadata({ category: 'Assertion' }),
 );
 
 /**
@@ -165,7 +165,7 @@ const AssertNotVisibleShorthandSchema = v.pipe(
   v.object({
     assertNotVisible: v.pipe(
       AnyTextBrandedSchema,
-      v.metadata({ exampleValues: ['エラーメッセージ', '非表示要素'] }),
+      v.metadata({ exampleValues: ['Error message', 'Hidden element'] }),
     ),
   }),
   v.metadata({
@@ -222,7 +222,7 @@ const AssertNotVisibleDetailedSchema = v.pipe(
 export const AssertNotVisibleYamlSchema = v.pipe(
   v.union([AssertNotVisibleShorthandSchema, AssertNotVisibleDetailedSchema]),
   v.description('要素が非表示であることを検証する'),
-  v.metadata({ category: '検証' }),
+  v.metadata({ category: 'Assertion' }),
 );
 
 /**
@@ -267,7 +267,7 @@ const AssertEnabledShorthandSchema = v.pipe(
   v.object({
     assertEnabled: v.pipe(
       InteractableTextBrandedSchema,
-      v.metadata({ exampleValues: ['送信ボタン', '入力フィールド'] }),
+      v.metadata({ exampleValues: ['Submit button', 'Input field'] }),
     ),
   }),
   v.metadata({
@@ -324,7 +324,7 @@ const AssertEnabledDetailedSchema = v.pipe(
 export const AssertEnabledYamlSchema = v.pipe(
   v.union([AssertEnabledShorthandSchema, AssertEnabledDetailedSchema]),
   v.description('要素が有効であることを検証する'),
-  v.metadata({ category: '検証' }),
+  v.metadata({ category: 'Assertion' }),
 );
 
 /**
@@ -382,7 +382,7 @@ const AssertCheckedShorthandSchema = v.pipe(
   v.object({
     assertChecked: v.pipe(
       InteractableTextBrandedSchema,
-      v.metadata({ exampleValues: ['利用規約に同意', 'メール通知を有効化'] }),
+      v.metadata({ exampleValues: ['Agree to terms', 'Enable email notifications'] }),
     ),
   }),
   v.metadata({
@@ -437,7 +437,7 @@ const AssertCheckedInteractableTextSchema = v.pipe(
       interactableText: v.pipe(
         InteractableTextBrandedSchema,
         v.description('インタラクティブ要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['利用規約に同意', 'メール通知を有効化'] }),
+        v.metadata({ exampleValues: ['Agree to terms', 'Enable email notifications'] }),
       ),
       checked: CheckedFieldSchema,
     }),
@@ -500,7 +500,7 @@ const AssertCheckedDetailedSchema = v.union([
 export const AssertCheckedYamlSchema = v.pipe(
   v.union([AssertCheckedShorthandSchema, AssertCheckedDetailedSchema]),
   v.description('チェックボックス/ラジオボタンの状態を検証する'),
-  v.metadata({ category: '検証' }),
+  v.metadata({ category: 'Assertion' }),
 );
 
 /**

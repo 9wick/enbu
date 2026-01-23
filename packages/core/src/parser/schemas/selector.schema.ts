@@ -15,13 +15,13 @@
  * E2Eテストでは再現性がないため削除された。
  */
 
-import * as v from 'valibot';
 import {
   AnyTextSelectorSchema as AnyTextBrandedSchema,
   CssSelectorSchema as CssBrandedSchema,
   InteractableTextSelectorSchema as InteractableTextBrandedSchema,
   XpathSelectorSchema as XpathBrandedSchema,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 
 /**
  * CSSセレクタスキーマ
@@ -34,7 +34,7 @@ import {
 const CssSelectorSchema = v.object({
   css: v.pipe(
     CssBrandedSchema,
-    v.description('CSSセレクタ形式で要素を指定'),
+    v.description('Specify element by CSS selector'),
     v.metadata({ exampleValues: ['#login-button', '.submit-btn'] }),
   ),
 });
@@ -44,15 +44,15 @@ const CssSelectorSchema = v.object({
  *
  * インタラクティブ要素（ボタン、リンク、入力欄等）をテキスト内容で検索する。
  * click, fill, type, hover, select, assertEnabled, assertChecked で使用。
- * 例: { interactableText: "ログイン" }
+ * 例: { interactableText: "Login" }
  *
  * 出力はBranded Type (InteractableTextSelector)
  */
 const InteractableTextSelectorSchema = v.object({
   interactableText: v.pipe(
     InteractableTextBrandedSchema,
-    v.description('インタラクティブ要素をテキスト内容で検索'),
-    v.metadata({ exampleValues: ['ログイン', '送信する'] }),
+    v.description('Search for interactive elements by text content'),
+    v.metadata({ exampleValues: ['Login', 'Submit'] }),
   ),
 });
 
@@ -68,8 +68,8 @@ const InteractableTextSelectorSchema = v.object({
 const AnyTextSelectorSchema = v.object({
   anyText: v.pipe(
     AnyTextBrandedSchema,
-    v.description('全要素をテキスト内容で検索'),
-    v.metadata({ exampleValues: ['Welcome', 'エラーメッセージ'] }),
+    v.description('Search for any elements by text content'),
+    v.metadata({ exampleValues: ['Welcome', 'Error message'] }),
   ),
 });
 
@@ -84,7 +84,7 @@ const AnyTextSelectorSchema = v.object({
 const XpathSelectorSchema = v.object({
   xpath: v.pipe(
     XpathBrandedSchema,
-    v.description('XPath形式で要素を指定'),
+    v.description('Specify element by XPath'),
     v.metadata({ exampleValues: ["//button[@type='submit']"] }),
   ),
 });

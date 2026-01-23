@@ -18,17 +18,17 @@
  * - JSON Schema生成には typeMode: 'input' を使用
  */
 
-import * as v from 'valibot';
 import {
-  type AnyTextSelector,
-  type CssSelector,
-  type XpathSelector,
-  type JsExpression,
-  CssSelectorSchema as CssBrandedSchema,
   AnyTextSelectorSchema as AnyTextBrandedSchema,
-  XpathSelectorSchema as XpathBrandedSchema,
+  type AnyTextSelector,
+  CssSelectorSchema as CssBrandedSchema,
+  type CssSelector,
+  type JsExpression,
   JsExpressionSchema,
+  XpathSelectorSchema as XpathBrandedSchema,
+  type XpathSelector,
 } from '@packages/agent-browser-adapter';
+import * as v from 'valibot';
 
 // ============================================================================
 // LoadState
@@ -43,7 +43,7 @@ import {
  */
 const LoadStateSchema = v.pipe(
   v.picklist(['load', 'domcontentloaded', 'networkidle']),
-  v.description('ページの読み込み状態'),
+  v.description('Page load state'),
 );
 
 type LoadState = v.InferOutput<typeof LoadStateSchema>;
@@ -62,12 +62,12 @@ const WaitMsSchema = v.pipe(
   v.object({
     wait: v.pipe(
       v.number(),
-      v.description('待機時間（ミリ秒）'),
+      v.description('Wait time (milliseconds)'),
       v.metadata({ exampleValues: [1000, 3000] }),
     ),
   }),
   v.metadata({
-    description: '指定ミリ秒待機',
+    description: 'Wait for specified milliseconds',
   }),
   v.transform(
     (input): WaitMs => ({
@@ -89,13 +89,13 @@ const WaitCssSchema = v.pipe(
     wait: v.object({
       css: v.pipe(
         CssBrandedSchema,
-        v.description('CSSセレクタ形式で要素を指定'),
+        v.description('Specify element by CSS selector'),
         v.metadata({ exampleValues: ['#login-button', '.submit-btn'] }),
       ),
     }),
   }),
   v.metadata({
-    description: 'CSSセレクタで指定した要素が表示されるまで待機',
+    description: 'Wait until element specified by CSS selector is visible',
   }),
   v.transform(
     (input): WaitCss => ({
@@ -117,13 +117,13 @@ const WaitAnyTextSchema = v.pipe(
     wait: v.object({
       anyText: v.pipe(
         AnyTextBrandedSchema,
-        v.description('全要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['ログイン', '送信する'] }),
+        v.description('Search for any elements by text content'),
+        v.metadata({ exampleValues: ['Login', 'Submit'] }),
       ),
     }),
   }),
   v.metadata({
-    description: 'テキストで指定した要素が表示されるまで待機',
+    description: 'Wait until element specified by text is visible',
   }),
   v.transform(
     (input): WaitAnyText => ({
@@ -145,13 +145,13 @@ const WaitXpathSchema = v.pipe(
     wait: v.object({
       xpath: v.pipe(
         XpathBrandedSchema,
-        v.description('XPath形式で要素を指定'),
+        v.description('Specify element by XPath'),
         v.metadata({ exampleValues: ["//button[@type='submit']"] }),
       ),
     }),
   }),
   v.metadata({
-    description: 'XPathで指定した要素が表示されるまで待機',
+    description: 'Wait until element specified by XPath is visible',
   }),
   v.transform(
     (input): WaitXpath => ({
@@ -177,7 +177,7 @@ const WaitLoadSchema = v.pipe(
     }),
   }),
   v.metadata({
-    description: 'ページの読み込み状態が指定の状態になるまで待機',
+    description: 'Wait until page reaches specified load state',
   }),
   v.transform(
     (input): WaitLoad => ({
@@ -198,13 +198,13 @@ const WaitUrlSchema = v.pipe(
     wait: v.object({
       url: v.pipe(
         v.string(),
-        v.description('待機するURL（部分一致）'),
+        v.description('URL to wait for (partial match)'),
         v.metadata({ exampleValues: ['https://example.com', '/dashboard'] }),
       ),
     }),
   }),
   v.metadata({
-    description: 'URLが指定の文字列を含むまで待機',
+    description: 'Wait until URL contains specified string',
   }),
   v.transform(
     (input): WaitUrl => ({
@@ -226,13 +226,13 @@ const WaitFnSchema = v.pipe(
     wait: v.object({
       fn: v.pipe(
         JsExpressionSchema,
-        v.description('待機条件の関数'),
+        v.description('Wait condition function'),
         v.metadata({ exampleValues: ['() => document.readyState === "complete"'] }),
       ),
     }),
   }),
   v.metadata({
-    description: '関数が真を返すまで待機',
+    description: 'Wait until function returns true',
   }),
   v.transform(
     (input): WaitFn => ({
@@ -265,7 +265,7 @@ export const WaitYamlSchema = v.pipe(
     WaitFnSchema,
   ]),
   v.description('指定の条件まで待機する'),
-  v.metadata({ category: '待機' }),
+  v.metadata({ category: 'Wait' }),
 );
 
 /**

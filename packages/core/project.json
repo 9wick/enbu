@@ -8,7 +8,7 @@
     "generate-docs": {
       "executor": "nx:run-commands",
       "dependsOn": ["generate-docs"],
-      "outputs": ["{projectRoot}/schemas", "{projectRoot}/docs"],
+      "outputs": ["{projectRoot}/schemas", "{workspaceRoot}/docs"],
       "options": {
         "command": "pnpm exec tsx src/generator/main.ts",
         "cwd": "packages/core"
