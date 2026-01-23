@@ -7,3 +7,4 @@ onlyBuiltDependencies:
   - agent-browser
   - esbuild
   - nx
+  - unrs-resolver
