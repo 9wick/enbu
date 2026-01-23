@@ -1,68 +1,69 @@
-リリース手順
+# リリース手順
 
-1. リリース実行コマンド
+## 前提条件
 
-バージョン指定方法
+- npmにログインしておく（2FAが有効な場合は認証アプリを用意）
 
-semverキーワードで指定
+```bash
+npm login
+```
 
-# パッチバージョン (1.0.0 → 1.0.1)
-pnpm exec nx release --version=patch
+## リリースコマンド
 
-# マイナーバージョン (1.0.0 → 1.1.0)
-pnpm exec nx release --version=minor
+### 1. バージョンアップとタグ作成
 
-# メジャーバージョン (1.0.0 → 2.0.0)
-pnpm exec nx release --version=major
-
-プレリリース
-
-# プレリリース (1.0.0 → 1.0.1-0 または 1.0.1-alpha.0)
-pnpm exec nx release --version=prerelease
-
-# 特定のプレリリースタグ
-pnpm exec nx release --version=prerelease --preid=beta
-# 結果: 1.0.0 → 1.0.1-beta.0
-
-明示的なバージョン
-
-pnpm exec nx release --version=2.5.0
-
-自動判定（Conventional Commits）
-
-# コミットメッセージから自動判定
+```bash
+# Conventional Commitsから自動判定してリリース（推奨）
 pnpm exec nx release
 
-# ドライラン（実際には何も変更しない、確認用）
+# 事前確認（dry-run）
 pnpm exec nx release --dry-run
+```
 
-# 本番リリース
-pnpm exec nx release
+**重要：** `conventionalCommits: true` のため、コミット履歴から自動判定されます
+- `feat:` → minor バージョンアップ（例: 0.3.0 → 0.4.0）
+- `fix:` → patch バージョンアップ（例: 0.3.0 → 0.3.1）
+- 明示的にバージョンを指定しても、Conventional Commitsの判定が優先される場合があります
 
-2. 設定の詳細 (nx.json:65-91)
+### 2. npm公開
 
-| 項目               | 設定値                           |
-  |--------------------|----------------------------------|
-| 対象プロジェクト   | cli のみ                         |
-| バージョニング     | Conventional Commits ベース      |
-| タグパターン       | v{version} (例: v1.2.3)          |
-| コミットメッセージ | chore(release): {version}        |
-| CHANGELOG          | apps/cli/CHANGELOG.md に自動生成 |
+```bash
+# 2FAが必要な場合（認証アプリから6桁のコードを取得）
+pnpm exec nx release publish --otp=123456
+```
 
-3. リリースフロー
+**注意：** OTPコードは30秒で期限切れになるため、取得後すぐに実行してください
 
-1. pnpm nx run-many -t build -p cli が自動実行（preVersionCommand）
+### 3. Gitプッシュ
+
+```bash
+# コミットとタグの両方をプッシュ
+git push && git push --tags
+```
+
+## 実行内容
+
+`pnpm exec nx release` は以下を自動実行します：
+
+1. ビルド実行（`pnpm nx run-many -t build -p cli`）
 2. Conventional Commitsから次バージョンを決定
-3. CHANGELOG.md を更新
-4. Gitコミット＆タグ作成
+3. `apps/cli/package.json` のバージョン更新
+4. `apps/cli/CHANGELOG.md` の更新
+5. Gitコミット（`chore(release): {version}`）
+6. Gitタグ作成（`v{version}`）
 
-4. オプション
+## トラブルシューティング
 
-# 特定バージョンを指定
-pnpm exec nx release --version=1.0.0
+### 認証エラー
 
-# 最初のリリース時
-pnpm exec nx release --first-release
+```bash
+npm login
+```
 
-# リリース後にpublishまで行う場合
-pnpm exec nx release publish
+### 2FA（OTP）エラー
+
+認証アプリから6桁のコードを取得して `--otp` オプションで指定：
+
+```bash
+pnpm exec nx release publish --otp=123456
+```
