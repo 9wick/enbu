@@ -1,6 +1,6 @@
 # enbu
 
-[日本語版 README](./README-ja.md)
+[日本語版 README](https://github.com/9wick/enbu/README-ja.md)
 
 > In martial arts, Enbu (演武) is a choreographed demonstration where practitioners perform predefined sequences of techniques. Similarly, Enbu lets you define test sequences in YAML and performs them in the browser — a rehearsal before production.
 
