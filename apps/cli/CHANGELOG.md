@@ -1,3 +1,9 @@
+## 0.4.0 (2026-01-23)
+
+### 🚀 Features
+
+- add @nx/js dependency to devDependencies ([f4f3054](https://github.com/9wick/enbu/commit/f4f3054))
+
 ## 0.2.0 (2026-01-18)
 
 ### 🚀 Features
