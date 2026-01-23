@@ -50,10 +50,10 @@ steps:
   - open: https://example.com/login
   - click: ログイン
   - fill:
-      selector: メールアドレス
+      interactableText: メールアドレス
       value: user@example.com
   - fill:
-      selector: パスワード
+      interactableText: パスワード
       value: password123
   - click: 送信
   - assertVisible: ダッシュボード
@@ -82,12 +82,12 @@ steps:
 
 ```yaml
 steps:
-  # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
+  # テキストセレクタ（テキスト、ラベル、ARIAロール等）
   - click: ログイン
 
   # CSSセレクタ
-  - click: "#submit-button"
-  - click: "[data-testid='add-to-cart']"
+  - click: 
+      css: "#submit-button"
 ```
 
 ### テキスト入力
@@ -96,12 +96,12 @@ steps:
 steps:
   # fill: 入力欄をクリアしてから入力
   - fill:
-      selector: ユーザー名
+      interactableText: ユーザー名
       value: 山田太郎
 
   # type: 既存テキストに追記
   - type:
-      selector: 検索欄
+      interactableText: 検索欄
       value: 追加テキスト
 ```
 
@@ -134,7 +134,7 @@ steps:
 
   # チェックボックスがチェックされていないことを確認
   - assertChecked:
-      selector: オプション
+      interactableText: オプション
       checked: false
 ```
 
@@ -150,15 +150,6 @@ steps:
       path: ./screenshots/fullpage.png
       full: true
 ```
-
-### スナップショット（デバッグ用）
-
-```yaml
-steps:
-  - snapshot: {}
-```
-
-現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
 
 ### スクロール
 
@@ -182,11 +173,11 @@ steps:
 
   # 要素が表示されるまで待機
   - wait:
-      selector: "#loading-complete"
+      css: "#loading-complete"
 
   # テキストが表示されるまで待機
   - wait:
-      text: 読み込み完了
+      anyText: 読み込み完了
 
   # URLが変わるまで待機
   - wait:
@@ -243,9 +234,11 @@ steps:
 フロー内で環境変数を使用できます：
 
 ```yaml
+env:
+  PASSWORD: secret123
 steps:
   - fill:
-      selector: パスワード
+      interactableText: パスワード
       value: ${PASSWORD}
 ```
 
@@ -263,8 +256,12 @@ npx enbu --env PASSWORD=secret123
 ```yaml
 env:
   BASE_URL: https://staging.example.com
+  PASSWORD: secret123
 steps:
   - open: ${BASE_URL}/login
+  - fill:
+      interactableText: パスワード
+      value: ${PASSWORD}
 ```
 
 ## CLI オプション

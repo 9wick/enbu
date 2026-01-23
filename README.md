@@ -52,10 +52,10 @@ steps:
   - open: https://example.com/login
   - click: Login
   - fill:
-      selector: Email
+      interactableText: Email
       value: user@example.com
   - fill:
-      selector: Password
+      interactableText: Password
       value: password123
   - click: Submit
   - assertVisible: Dashboard
@@ -84,12 +84,12 @@ steps:
 
 ```yaml
 steps:
-  # Semantic selector (text, label, ARIA role, etc.)
+  # Text selector
   - click: Login
 
   # CSS selector
-  - click: "#submit-button"
-  - click: "[data-testid='add-to-cart']"
+  - click:
+      css: "#submit-button"
 ```
 
 ### Text Input
@@ -98,12 +98,12 @@ steps:
 steps:
   # fill: Clear input field then type
   - fill:
-      selector: Username
+      interactableText: Username
       value: John Doe
 
   # type: Append to existing text
   - type:
-      selector: Search box
+      interactableText: Search box
       value: Additional text
 ```
 
@@ -136,7 +136,7 @@ steps:
 
   # Assert checkbox is not checked
   - assertChecked:
-      selector: Optional feature
+      interactableText: Optional feature
       checked: false
 ```
 
@@ -152,15 +152,6 @@ steps:
       path: ./screenshots/fullpage.png
       full: true
 ```
-
-### Snapshot (for debugging)
-
-```yaml
-steps:
-  - snapshot: {}
-```
-
-Captures the accessibility tree of the current page. Useful for debugging element selection.
 
 ### Scroll
 
@@ -184,11 +175,11 @@ steps:
 
   # Wait for element to be visible
   - wait:
-      selector: "#loading-complete"
+      css: "#loading-complete"
 
   # Wait for text to appear
   - wait:
-      text: Loading complete
+      anyText: Loading complete
 
   # Wait for URL to change
   - wait:
@@ -245,9 +236,11 @@ Each example includes a working Express server and `.enbuflow/` test files. See 
 You can use environment variables in your flows:
 
 ```yaml
+env:
+  PASSWORD: secret123
 steps:
   - fill:
-      selector: Password
+      interactableText: Password
       value: ${PASSWORD}
 ```
 
@@ -265,8 +258,12 @@ npx enbu --env PASSWORD=secret123
 ```yaml
 env:
   BASE_URL: https://staging.example.com
+  PASSWORD: secret123
 steps:
   - open: ${BASE_URL}/login
+  - fill:
+      interactableText: Password
+      value: ${PASSWORD}
 ```
 
 ## CLI Options

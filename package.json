@@ -20,7 +20,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:examples": "pnpm --filter '@example/*' --workspace-concurrency=4 run test",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "validate-readme-samples": "tsx scripts/validate-readme-samples.ts"
   },
   "keywords": [],
   "author": "",
