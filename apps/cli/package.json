@@ -1,6 +1,6 @@
 {
   "name": "enbu",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A simple YAML-based E2E testing framework powered by agent-browser. Define test flows in human-readable YAML and perform them in the browser.",
   "keywords": [
     "e2e",
@@ -14,7 +14,7 @@
     "selenium-alternative",
     "playwright-alternative"
   ],
-  "homepage": "https://github.com/9wick/enbu/tree/main/apps/cli#readme",
+  "homepage": "https://github.com/9wick/enbu",
   "bugs": {
     "url": "https://github.com/9wick/enbu/issues"
   },
