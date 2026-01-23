@@ -1,0 +1,161 @@
+flowchart TD
+
+    subgraph packages["packages"]
+        subgraph packages_agent_browser_adapter["agent-browser-adapter"]
+            subgraph packages_agent_browser_adapter_src["src"]
+                executeCommand_123["executeCommand (+1)<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                asFilePath_150["asFilePath<br/><small>Result&lt;string & Brand&lt;'FilePat...</small>"]
+                executeCommand_159["executeCommand (+1)<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                isRecord_171["isRecord<br/><small>boolean</small>"]
+                isRecord_174["isRecord<br/><small>boolean</small>"]
+                isRecord_178["isRecord<br/><small>boolean</small>"]
+                isRecord_182["isRecord<br/><small>boolean</small>"]
+                checkAgentBrowser_190["checkAgentBrowser<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                browserClick_122["browserClick<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserScreenshot_151["browserScreenshot<br/><small>ResultAsync&lt;( path: string; ),...</small>"]
+                browserClose_158["browserClose<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+            end
+
+        end
+
+        subgraph packages_core["core"]
+            subgraph packages_core_src["src"]
+                executeFlow_7["executeFlow<br/><small>ResultAsync&lt;FlowResult, AgentB...</small>"]
+                buildExecutionContext_8["buildExecutionContext<br/><small>ExecutionContext</small>"]
+                executeAllSteps_9["executeAllSteps (+1)<br/><small>Promise&lt;ExecuteAllStepsResult&gt;</small>"]
+                isStepProgressCallback_10["isStepProgressCallback<br/><small>boolean</small>"]
+                executeStep_11["executeStep (+1)<br/><small>Promise&lt;StepResult&gt;</small>"]
+                processSelectorWait_130["processSelectorWait (+1)<br/><small>ResultAsync&lt;ResolvedCommand, S...</small>"]
+                takeErrorScreenshot_148["takeErrorScreenshot (+1)<br/><small>Promise&lt;ScreenshotResult&gt;</small>"]
+                captureErrorScreenshot_149["captureErrorScreenshot (+1)<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                executeResolvedCommand_12["executeResolvedCommand<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleClick_121["handleClick<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                resolveCliSelector_125["resolveCliSelector<br/><small>ResultAsync&lt;CliSelector, Agent...</small>"]
+                loadAllFlows_164["loadAllFlows<br/><small>ResultAsync&lt;readonly Flow(), P...</small>"]
+                loadSingleFlow_165["loadSingleFlow<br/><small>ResultAsync&lt;Flow, ParseError&gt;</small>"]
+                parseYaml_166["parseYaml<br/><small>ResultAsync&lt;Flow, ParseError&gt;</small>"]
+                runFlows_0["runFlows<br/><small>ResultAsync&lt;RunFlowsOutput, Or...</small>"]
+                executeAllFlows_1["executeAllFlows<br/><small>Promise&lt;RunFlowsOutput&gt;</small>"]
+                executeAllFlowsParallel_2["executeAllFlowsParallel (+1)<br/><small>Promise&lt;RunFlowsOutput&gt;</small>"]
+                executeSingleFlow_3["executeSingleFlow<br/><small>Promise&lt;FlowRunSummary&gt;</small>"]
+                generateSessionName_4["generateSessionName<br/><small>string</small>"]
+                notifyFlowProgress_5["notifyFlowProgress<br/><small>Promise&lt;void&gt;</small>"]
+                buildFlowExecutionOptions_6["buildFlowExecutionOptions<br/><small>FlowExecutionOptions</small>"]
+                getScreenshotPath_161["getScreenshotPath<br/><small>string / undefined</small>"]
+                discoverFlowFiles_188["discoverFlowFiles<br/><small>ResultAsync&lt;readonly string(),...</small>"]
+                checkEnvironment_189["checkEnvironment<br/><small>ResultAsync&lt;void, Orchestrator...</small>"]
+                parseFlowYaml_167["parseFlowYaml<br/><small>Result&lt;Flow, ParseError&gt;</small>"]
+                resolveEnvVariables_168["resolveEnvVariables<br/><small>Result&lt;RawFlowData, ParseError...</small>"]
+                mergeEnvMaps_169["mergeEnvMaps<br/><small>Record&lt;string, string&gt;</small>"]
+                resolveStepVariables_170["resolveStepVariables<br/><small>Result&lt;unknown, ParseError&gt;</small>"]
+                resolveObjectVariables_172["resolveObjectVariables<br/><small>Result&lt;void, ParseError&gt;</small>"]
+                resolveStringVariables_173["resolveStringVariables<br/><small>Result&lt;string, ParseError&gt;</small>"]
+                resolveObjectVariables_175["resolveObjectVariables<br/><small>Result&lt;void, ParseError&gt;</small>"]
+                buildRawFlowData_176["buildRawFlowData<br/><small>RawFlowData</small>"]
+                extractEnvFromRoot_177["extractEnvFromRoot (+1)<br/><small>Readonly&lt;Record&lt;string, string...</small>"]
+                buildEnvMap_179["buildEnvMap<br/><small>Record&lt;string, string&gt;</small>"]
+                validateRootStructure_181["validateRootStructure (+1)<br/><small>Result&lt;Record&lt;string, unknown&gt;...</small>"]
+            end
+
+        end
+
+    end
+
+    %% Edges (Data Flow: 往路→ / 復路←)
+    executeSingleFlow_3 -->|"string"| generateSessionName_4
+    generateSessionName_4 -.->|"string"| executeSingleFlow_3
+    generateSessionName_4 -->|"RunFlowsInput"| notifyFlowProgress_5
+    notifyFlowProgress_5 -.->|"void"| generateSessionName_4
+    notifyFlowProgress_5 -->|"string"| buildFlowExecutionOptions_6
+    buildFlowExecutionOptions_6 -.->|"FlowExecutionOptions"| notifyFlowProgress_5
+    executeFlow_7 -->|"FlowExecutionOptions"| buildExecutionContext_8
+    buildExecutionContext_8 -.->|"ExecutionContext"| executeFlow_7
+    executeAllSteps_9 -->|"StepProgressCallback /..."| isStepProgressCallback_10
+    isStepProgressCallback_10 -.->|"boolean"| executeAllSteps_9
+    browserClick_122 -->|"'click'"| executeCommand_123
+    executeCommand_123 -.->|"string"| browserClick_122
+    handleClick_121 -->|"CliSelector"| browserClick_122
+    browserClick_122 -.->|"()"| handleClick_121
+    browserClick_122 -->|"ResolvedClickCommand"| resolveCliSelector_125
+    resolveCliSelector_125 -.->|"CliSelector"| browserClick_122
+    executeResolvedCommand_12 -.->|"ResolvedClickCommand"| handleClick_121
+    handleClick_121 -.->|"CommandResult"| executeResolvedCommand_12
+    executeStep_11 -->|"ResolvedCommand"| executeResolvedCommand_12
+    executeResolvedCommand_12 -.->|"CommandResult"| executeStep_11
+    executeResolvedCommand_12 -->|"Command"| processSelectorWait_130
+    processSelectorWait_130 -.->|"ResolvedCommand"| executeResolvedCommand_12
+    captureErrorScreenshot_149 -->|"string"| asFilePath_150
+    asFilePath_150 -.->|"Result&lt;string & Brand&lt;..."| captureErrorScreenshot_149
+    asFilePath_150 -->|"string & Brand&lt;'FilePa..."| browserScreenshot_151
+    browserScreenshot_151 -.->|"( path: string; )"| asFilePath_150
+    takeErrorScreenshot_148 -->|"ExecutionContext"| captureErrorScreenshot_149
+    captureErrorScreenshot_149 -.->|"string"| takeErrorScreenshot_148
+    processSelectorWait_130 -->|"ExecutionContext"| takeErrorScreenshot_148
+    takeErrorScreenshot_148 -.->|"ScreenshotResult"| processSelectorWait_130
+    isStepProgressCallback_10 -->|"Command"| executeStep_11
+    executeStep_11 -.->|"StepResult"| isStepProgressCallback_10
+    buildExecutionContext_8 -->|"Flow"| executeAllSteps_9
+    executeAllSteps_9 -.->|"ExecuteAllStepsResult"| buildExecutionContext_8
+    buildFlowExecutionOptions_6 -->|"Flow"| executeFlow_7
+    executeFlow_7 -.->|"FlowResult"| buildFlowExecutionOptions_6
+    browserClose_158 -->|"'close'"| executeCommand_159
+    executeCommand_159 -.->|"string"| browserClose_158
+    executeFlow_7 -->|"string"| browserClose_158
+    browserClose_158 -.->|"()"| executeFlow_7
+    browserClose_158 -->|"ScreenshotResult"| getScreenshotPath_161
+    getScreenshotPath_161 -.->|"string / undefined"| browserClose_158
+    executeAllFlowsParallel_2 -->|"Flow"| executeSingleFlow_3
+    executeSingleFlow_3 -.->|"FlowRunSummary"| executeAllFlowsParallel_2
+    executeAllFlows_1 -->|"readonly Flow()"| executeAllFlowsParallel_2
+    executeAllFlowsParallel_2 -.->|"RunFlowsOutput"| executeAllFlows_1
+    runFlows_0 -->|"readonly Flow()"| executeAllFlows_1
+    executeAllFlows_1 -.->|"RunFlowsOutput"| runFlows_0
+    resolveEnvVariables_168 -->|"Readonly&lt;Record&lt;string..."| mergeEnvMaps_169
+    mergeEnvMaps_169 -.->|"Record&lt;string, string&gt;"| resolveEnvVariables_168
+    resolveStepVariables_170 -->|"unknown"| isRecord_171
+    isRecord_171 -.->|"boolean"| resolveStepVariables_170
+    resolveObjectVariables_172 -->|"string"| resolveStringVariables_173
+    resolveStringVariables_173 -.->|"Result&lt;string, ParseEr..."| resolveObjectVariables_172
+    resolveStringVariables_173 -->|"unknown"| isRecord_174
+    isRecord_174 -.->|"boolean"| resolveStringVariables_173
+    isRecord_174 -->|"Record&lt;string, unknown&gt;"| resolveObjectVariables_175
+    resolveObjectVariables_175 -.->|"Result&lt;void, ParseError&gt;"| isRecord_174
+    isRecord_171 -->|"Record&lt;string, unknown&gt;"| resolveObjectVariables_172
+    resolveObjectVariables_172 -.->|"Result&lt;void, ParseError&gt;"| isRecord_171
+    mergeEnvMaps_169 -->|"unknown()"| resolveStepVariables_170
+    resolveStepVariables_170 -.->|"Result&lt;unknown, ParseE..."| mergeEnvMaps_169
+    parseFlowYaml_167 -->|"RawFlowData"| resolveEnvVariables_168
+    resolveEnvVariables_168 -.->|"Result&lt;RawFlowData, Pa..."| parseFlowYaml_167
+    extractEnvFromRoot_177 -->|"unknown"| isRecord_178
+    isRecord_178 -.->|"boolean"| extractEnvFromRoot_177
+    isRecord_178 -->|"Record&lt;string, unknown&gt;"| buildEnvMap_179
+    buildEnvMap_179 -.->|"Record&lt;string, string&gt;"| isRecord_178
+    buildRawFlowData_176 -->|"Record&lt;string, unknown&gt;"| extractEnvFromRoot_177
+    extractEnvFromRoot_177 -.->|"Readonly&lt;Record&lt;string..."| buildRawFlowData_176
+    resolveEnvVariables_168 -->|"?"| buildRawFlowData_176
+    buildRawFlowData_176 -.->|"RawFlowData"| resolveEnvVariables_168
+    validateRootStructure_181 -->|"unknown"| isRecord_182
+    isRecord_182 -.->|"boolean"| validateRootStructure_181
+    buildRawFlowData_176 -->|"?"| validateRootStructure_181
+    validateRootStructure_181 -.->|"Result&lt;Record&lt;string, ..."| buildRawFlowData_176
+    parseYaml_166 -->|"string"| parseFlowYaml_167
+    parseFlowYaml_167 -.->|"Result&lt;Flow, ParseError&gt;"| parseYaml_166
+    loadSingleFlow_165 -->|"string"| parseYaml_166
+    parseYaml_166 -.->|"Flow"| loadSingleFlow_165
+    loadAllFlows_164 -->|"string"| loadSingleFlow_165
+    loadSingleFlow_165 -.->|"Flow"| loadAllFlows_164
+    executeAllFlows_1 -->|"readonly string()"| loadAllFlows_164
+    loadAllFlows_164 -.->|"readonly Flow()"| executeAllFlows_1
+    loadAllFlows_164 -->|"?"| discoverFlowFiles_188
+    discoverFlowFiles_188 -.->|"readonly string()"| loadAllFlows_164
+    checkEnvironment_189 -->|"?"| checkAgentBrowser_190
+    checkAgentBrowser_190 -.->|"string"| checkEnvironment_189
+    discoverFlowFiles_188 -->|"?"| checkEnvironment_189
+    checkEnvironment_189 -.->|"void"| discoverFlowFiles_188
+
+    %% Subgraph styles
+    style packages fill:#e8f4f8,stroke:#999
+    style packages_agent_browser_adapter fill:#f0e8f8,stroke:#999
+    style packages_agent_browser_adapter_src fill:#f8f0e8,stroke:#999
+    style packages_core fill:#f0e8f8,stroke:#999
+    style packages_core_src fill:#f8f0e8,stroke:#999

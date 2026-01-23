@@ -1,6 +1,15 @@
 import { defineConfig } from 'vitest/config';
+import { resolve } from 'node:path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@packages/agent-browser-adapter': resolve(__dirname, 'packages/agent-browser-adapter/src'),
+      '@packages/core': resolve(__dirname, 'packages/core/src'),
+      '@packages/common': resolve(__dirname, 'packages/common/src'),
+      '@agent-browser-flow/v-arch': resolve(__dirname, 'packages/v-arch/src'),
+    },
+  },
   test: {
     include: ['tests/e2e/**/*.test.ts'],
     globals: true,

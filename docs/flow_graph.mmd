@@ -1,0 +1,563 @@
+flowchart TD
+
+    subgraph packages["packages"]
+        subgraph packages_agent_browser_adapter["agent-browser-adapter"]
+            subgraph packages_agent_browser_adapter_src["src"]
+                validateAndExtractData_19["validateAndExtractData (+1) (+2)<br/><small>Result&lt;InferOutput&lt;T&gt;, AgentBr...</small>"]
+                executeCommand_27["executeCommand (+1)<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                extractErrorMessage_30["extractErrorMessage<br/><small>string / null</small>"]
+                isRecord_31["isRecord<br/><small>boolean</small>"]
+                ScreenshotDataSchema_32["ScreenshotDataSchema<br/><small>ObjectSchema&lt;( readonly path: ...</small>"]
+                asFilePath_33["asFilePath (+1)<br/><small>Result&lt;string & Brand&lt;'FilePat...</small>"]
+                IsCheckedDataSchema_46["IsCheckedDataSchema<br/><small>ObjectSchema&lt;( readonly checke...</small>"]
+                asCliXpathSelector_48["asCliXpathSelector (+1)<br/><small>Result&lt;string & Brand&lt;'CliXpat...</small>"]
+                asCliTextSelector_50["asCliTextSelector (+1)<br/><small>Result&lt;string & Brand&lt;'CliText...</small>"]
+                IsEnabledDataSchema_55["IsEnabledDataSchema<br/><small>ObjectSchema&lt;( readonly enable...</small>"]
+                EmptyDataSchema_61["EmptyDataSchema<br/><small>ObjectSchema&lt;(), undefined&gt;</small>"]
+                IsVisibleDataSchema_66["IsVisibleDataSchema<br/><small>ObjectSchema&lt;( readonly visibl...</small>"]
+                EvalDataSchema_76["EvalDataSchema<br/><small>ObjectSchema&lt;( readonly result...</small>"]
+                OpenDataSchema_104["OpenDataSchema<br/><small>ObjectSchema&lt;( readonly url: S...</small>"]
+                asRefSelector_117["asRefSelector (+1)<br/><small>Result&lt;string & Brand&lt;'RefSele...</small>"]
+                SnapshotDataSchema_120["SnapshotDataSchema<br/><small>ObjectSchema&lt;( readonly snapsh...</small>"]
+                checkAgentBrowser_170["checkAgentBrowser<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                browserScreenshot_18["browserScreenshot<br/><small>ResultAsync&lt;( path: string; ),...</small>"]
+                browserIsChecked_45["browserIsChecked<br/><small>ResultAsync&lt;( checked: boolean...</small>"]
+                browserIsEnabled_54["browserIsEnabled<br/><small>ResultAsync&lt;( enabled: boolean...</small>"]
+                browserWaitForText_60["browserWaitForText<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserWaitForNetworkIdle_63["browserWaitForNetworkIdle<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserIsVisible_65["browserIsVisible<br/><small>ResultAsync&lt;( visible: boolean...</small>"]
+                browserWaitForSelector_71["browserWaitForSelector<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserEval_75["browserEval<br/><small>ResultAsync&lt;( result: unknown;...</small>"]
+                browserWaitForFunction_80["browserWaitForFunction<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserWaitForUrl_81["browserWaitForUrl<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserWaitForLoad_82["browserWaitForLoad<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserWaitForMs_83["browserWaitForMs<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserScrollIntoView_86["browserScrollIntoView<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserScroll_89["browserScroll<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserSelect_91["browserSelect<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserHover_93["browserHover<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserPress_95["browserPress<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserFill_97["browserFill<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserType_99["browserType<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserClick_101["browserClick<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+                browserOpen_103["browserOpen<br/><small>ResultAsync&lt;( url: string; ), ...</small>"]
+                browserSnapshot_119["browserSnapshot<br/><small>ResultAsync&lt;( snapshot: string...</small>"]
+                browserClose_143["browserClose<br/><small>ResultAsync&lt;(), AgentBrowserEr...</small>"]
+            end
+
+        end
+
+        subgraph packages_core["core"]
+            subgraph packages_core_src["src"]
+                executeFlow_7["executeFlow (+3)<br/><small>ResultAsync&lt;FlowResult, AgentB...</small>"]
+                buildFailedFlowResult_10["buildFailedFlowResult<br/><small>FailedFlowResult</small>"]
+                executeAllSteps_12["executeAllSteps (+1)<br/><small>Promise&lt;ExecuteAllStepsResult&gt;</small>"]
+                executeStep_14["executeStep<br/><small>Promise&lt;StepResult&gt;</small>"]
+                takeErrorScreenshot_15["takeErrorScreenshot (+1)<br/><small>Promise&lt;ScreenshotResult&gt;</small>"]
+                captureErrorScreenshot_17["captureErrorScreenshot<br/><small>ResultAsync&lt;string, AgentBrows...</small>"]
+                getErrorMessage_35["getErrorMessage (+1) (+1)<br/><small>string</small>"]
+                processSelectorWait_105["processSelectorWait (+10)<br/><small>ResultAsync&lt;ResolvedCommand, S...</small>"]
+                extractSelectorSpecOrFail_106["extractSelectorSpecOrFail<br/><small>ResultAsync&lt;SelectorSpec, Sele...</small>"]
+                extractSelectorSpec_107["extractSelectorSpec<br/><small>ExtractSelectorResult</small>"]
+                processDirectOrWaitSelector_108["processDirectOrWaitSelector (+2)<br/><small>ResultAsync&lt;ResolvedCommand, S...</small>"]
+                processWaitableSelector_110["processWaitableSelector (+1)<br/><small>ResultAsync&lt;ResolvedCommand, S...</small>"]
+                waitForSelector_112["waitForSelector<br/><small>ResultAsync&lt;WaitResult, AgentB...</small>"]
+                waitForTextAndResolveRef_113["waitForTextAndResolveRef<br/><small>ResultAsync&lt;string & Brand&lt;'Re...</small>"]
+                createTextToRefCheckFunc_114["createTextToRefCheckFunc (+1)<br/><small>() =&gt; ResultAsync&lt;CheckResult&lt;...</small>"]
+                waitUntil_121["waitUntil (+1)<br/><small>ResultAsync&lt;T, AgentBrowserErr...</small>"]
+                waitForXpathSelector_128["waitForXpathSelector<br/><small>ResultAsync&lt;true, AgentBrowser...</small>"]
+                createVisibilityCheckFunc_129["createVisibilityCheckFunc<br/><small>() =&gt; ResultAsync&lt;CheckResult&lt;...</small>"]
+                waitForCssSelector_130["waitForCssSelector<br/><small>ResultAsync&lt;true, AgentBrowser...</small>"]
+                extractWaitableSelectorSpecOrFail_132["extractWaitableSelectorSpecOrFail<br/><small>ResultAsync&lt;WaitableSelectorSp...</small>"]
+                executeResolvedCommand_40["executeResolvedCommand<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleAssertChecked_41["handleAssertChecked (+1)<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                getSelectorForErrorMessage_42["getSelectorForErrorMessage<br/><small>string</small>"]
+                getSelectorString_43["getSelectorString<br/><small>string</small>"]
+                resolveCliSelector_47["resolveCliSelector<br/><small>ResultAsync&lt;CliSelector, Agent...</small>"]
+                handleAssertEnabled_52["handleAssertEnabled (+1)<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleAssertNotVisible_56["handleAssertNotVisible<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                isTextSelector_57["isTextSelector<br/><small>boolean</small>"]
+                handleTextSelectorNotVisible_58["handleTextSelectorNotVisible<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                checkTextNotVisible_59["checkTextNotVisible<br/><small>Promise&lt;ResultAsync&lt;CommandRes...</small>"]
+                waitForPageStable_62["waitForPageStable<br/><small>ResultAsync&lt;undefined, AgentBr...</small>"]
+                getAndCheckNotVisible_64["getAndCheckNotVisible (+1)<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleAssertVisible_68["handleAssertVisible<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleTextSelectorVisible_69["handleTextSelectorVisible<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                waitForElement_70["waitForElement<br/><small>ResultAsync&lt;undefined, AgentBr...</small>"]
+                getAndCheckVisibility_72["getAndCheckVisibility (+1)<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleEval_74["handleEval<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleScreenshot_77["handleScreenshot<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleWait_78["handleWait (+1)<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleScrollIntoView_84["handleScrollIntoView<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleTextSelectorScrollIntoView_85["handleTextSelectorScrollIntoView<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleCssOrRefScrollIntoView_87["handleCssOrRefScrollIntoView<br/><small>ResultAsync&lt;CommandResult, Exe...</small>"]
+                handleScroll_88["handleScroll<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleSelect_90["handleSelect<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleHover_92["handleHover<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handlePress_94["handlePress<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleFill_96["handleFill<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleType_98["handleType<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleClick_100["handleClick<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                handleOpen_102["handleOpen<br/><small>ResultAsync&lt;CommandResult, Age...</small>"]
+                loadAllFlows_146["loadAllFlows<br/><small>ResultAsync&lt;readonly Flow(), P...</small>"]
+                loadSingleFlow_147["loadSingleFlow<br/><small>ResultAsync&lt;Flow, ParseError&gt;</small>"]
+                parseYaml_148["parseYaml<br/><small>ResultAsync&lt;Flow, ParseError&gt;</small>"]
+                runFlows_0["runFlows (+1)<br/><small>ResultAsync&lt;RunFlowsOutput, Or...</small>"]
+                executeAllFlows_1["executeAllFlows<br/><small>Promise&lt;RunFlowsOutput&gt;</small>"]
+                executeAllFlowsParallel_2["executeAllFlowsParallel<br/><small>Promise&lt;RunFlowsOutput&gt;</small>"]
+                executeSingleFlow_3["executeSingleFlow (+4)<br/><small>Promise&lt;FlowRunSummary&gt;</small>"]
+                executeAllFlowsSequential_145["executeAllFlowsSequential<br/><small>Promise&lt;RunFlowsOutput&gt;</small>"]
+                checkEnvironment_169["checkEnvironment<br/><small>ResultAsync&lt;void, Orchestrator...</small>"]
+                parseFlowYaml_149["parseFlowYaml (+1)<br/><small>Result&lt;Flow, ParseError&gt;</small>"]
+                resolveEnvVariables_150["resolveEnvVariables (+1)<br/><small>Result&lt;RawFlowData, ParseError...</small>"]
+                resolveStepVariables_152["resolveStepVariables<br/><small>Result&lt;unknown, ParseError&gt;</small>"]
+                resolveObjectVariables_153["resolveObjectVariables (+1)<br/><small>Result&lt;void, ParseError&gt;</small>"]
+                buildRawFlowData_155["buildRawFlowData (+1)<br/><small>RawFlowData</small>"]
+                extractEnvFromRoot_156["extractEnvFromRoot (+1)<br/><small>Readonly&lt;Record&lt;string, string...</small>"]
+                validateRootStructure_159["validateRootStructure<br/><small>Result&lt;Record&lt;string, unknown&gt;...</small>"]
+                buildFlow_161["buildFlow<br/><small>Result&lt;Flow, ParseError&gt;</small>"]
+                validateCommands_162["validateCommands (+1)<br/><small>Result&lt;readonly Command(), Par...</small>"]
+                validateAllCommands_163["validateAllCommands<br/><small>Result&lt;Command(), ParseError&gt;</small>"]
+                reduceValidateCommand_164["reduceValidateCommand<br/><small>Result&lt;Command(), ParseError&gt;</small>"]
+                appendValidatedCommand_165["appendValidatedCommand<br/><small>Result&lt;Command(), ParseError&gt;</small>"]
+                validateCommand_166["validateCommand<br/><small>Result&lt;Command, ParseError&gt;</small>"]
+            end
+
+        end
+
+    end
+
+    %% Edges (Data Flow: 往路→ / 復路←)
+    executeFlow_7 -->|"?"| buildFailedFlowResult_10
+    buildFailedFlowResult_10 -.->|"FailedFlowResult"| executeFlow_7
+    browserScreenshot_18 -->|"?"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserScreenshot_18
+    extractErrorMessage_30 -->|"unknown"| isRecord_31
+    isRecord_31 -.->|"boolean"| extractErrorMessage_30
+    executeCommand_27 -->|"?"| extractErrorMessage_30
+    extractErrorMessage_30 -.->|"string / null"| executeCommand_27
+    browserScreenshot_18 -->|"'screenshot'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserScreenshot_18
+    browserScreenshot_18 -->|"?"| ScreenshotDataSchema_32
+    ScreenshotDataSchema_32 -.->|"ObjectSchema&lt;( readonl..."| browserScreenshot_18
+    captureErrorScreenshot_17 -->|"?"| browserScreenshot_18
+    browserScreenshot_18 -.->|"( path: string; )"| captureErrorScreenshot_17
+    captureErrorScreenshot_17 -->|"string"| asFilePath_33
+    asFilePath_33 -.->|"Result&lt;string & Brand&lt;..."| captureErrorScreenshot_17
+    takeErrorScreenshot_15 -->|"ExecutionContext"| captureErrorScreenshot_17
+    captureErrorScreenshot_17 -.->|"string"| takeErrorScreenshot_15
+    executeStep_14 -->|"?"| takeErrorScreenshot_15
+    takeErrorScreenshot_15 -.->|"ScreenshotResult"| executeStep_14
+    executeStep_14 -->|"?"| getErrorMessage_35
+    getErrorMessage_35 -.->|"string"| executeStep_14
+    getSelectorForErrorMessage_42 -->|"ResolvedSelectorSpec /..."| getSelectorString_43
+    getSelectorString_43 -.->|"string"| getSelectorForErrorMessage_42
+    handleAssertChecked_41 -->|"ResolvedAssertCheckedC..."| getSelectorForErrorMessage_42
+    getSelectorForErrorMessage_42 -.->|"string"| handleAssertChecked_41
+    browserIsChecked_45 -->|"'is'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserIsChecked_45
+    browserIsChecked_45 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserIsChecked_45
+    browserIsChecked_45 -->|"?"| IsCheckedDataSchema_46
+    IsCheckedDataSchema_46 -.->|"ObjectSchema&lt;( readonl..."| browserIsChecked_45
+    handleAssertChecked_41 -->|"?"| browserIsChecked_45
+    browserIsChecked_45 -.->|"( checked: boolean; )"| handleAssertChecked_41
+    resolveCliSelector_47 -->|"?"| asCliXpathSelector_48
+    asCliXpathSelector_48 -.->|"Result&lt;string & Brand&lt;..."| resolveCliSelector_47
+    resolveCliSelector_47 -->|"?"| asCliTextSelector_50
+    asCliTextSelector_50 -.->|"Result&lt;string & Brand&lt;..."| resolveCliSelector_47
+    handleAssertChecked_41 -->|"ResolvedAssertCheckedC..."| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleAssertChecked_41
+    executeResolvedCommand_40 -->|"?"| handleAssertChecked_41
+    handleAssertChecked_41 -.->|"CommandResult"| executeResolvedCommand_40
+    handleAssertEnabled_52 -->|"ResolvedAssertEnabledC..."| getSelectorForErrorMessage_42
+    getSelectorForErrorMessage_42 -.->|"string"| handleAssertEnabled_52
+    browserIsEnabled_54 -->|"'is'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserIsEnabled_54
+    browserIsEnabled_54 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserIsEnabled_54
+    browserIsEnabled_54 -->|"?"| IsEnabledDataSchema_55
+    IsEnabledDataSchema_55 -.->|"ObjectSchema&lt;( readonl..."| browserIsEnabled_54
+    handleAssertEnabled_52 -->|"?"| browserIsEnabled_54
+    browserIsEnabled_54 -.->|"( enabled: boolean; )"| handleAssertEnabled_52
+    handleAssertEnabled_52 -->|"ResolvedAssertEnabledC..."| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleAssertEnabled_52
+    executeResolvedCommand_40 -->|"?"| handleAssertEnabled_52
+    handleAssertEnabled_52 -.->|"CommandResult"| executeResolvedCommand_40
+    handleAssertNotVisible_56 -->|"ResolvedAssertNotVisib..."| getSelectorString_43
+    getSelectorString_43 -.->|"string"| handleAssertNotVisible_56
+    handleAssertNotVisible_56 -->|"ResolvedAssertNotVisib..."| isTextSelector_57
+    isTextSelector_57 -.->|"boolean"| handleAssertNotVisible_56
+    browserWaitForText_60 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForText_60
+    browserWaitForText_60 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForText_60
+    browserWaitForText_60 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForText_60
+    checkTextNotVisible_59 -->|"string"| browserWaitForText_60
+    browserWaitForText_60 -.->|"()"| checkTextNotVisible_59
+    handleTextSelectorNotVisible_58 -->|"?"| checkTextNotVisible_59
+    checkTextNotVisible_59 -.->|"CommandResult"| handleTextSelectorNotVisible_58
+    waitForPageStable_62 -->|"( sessionName: string;..."| browserWaitForNetworkIdle_63
+    browserWaitForNetworkIdle_63 -.->|"()"| waitForPageStable_62
+    handleTextSelectorNotVisible_58 -->|"ExecutionContext"| waitForPageStable_62
+    waitForPageStable_62 -.->|"undefined"| handleTextSelectorNotVisible_58
+    handleAssertNotVisible_56 -->|"string"| handleTextSelectorNotVisible_58
+    handleTextSelectorNotVisible_58 -.->|"CommandResult"| handleAssertNotVisible_56
+    browserIsVisible_65 -->|"'is'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserIsVisible_65
+    browserIsVisible_65 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserIsVisible_65
+    browserIsVisible_65 -->|"?"| IsVisibleDataSchema_66
+    IsVisibleDataSchema_66 -.->|"ObjectSchema&lt;( readonl..."| browserIsVisible_65
+    getAndCheckNotVisible_64 -->|"?"| browserIsVisible_65
+    browserIsVisible_65 -.->|"( visible: boolean; )"| getAndCheckNotVisible_64
+    getAndCheckNotVisible_64 -->|"?"| getSelectorForErrorMessage_42
+    getSelectorForErrorMessage_42 -.->|"string"| getAndCheckNotVisible_64
+    getAndCheckNotVisible_64 -->|"ResolvedSelectorSpec"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| getAndCheckNotVisible_64
+    handleAssertNotVisible_56 -->|"?"| getAndCheckNotVisible_64
+    getAndCheckNotVisible_64 -.->|"CommandResult"| handleAssertNotVisible_56
+    handleAssertNotVisible_56 -->|"ExecutionContext"| waitForPageStable_62
+    waitForPageStable_62 -.->|"undefined"| handleAssertNotVisible_56
+    executeResolvedCommand_40 -->|"?"| handleAssertNotVisible_56
+    handleAssertNotVisible_56 -.->|"CommandResult"| executeResolvedCommand_40
+    handleAssertVisible_68 -->|"ResolvedAssertVisibleC..."| getSelectorString_43
+    getSelectorString_43 -.->|"string"| handleAssertVisible_68
+    handleAssertVisible_68 -->|"ResolvedAssertVisibleC..."| isTextSelector_57
+    isTextSelector_57 -.->|"boolean"| handleAssertVisible_68
+    handleTextSelectorVisible_69 -->|"string"| browserWaitForText_60
+    browserWaitForText_60 -.->|"()"| handleTextSelectorVisible_69
+    handleAssertVisible_68 -->|"string"| handleTextSelectorVisible_69
+    handleTextSelectorVisible_69 -.->|"CommandResult"| handleAssertVisible_68
+    waitForElement_70 -->|"ResolvedSelectorSpec"| isTextSelector_57
+    isTextSelector_57 -.->|"boolean"| waitForElement_70
+    waitForElement_70 -->|"ResolvedSelectorSpec"| getSelectorString_43
+    getSelectorString_43 -.->|"string"| waitForElement_70
+    waitForElement_70 -->|"string"| browserWaitForText_60
+    browserWaitForText_60 -.->|"()"| waitForElement_70
+    browserWaitForSelector_71 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForSelector_71
+    browserWaitForSelector_71 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForSelector_71
+    browserWaitForSelector_71 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForSelector_71
+    waitForElement_70 -->|"?"| browserWaitForSelector_71
+    browserWaitForSelector_71 -.->|"()"| waitForElement_70
+    waitForElement_70 -->|"ResolvedSelectorSpec"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| waitForElement_70
+    handleAssertVisible_68 -->|"ResolvedAssertVisibleC..."| waitForElement_70
+    waitForElement_70 -.->|"undefined"| handleAssertVisible_68
+    getAndCheckVisibility_72 -->|"?"| browserIsVisible_65
+    browserIsVisible_65 -.->|"( visible: boolean; )"| getAndCheckVisibility_72
+    getAndCheckVisibility_72 -->|"?"| getSelectorForErrorMessage_42
+    getSelectorForErrorMessage_42 -.->|"string"| getAndCheckVisibility_72
+    getAndCheckVisibility_72 -->|"ResolvedSelectorSpec"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| getAndCheckVisibility_72
+    handleAssertVisible_68 -->|"?"| getAndCheckVisibility_72
+    getAndCheckVisibility_72 -.->|"CommandResult"| handleAssertVisible_68
+    executeResolvedCommand_40 -->|"?"| handleAssertVisible_68
+    handleAssertVisible_68 -.->|"CommandResult"| executeResolvedCommand_40
+    browserEval_75 -->|"'eval'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserEval_75
+    browserEval_75 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserEval_75
+    browserEval_75 -->|"?"| EvalDataSchema_76
+    EvalDataSchema_76 -.->|"ObjectSchema&lt;( readonl..."| browserEval_75
+    handleEval_74 -->|"string & Brand&lt;'JsExpr..."| browserEval_75
+    browserEval_75 -.->|"( result: unknown; )"| handleEval_74
+    executeResolvedCommand_40 -->|"?"| handleEval_74
+    handleEval_74 -.->|"CommandResult"| executeResolvedCommand_40
+    handleScreenshot_77 -->|"string & Brand&lt;'FilePa..."| browserScreenshot_18
+    browserScreenshot_18 -.->|"( path: string; )"| handleScreenshot_77
+    executeResolvedCommand_40 -->|"?"| handleScreenshot_77
+    handleScreenshot_77 -.->|"CommandResult"| executeResolvedCommand_40
+    browserWaitForFunction_80 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForFunction_80
+    browserWaitForFunction_80 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForFunction_80
+    browserWaitForFunction_80 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForFunction_80
+    handleWait_78 -->|"?"| browserWaitForFunction_80
+    browserWaitForFunction_80 -.->|"()"| handleWait_78
+    browserWaitForUrl_81 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForUrl_81
+    browserWaitForUrl_81 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForUrl_81
+    browserWaitForUrl_81 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForUrl_81
+    handleWait_78 -->|"?"| browserWaitForUrl_81
+    browserWaitForUrl_81 -.->|"()"| handleWait_78
+    browserWaitForLoad_82 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForLoad_82
+    browserWaitForLoad_82 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForLoad_82
+    browserWaitForLoad_82 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForLoad_82
+    handleWait_78 -->|"?"| browserWaitForLoad_82
+    browserWaitForLoad_82 -.->|"()"| handleWait_78
+    handleWait_78 -->|"?"| asCliXpathSelector_48
+    asCliXpathSelector_48 -.->|"Result&lt;string & Brand&lt;..."| handleWait_78
+    handleWait_78 -->|"?"| browserWaitForSelector_71
+    browserWaitForSelector_71 -.->|"()"| handleWait_78
+    handleWait_78 -->|"?"| browserWaitForText_60
+    browserWaitForText_60 -.->|"()"| handleWait_78
+    browserWaitForMs_83 -->|"'wait'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserWaitForMs_83
+    browserWaitForMs_83 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserWaitForMs_83
+    browserWaitForMs_83 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserWaitForMs_83
+    handleWait_78 -->|"?"| browserWaitForMs_83
+    browserWaitForMs_83 -.->|"()"| handleWait_78
+    executeResolvedCommand_40 -->|"?"| handleWait_78
+    handleWait_78 -.->|"CommandResult"| executeResolvedCommand_40
+    handleScrollIntoView_84 -->|"ResolvedScrollIntoView..."| getSelectorString_43
+    getSelectorString_43 -.->|"string"| handleScrollIntoView_84
+    handleScrollIntoView_84 -->|"ResolvedScrollIntoView..."| isTextSelector_57
+    isTextSelector_57 -.->|"boolean"| handleScrollIntoView_84
+    handleTextSelectorScrollIntoView_85 -->|"?"| asCliTextSelector_50
+    asCliTextSelector_50 -.->|"Result&lt;string & Brand&lt;..."| handleTextSelectorScrollIntoView_85
+    browserScrollIntoView_86 -->|"'scrollintoview'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserScrollIntoView_86
+    browserScrollIntoView_86 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserScrollIntoView_86
+    browserScrollIntoView_86 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserScrollIntoView_86
+    handleTextSelectorScrollIntoView_85 -->|"?"| browserScrollIntoView_86
+    browserScrollIntoView_86 -.->|"()"| handleTextSelectorScrollIntoView_85
+    handleTextSelectorScrollIntoView_85 -->|"string"| browserWaitForText_60
+    browserWaitForText_60 -.->|"()"| handleTextSelectorScrollIntoView_85
+    handleScrollIntoView_84 -->|"string"| handleTextSelectorScrollIntoView_85
+    handleTextSelectorScrollIntoView_85 -.->|"CommandResult"| handleScrollIntoView_84
+    handleCssOrRefScrollIntoView_87 -->|"ResolvedScrollIntoView..."| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleCssOrRefScrollIntoView_87
+    handleCssOrRefScrollIntoView_87 -->|"CliSelector"| browserScrollIntoView_86
+    browserScrollIntoView_86 -.->|"()"| handleCssOrRefScrollIntoView_87
+    handleScrollIntoView_84 -->|"ResolvedScrollIntoView..."| handleCssOrRefScrollIntoView_87
+    handleCssOrRefScrollIntoView_87 -.->|"CommandResult"| handleScrollIntoView_84
+    executeResolvedCommand_40 -->|"?"| handleScrollIntoView_84
+    handleScrollIntoView_84 -.->|"CommandResult"| executeResolvedCommand_40
+    browserScroll_89 -->|"'scroll'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserScroll_89
+    browserScroll_89 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserScroll_89
+    browserScroll_89 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserScroll_89
+    handleScroll_88 -->|"ScrollDirection"| browserScroll_89
+    browserScroll_89 -.->|"()"| handleScroll_88
+    executeResolvedCommand_40 -->|"?"| handleScroll_88
+    handleScroll_88 -.->|"CommandResult"| executeResolvedCommand_40
+    browserSelect_91 -->|"'select'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserSelect_91
+    browserSelect_91 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserSelect_91
+    browserSelect_91 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserSelect_91
+    handleSelect_90 -->|"?"| browserSelect_91
+    browserSelect_91 -.->|"()"| handleSelect_90
+    handleSelect_90 -->|"ResolvedSelectCommand"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleSelect_90
+    executeResolvedCommand_40 -->|"?"| handleSelect_90
+    handleSelect_90 -.->|"CommandResult"| executeResolvedCommand_40
+    browserHover_93 -->|"'hover'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserHover_93
+    browserHover_93 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserHover_93
+    browserHover_93 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserHover_93
+    handleHover_92 -->|"?"| browserHover_93
+    browserHover_93 -.->|"()"| handleHover_92
+    handleHover_92 -->|"ResolvedHoverCommand"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleHover_92
+    executeResolvedCommand_40 -->|"?"| handleHover_92
+    handleHover_92 -.->|"CommandResult"| executeResolvedCommand_40
+    browserPress_95 -->|"'press'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserPress_95
+    browserPress_95 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserPress_95
+    browserPress_95 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserPress_95
+    handlePress_94 -->|"string & Brand&lt;'Keyboa..."| browserPress_95
+    browserPress_95 -.->|"()"| handlePress_94
+    executeResolvedCommand_40 -->|"?"| handlePress_94
+    handlePress_94 -.->|"CommandResult"| executeResolvedCommand_40
+    browserFill_97 -->|"'fill'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserFill_97
+    browserFill_97 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserFill_97
+    browserFill_97 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserFill_97
+    handleFill_96 -->|"?"| browserFill_97
+    browserFill_97 -.->|"()"| handleFill_96
+    handleFill_96 -->|"ResolvedFillCommand"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleFill_96
+    executeResolvedCommand_40 -->|"?"| handleFill_96
+    handleFill_96 -.->|"CommandResult"| executeResolvedCommand_40
+    browserType_99 -->|"'type'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserType_99
+    browserType_99 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserType_99
+    browserType_99 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserType_99
+    handleType_98 -->|"?"| browserType_99
+    browserType_99 -.->|"()"| handleType_98
+    handleType_98 -->|"ResolvedTypeCommand"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleType_98
+    executeResolvedCommand_40 -->|"?"| handleType_98
+    handleType_98 -.->|"CommandResult"| executeResolvedCommand_40
+    browserClick_101 -->|"'click'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserClick_101
+    browserClick_101 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserClick_101
+    browserClick_101 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserClick_101
+    handleClick_100 -->|"?"| browserClick_101
+    browserClick_101 -.->|"()"| handleClick_100
+    handleClick_100 -->|"ResolvedClickCommand"| resolveCliSelector_47
+    resolveCliSelector_47 -.->|"CliSelector"| handleClick_100
+    executeResolvedCommand_40 -->|"?"| handleClick_100
+    handleClick_100 -.->|"CommandResult"| executeResolvedCommand_40
+    browserOpen_103 -->|"'open'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserOpen_103
+    browserOpen_103 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserOpen_103
+    browserOpen_103 -->|"?"| OpenDataSchema_104
+    OpenDataSchema_104 -.->|"ObjectSchema&lt;( readonl..."| browserOpen_103
+    handleOpen_102 -->|"string & Brand&lt;'Url'&gt;"| browserOpen_103
+    browserOpen_103 -.->|"( url: string; )"| handleOpen_102
+    executeResolvedCommand_40 -->|"?"| handleOpen_102
+    handleOpen_102 -.->|"CommandResult"| executeResolvedCommand_40
+    executeStep_14 -->|"?"| executeResolvedCommand_40
+    executeResolvedCommand_40 -.->|"CommandResult"| executeStep_14
+    extractSelectorSpecOrFail_106 -->|"Command"| extractSelectorSpec_107
+    extractSelectorSpec_107 -.->|"ExtractSelectorResult"| extractSelectorSpecOrFail_106
+    processSelectorWait_105 -->|"?"| extractSelectorSpecOrFail_106
+    extractSelectorSpecOrFail_106 -.->|"SelectorSpec"| processSelectorWait_105
+    createTextToRefCheckFunc_114 -->|"?"| asRefSelector_117
+    asRefSelector_117 -.->|"Result&lt;string & Brand&lt;..."| createTextToRefCheckFunc_114
+    browserSnapshot_119 -->|"'snapshot'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserSnapshot_119
+    browserSnapshot_119 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserSnapshot_119
+    browserSnapshot_119 -->|"?"| SnapshotDataSchema_120
+    SnapshotDataSchema_120 -.->|"ObjectSchema&lt;( readonl..."| browserSnapshot_119
+    createTextToRefCheckFunc_114 -->|"( sessionName: string;..."| browserSnapshot_119
+    browserSnapshot_119 -.->|"( snapshot: string; re..."| createTextToRefCheckFunc_114
+    waitForTextAndResolveRef_113 -->|"string & Brand&lt;'Intera..."| createTextToRefCheckFunc_114
+    createTextToRefCheckFunc_114 -.->|"CheckResult&lt;string & B..."| waitForTextAndResolveRef_113
+    waitForTextAndResolveRef_113 -->|"() =&gt; ResultAsync&lt;Chec..."| waitUntil_121
+    waitUntil_121 -.->|"T"| waitForTextAndResolveRef_113
+    waitForSelector_112 -->|"?"| waitForTextAndResolveRef_113
+    waitForTextAndResolveRef_113 -.->|"string & Brand&lt;'RefSel..."| waitForSelector_112
+    waitForXpathSelector_128 -->|"string"| asCliXpathSelector_48
+    asCliXpathSelector_48 -.->|"Result&lt;string & Brand&lt;..."| waitForXpathSelector_128
+    createVisibilityCheckFunc_129 -->|"CliSelector"| browserIsVisible_65
+    browserIsVisible_65 -.->|"( visible: boolean; )"| createVisibilityCheckFunc_129
+    waitForXpathSelector_128 -->|"string & Brand&lt;'CliXpa..."| createVisibilityCheckFunc_129
+    createVisibilityCheckFunc_129 -.->|"CheckResult&lt;true"| waitForXpathSelector_128
+    waitForXpathSelector_128 -->|"() =&gt; ResultAsync&lt;Chec..."| waitUntil_121
+    waitUntil_121 -.->|"T"| waitForXpathSelector_128
+    waitForSelector_112 -->|"?"| waitForXpathSelector_128
+    waitForXpathSelector_128 -.->|"true"| waitForSelector_112
+    waitForCssSelector_130 -->|"string & Brand&lt;'CssSel..."| createVisibilityCheckFunc_129
+    createVisibilityCheckFunc_129 -.->|"CheckResult&lt;true"| waitForCssSelector_130
+    waitForCssSelector_130 -->|"() =&gt; ResultAsync&lt;Chec..."| waitUntil_121
+    waitUntil_121 -.->|"T"| waitForCssSelector_130
+    waitForSelector_112 -->|"?"| waitForCssSelector_130
+    waitForCssSelector_130 -.->|"true"| waitForSelector_112
+    processWaitableSelector_110 -->|"WaitableSelectorSpec"| waitForSelector_112
+    waitForSelector_112 -.->|"WaitResult"| processWaitableSelector_110
+    processWaitableSelector_110 -->|"AgentBrowserError"| getErrorMessage_35
+    getErrorMessage_35 -.->|"string"| processWaitableSelector_110
+    processDirectOrWaitSelector_108 -->|"?"| processWaitableSelector_110
+    processWaitableSelector_110 -.->|"ResolvedCommand"| processDirectOrWaitSelector_108
+    processSelectorWait_105 -->|"?"| processDirectOrWaitSelector_108
+    processDirectOrWaitSelector_108 -.->|"ResolvedCommand"| processSelectorWait_105
+    extractWaitableSelectorSpecOrFail_132 -->|"Command"| extractSelectorSpec_107
+    extractSelectorSpec_107 -.->|"ExtractSelectorResult"| extractWaitableSelectorSpecOrFail_132
+    processSelectorWait_105 -->|"?"| extractWaitableSelectorSpecOrFail_132
+    extractWaitableSelectorSpecOrFail_132 -.->|"WaitableSelectorSpec"| processSelectorWait_105
+    processSelectorWait_105 -->|"?"| processWaitableSelector_110
+    processWaitableSelector_110 -.->|"ResolvedCommand"| processSelectorWait_105
+    executeStep_14 -->|"Command"| processSelectorWait_105
+    processSelectorWait_105 -.->|"ResolvedCommand"| executeStep_14
+    executeAllSteps_12 -->|"Command"| executeStep_14
+    executeStep_14 -.->|"StepResult"| executeAllSteps_12
+    executeAllSteps_12 -->|"Flow"| buildFailedFlowResult_10
+    buildFailedFlowResult_10 -.->|"FailedFlowResult"| executeAllSteps_12
+    executeFlow_7 -->|"Flow"| executeAllSteps_12
+    executeAllSteps_12 -.->|"ExecuteAllStepsResult"| executeFlow_7
+    executeSingleFlow_3 -->|"Flow"| executeFlow_7
+    executeFlow_7 -.->|"FlowResult"| executeSingleFlow_3
+    browserClose_143 -->|"'close'"| executeCommand_27
+    executeCommand_27 -.->|"string"| browserClose_143
+    browserClose_143 -->|"string"| validateAndExtractData_19
+    validateAndExtractData_19 -.->|"Result&lt;InferOutput&lt;T&gt;,..."| browserClose_143
+    browserClose_143 -->|"?"| EmptyDataSchema_61
+    EmptyDataSchema_61 -.->|"ObjectSchema&lt;(), undef..."| browserClose_143
+    executeSingleFlow_3 -->|"?"| browserClose_143
+    browserClose_143 -.->|"()"| executeSingleFlow_3
+    executeAllFlowsParallel_2 -->|"?"| executeSingleFlow_3
+    executeSingleFlow_3 -.->|"FlowRunSummary"| executeAllFlowsParallel_2
+    executeAllFlows_1 -->|"readonly Flow()"| executeAllFlowsParallel_2
+    executeAllFlowsParallel_2 -.->|"RunFlowsOutput"| executeAllFlows_1
+    executeAllFlowsSequential_145 -->|"Flow"| executeSingleFlow_3
+    executeSingleFlow_3 -.->|"FlowRunSummary"| executeAllFlowsSequential_145
+    executeAllFlows_1 -->|"readonly Flow()"| executeAllFlowsSequential_145
+    executeAllFlowsSequential_145 -.->|"RunFlowsOutput"| executeAllFlows_1
+    runFlows_0 -->|"?"| executeAllFlows_1
+    executeAllFlows_1 -.->|"RunFlowsOutput"| runFlows_0
+    resolveStepVariables_152 -->|"unknown"| isRecord_31
+    isRecord_31 -.->|"boolean"| resolveStepVariables_152
+    resolveObjectVariables_153 -->|"unknown"| isRecord_31
+    isRecord_31 -.->|"boolean"| resolveObjectVariables_153
+    resolveObjectVariables_153 -->|"Record&lt;string, unknown&gt;"| resolveObjectVariables_153
+    resolveObjectVariables_153 -.->|"Result&lt;void, ParseError&gt;"| resolveObjectVariables_153
+    resolveStepVariables_152 -->|"Record&lt;string, unknown&gt;"| resolveObjectVariables_153
+    resolveObjectVariables_153 -.->|"Result&lt;void, ParseError&gt;"| resolveStepVariables_152
+    resolveEnvVariables_150 -->|"?"| resolveStepVariables_152
+    resolveStepVariables_152 -.->|"Result&lt;unknown, ParseE..."| resolveEnvVariables_150
+    parseFlowYaml_149 -->|"?"| resolveEnvVariables_150
+    resolveEnvVariables_150 -.->|"Result&lt;RawFlowData, Pa..."| parseFlowYaml_149
+    extractEnvFromRoot_156 -->|"unknown"| isRecord_31
+    isRecord_31 -.->|"boolean"| extractEnvFromRoot_156
+    buildRawFlowData_155 -->|"Record&lt;string, unknown&gt;"| extractEnvFromRoot_156
+    extractEnvFromRoot_156 -.->|"Readonly&lt;Record&lt;string..."| buildRawFlowData_155
+    parseFlowYaml_149 -->|"?"| buildRawFlowData_155
+    buildRawFlowData_155 -.->|"RawFlowData"| parseFlowYaml_149
+    validateRootStructure_159 -->|"unknown"| isRecord_31
+    isRecord_31 -.->|"boolean"| validateRootStructure_159
+    parseFlowYaml_149 -->|"?"| validateRootStructure_159
+    validateRootStructure_159 -.->|"Result&lt;Record&lt;string, ..."| parseFlowYaml_149
+    appendValidatedCommand_165 -->|"unknown"| validateCommand_166
+    validateCommand_166 -.->|"Result&lt;Command, ParseE..."| appendValidatedCommand_165
+    reduceValidateCommand_164 -->|"?"| appendValidatedCommand_165
+    appendValidatedCommand_165 -.->|"Result&lt;Command(), Pars..."| reduceValidateCommand_164
+    validateAllCommands_163 -->|"?"| reduceValidateCommand_164
+    reduceValidateCommand_164 -.->|"Result&lt;Command(), Pars..."| validateAllCommands_163
+    validateCommands_162 -->|"?"| validateAllCommands_163
+    validateAllCommands_163 -.->|"Result&lt;Command(), Pars..."| validateCommands_162
+    buildFlow_161 -->|"unknown()"| validateCommands_162
+    validateCommands_162 -.->|"Result&lt;readonly Comman..."| buildFlow_161
+    parseFlowYaml_149 -->|"RawFlowData"| buildFlow_161
+    buildFlow_161 -.->|"Result&lt;Flow, ParseError&gt;"| parseFlowYaml_149
+    parseYaml_148 -->|"string"| parseFlowYaml_149
+    parseFlowYaml_149 -.->|"Result&lt;Flow, ParseError&gt;"| parseYaml_148
+    loadSingleFlow_147 -->|"?"| parseYaml_148
+    parseYaml_148 -.->|"Flow"| loadSingleFlow_147
+    loadAllFlows_146 -->|"?"| loadSingleFlow_147
+    loadSingleFlow_147 -.->|"Flow"| loadAllFlows_146
+    runFlows_0 -->|"?"| loadAllFlows_146
+    loadAllFlows_146 -.->|"readonly Flow()"| runFlows_0
+    checkEnvironment_169 -->|"?"| checkAgentBrowser_170
+    checkAgentBrowser_170 -.->|"string"| checkEnvironment_169
+    runFlows_0 -->|"?"| checkEnvironment_169
+    checkEnvironment_169 -.->|"void"| runFlows_0
+
+    %% Subgraph styles
+    style packages fill:#e8f4f8,stroke:#999
+    style packages_agent_browser_adapter fill:#f0e8f8,stroke:#999
+    style packages_agent_browser_adapter_src fill:#f8f0e8,stroke:#999
+    style packages_core fill:#f0e8f8,stroke:#999
+    style packages_core_src fill:#f8f0e8,stroke:#999
