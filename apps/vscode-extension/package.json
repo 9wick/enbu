@@ -3,7 +3,7 @@
   "displayName": "Enbu - Browser Automation Visualizer",
   "description": "Run and visualize enbu.yaml flow tests with VS Code Test Explorer",
   "version": "0.0.1",
-  "publisher": "agent-browser-flow",
+  "publisher": "enbu",
   "type": "module",
   "engines": {
     "vscode": "^1.85.0"

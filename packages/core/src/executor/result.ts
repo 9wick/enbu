@@ -143,14 +143,27 @@ export const NO_CALLBACK = { _brand: 'NoCallback' } as const;
 export type NoCallback = typeof NO_CALLBACK;
 
 /**
+ * セッション指定の型
+ *
+ * セッションの指定方法を明示的に表現する:
+ * - name: 完全なセッション名を指定（そのまま使用）
+ * - prefix: プレフィックスを指定（{prefix}-timestamp-random 形式で生成）
+ * - default: デフォルトのプレフィックス 'enbu' を使用
+ */
+export type SessionSpec =
+  | { type: 'name'; value: string }
+  | { type: 'prefix'; value: string }
+  | { type: 'default' };
+
+/**
  * フロー実行時のオプション
  *
  * Domain層では全てのオプションを必須とし、曖昧さを排除する。
  * デフォルト値の補完はUsecase層（CLI、VSCode拡張など）で行う。
  */
 export type FlowExecutionOptions = {
-  /** セッション名 */
-  sessionName: string;
+  /** セッション指定 */
+  session: SessionSpec;
   /** ヘッドモードで実行するか */
   headed: boolean;
   /** 環境変数のマップ */
@@ -225,8 +238,6 @@ export type StepResult = PassedStepResult | FailedStepResult;
 export type PassedFlowResult = {
   /** 実行したフロー */
   flow: Flow;
-  /** セッション名 */
-  sessionName: string;
   /** 全体の実行ステータス: 成功 */
   status: 'passed';
   /** 全体の実行時間（ミリ秒） */
@@ -363,4 +374,22 @@ export const isFailedStepResult = (result: StepResult): result is FailedStepResu
  */
 export const isPassedFlowResult = (result: FlowResult): result is PassedFlowResult => {
   return result.status === 'passed';
+};
+
+/**
+ * FlowResultが失敗したフローかどうかを判定する型ガード関数
+ *
+ * @param result - 判定対象のFlowResult
+ * @returns 失敗したフローの場合はtrue、成功したフローの場合はfalse
+ *
+ * @example
+ * ```typescript
+ * if (isFailedFlowResult(flowResult)) {
+ *   // flowResult.errorとflowResult.sessionNameは必ず存在する
+ *   console.log(`Flow failed at step ${flowResult.error.stepIndex}`);
+ * }
+ * ```
+ */
+export const isFailedFlowResult = (result: FlowResult): result is FailedFlowResult => {
+  return result.status === 'failed';
 };

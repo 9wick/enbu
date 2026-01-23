@@ -57,6 +57,13 @@ export type RunFlowsInput = {
   files: string[];
   /** ファイル解決の基準となる作業ディレクトリ */
   cwd: string;
+  /**
+   * セッション名（完全なセッション名をそのまま使用、CLIの--sessionオプションで渡される）
+   *
+   * 指定しない場合はデフォルトプレフィックス 'enbu' で自動生成される。
+   * テスト時は 'e2e-xxx' 形式、本番時は 'enbu-xxx' 形式となる。
+   */
+  sessionName?: string;
   /** ヘッドモードで実行するか（デフォルト: false） */
   headed?: boolean;
   /** 渡す環境変数（デフォルト: {}） */

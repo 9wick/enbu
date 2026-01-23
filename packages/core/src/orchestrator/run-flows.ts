@@ -1,7 +1,7 @@
 /**
  * フロー実行パイプラインのメイン実装
  *
- * ファイル検出、読み込み、パース、実行、セッション管理を統合し、
+ * ファイル検出、読み込み、パース、実行を統合し、
  * 単一のエントリーポイント runFlows を提供する。
  *
  * @remarks
@@ -15,11 +15,7 @@ import { basename, join, resolve } from 'node:path';
 import { glob } from 'glob';
 import pLimit from 'p-limit';
 import { errAsync, okAsync, ResultAsync } from 'neverthrow';
-import {
-  browserClose,
-  checkAgentBrowser,
-  type AgentBrowserError,
-} from '@packages/agent-browser-adapter';
+import { type AgentBrowserError } from '@packages/agent-browser-adapter';
 import { parseFlowYaml } from '../parser/yaml-parser';
 import type { Flow, ParseError } from '../types';
 import { executeFlow, NO_CALLBACK, type ScreenshotResult } from '../executor';
@@ -52,24 +48,6 @@ const DEFAULT_OPTIONS = {
   bail: true,
   parallel: 1,
 } as const;
-
-/**
- * agent-browserのインストール状態を確認する
- *
- * @returns 成功時: void、失敗時: OrchestratorError
- */
-const checkEnvironment = (): ResultAsync<void, OrchestratorError> =>
-  checkAgentBrowser()
-    .map(() => undefined)
-    .mapErr(
-      (error: AgentBrowserError): OrchestratorError => ({
-        type: 'environment_error',
-        message:
-          error.type === 'not_installed'
-            ? error.message
-            : `agent-browser check failed: ${error.type}`,
-      }),
-    );
 
 /**
  * ファイルパスまたはglobパターンからフローファイルを検出する
@@ -167,36 +145,23 @@ const loadAllFlows = (
 };
 
 /**
- * ユニークなセッション名を生成する
- *
- * 並列実行時の衝突を防ぐため、タイムスタンプとランダム値を組み合わせる。
- * Unixドメインソケットのパス長制限（約108バイト）を考慮し、セッション名は短くする。
- *
- * @param flowName - フロー名
- * @returns ユニークなセッション名
- */
-const generateSessionName = (flowName: string): string => {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2, 6);
-  const shortName = flowName.slice(0, 10);
-  return `enbu-${shortName}-${timestamp}-${random}`;
-};
-
-/**
  * FlowExecutionOptionsを構築する
  *
- * @param sessionName - セッション名
  * @param input - 実行オプション
  * @param cwd - 作業ディレクトリ
  * @returns FlowExecutionOptions
  */
-const buildFlowExecutionOptions = (
-  sessionName: string,
-  input: RunFlowsInput,
-  cwd: string,
-): FlowExecutionOptions => {
+const buildFlowExecutionOptions = (input: RunFlowsInput, cwd: string): FlowExecutionOptions => {
+  // セッション指定の決定:
+  // - sessionName が指定されていれば、そのまま使用（type: 'name'）
+  // - 指定されていなければ、デフォルトプレフィックス 'enbu' で生成（type: 'default'）
+  const session =
+    input.sessionName !== undefined
+      ? { type: 'name' as const, value: input.sessionName }
+      : { type: 'default' as const };
+
   return {
-    sessionName,
+    session,
     headed: input.headed ?? DEFAULT_OPTIONS.headed,
     env: input.env ?? DEFAULT_OPTIONS.env,
     commandTimeoutMs: input.commandTimeoutMs ?? DEFAULT_OPTIONS.commandTimeoutMs,
@@ -253,12 +218,11 @@ const notifyFlowProgress = async (
  * @returns フロー実行結果のサマリー
  */
 const executeSingleFlow = async (flow: Flow, input: RunFlowsInput): Promise<FlowRunSummary> => {
-  const sessionName = generateSessionName(flow.name);
   const startTime = Date.now();
 
   await notifyFlowProgress(input, flow.name, 'start', 0, flow.steps.length);
 
-  const options = buildFlowExecutionOptions(sessionName, input, input.cwd);
+  const options = buildFlowExecutionOptions(input, input.cwd);
   const result = await executeFlow(flow, options);
 
   return result.match(
@@ -267,10 +231,6 @@ const executeSingleFlow = async (flow: Flow, input: RunFlowsInput): Promise<Flow
       const status = flowResult.status;
 
       await notifyFlowProgress(input, flow.name, status, duration, undefined);
-
-      if (status === 'passed') {
-        await browserClose(sessionName);
-      }
 
       const summary: FlowRunSummary = {
         flowName: flow.name,
@@ -400,11 +360,10 @@ const executeAllFlows = async (
  * フロー実行パイプラインのメインエントリーポイント
  *
  * 以下の処理を順次実行する:
- * 1. agent-browserのインストール確認
- * 2. フローファイルの検出
- * 3. フローファイルの読み込み・パース
- * 4. フローの実行（順次または並列）
- * 5. 実行結果の集約
+ * 1. フローファイルの検出
+ * 2. フローファイルの読み込み・パース
+ * 3. フローの実行（順次または並列）
+ * 4. 実行結果の集約
  *
  * @param input - 実行オプション
  * @returns 成功時: RunFlowsOutput、失敗時: OrchestratorError
@@ -413,9 +372,7 @@ export const runFlows = (input: RunFlowsInput): ResultAsync<RunFlowsOutput, Orch
   const startTime = Date.now();
 
   return (
-    checkEnvironment()
-      // フローファイル検出
-      .andThen(() => discoverFlowFiles(input.files, input.cwd))
+    discoverFlowFiles(input.files, input.cwd)
       // 空チェック
       .andThen((flowFiles) => {
         if (flowFiles.length === 0) {

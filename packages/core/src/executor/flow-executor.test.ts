@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Flow } from '../types';
 import { executeFlow } from './flow-executor';
 import type { FlowExecutionOptions } from './result';
-import { isPassedFlowResult, NO_CALLBACK } from './result';
+import { isFailedFlowResult, isPassedFlowResult, NO_CALLBACK } from './result';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
 const toUrl = (s: string) => s as Url;
@@ -20,7 +20,7 @@ const toInteractableTextSelector = (s: string) => s as InteractableTextSelector;
 const createTestOptions = (
   overrides: Partial<FlowExecutionOptions> = {},
 ): FlowExecutionOptions => ({
-  sessionName: 'test-session',
+  session: { type: 'default' },
   headed: false,
   env: {},
   autoWaitTimeoutMs: 5000,
@@ -45,11 +45,13 @@ vi.mock('@packages/agent-browser-adapter', async (importOriginal) => {
     browserWaitForMs: vi.fn(),
     browserScreenshot: vi.fn(),
     browserIsVisible: vi.fn(),
+    browserClose: vi.fn(),
   };
 });
 
 import {
   browserClick,
+  browserClose,
   browserFill,
   browserIsVisible,
   browserOpen,
@@ -65,6 +67,8 @@ describe('executeFlow', () => {
     vi.mocked(browserScreenshot).mockReturnValue(okAsync({ path: '/tmp/screenshot.png' }));
     // セレクタ待機用のデフォルトモック（要素が常に表示されている状態）
     vi.mocked(browserIsVisible).mockReturnValue(okAsync({ visible: true }));
+    // ブラウザクローズ用のデフォルトモック
+    vi.mocked(browserClose).mockReturnValue(okAsync({}));
   });
 
   /**
@@ -342,12 +346,12 @@ describe('executeFlow', () => {
   });
 
   /**
-   * FE-10: FlowResultにsessionNameが含まれる（成功時）
+   * FE-10: 成功時は sessionName が結果に含まれない
    *
    * 前提条件: 正常に実行されるフロー
-   * 検証項目: FlowResult.sessionName が options.sessionName と一致すること
+   * 検証項目: PassedFlowResult には sessionName プロパティがないこと
    */
-  it('FE-10: FlowResultにsessionNameが含まれる（成功時）', async () => {
+  it('FE-10: 成功時は sessionName が結果に含まれない', async () => {
     // Arrange
     const flow: Flow = {
       name: 'テストフロー',
@@ -355,9 +359,7 @@ describe('executeFlow', () => {
       steps: [{ command: 'open', url: toUrl('https://example.com') }],
     };
 
-    const options = createTestOptions({
-      sessionName: 'test-session-success',
-    });
+    const options = createTestOptions();
 
     vi.mocked(browserOpen).mockReturnValueOnce(okAsync({ url: 'https://example.com' }));
 
@@ -369,8 +371,8 @@ describe('executeFlow', () => {
     result.match(
       (flowResult) => {
         expect(flowResult.status).toBe('passed');
-        expect(flowResult.sessionName).toBe('test-session-success');
-        expect(flowResult.sessionName).toBe(options.sessionName);
+        // 成功時は sessionName プロパティが存在しない
+        expect('sessionName' in flowResult).toBe(false);
       },
       () => {
         throw new Error('Expected ok result');
@@ -379,12 +381,12 @@ describe('executeFlow', () => {
   });
 
   /**
-   * FE-11: FlowResultにsessionNameが含まれる（失敗時）
+   * FE-11: 失敗時は sessionName が結果に含まれる（デバッグ用）
    *
    * 前提条件: agent-browserが未インストールでコマンドが失敗
-   * 検証項目: FlowResult.sessionName が options.sessionName と一致すること（status: 'failed' でも）
+   * 検証項目: FailedFlowResult には sessionName プロパティが存在すること
    */
-  it('FE-11: FlowResultにsessionNameが含まれる（失敗時）', async () => {
+  it('FE-11: 失敗時は sessionName が結果に含まれる（デバッグ用）', async () => {
     // Arrange
     const flow: Flow = {
       name: 'テストフロー',
@@ -392,9 +394,7 @@ describe('executeFlow', () => {
       steps: [{ command: 'open', url: toUrl('https://example.com') }],
     };
 
-    const options = createTestOptions({
-      sessionName: 'test-session-failure',
-    });
+    const options = createTestOptions();
 
     vi.mocked(browserOpen).mockReturnValueOnce(
       errAsync({ type: 'not_installed', message: 'agent-browser not found' }),
@@ -408,8 +408,12 @@ describe('executeFlow', () => {
     result.match(
       (flowResult) => {
         expect(flowResult.status).toBe('failed');
-        expect(flowResult.sessionName).toBe('test-session-failure');
-        expect(flowResult.sessionName).toBe(options.sessionName);
+        // 失敗時は sessionName が存在する（デバッグ用）
+        expect(isFailedFlowResult(flowResult)).toBe(true);
+        if (isFailedFlowResult(flowResult)) {
+          // sessionName が自動生成された形式であること
+          expect(flowResult.sessionName).toMatch(/^enbu-/);
+        }
       },
       () => {
         throw new Error('Expected ok result');

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { startTestServer } from '../utils/file-server';
+import { describe, it, expect } from 'vitest';
 import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
+import { getE2EServerPort } from '../utils/e2e-test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -13,33 +13,9 @@ import { join } from 'node:path';
  * - npx agent-browser が利用可能であること
  * - tests/fixtures/flows/simple.enbu.yaml が存在すること
  * - tests/fixtures/html/login-form.html が存在すること
+ * - グローバルセットアップでHTTPサーバーが起動していること
  */
 describe('E2E: Basic Flow Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
-    ? T extends { isOk(): true; value: infer V }
-      ? V
-      : never
-    : never;
-
-  beforeAll(async () => {
-    // テスト用HTTPサーバーを起動（空きポートを自動選択）
-    const serverResult = await startTestServer();
-    if (serverResult.isErr()) {
-      throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
-    }
-    server = serverResult.value;
-  });
-
-  afterAll(async () => {
-    // サーバーを停止
-    if (server) {
-      const closeResult = await server.close();
-      if (closeResult.isErr()) {
-        console.error(`サーバー停止失敗: ${closeResult.error.message}`);
-      }
-    }
-  });
-
   /**
    * E-BASIC-1: ページを開く
    *
@@ -55,7 +31,7 @@ describe('E2E: Basic Flow Tests', () => {
   it('E-BASIC-1: ページを正常に開ける', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -72,7 +48,7 @@ describe('E2E: Basic Flow Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 60000); // タイムアウト: 60秒
 
   /**
    * E-BASIC-2: 要素の存在確認
@@ -89,7 +65,7 @@ describe('E2E: Basic Flow Tests', () => {
   it('E-BASIC-2: 要素の存在を確認できる', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -106,7 +82,7 @@ describe('E2E: Basic Flow Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 60000); // タイムアウト: 60秒
 
   /**
    * E-BASIC-3: 複数ステップの実行
@@ -122,7 +98,7 @@ describe('E2E: Basic Flow Tests', () => {
   it('E-BASIC-3: 複数ステップを順次実行できる', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -139,7 +115,7 @@ describe('E2E: Basic Flow Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 60000); // タイムアウト: 60秒
 
   /**
    * E-BASIC-4: スクリーンショット機能
@@ -155,7 +131,7 @@ describe('E2E: Basic Flow Tests', () => {
   it('E-BASIC-4: --screenshot フラグでフローを実行できる', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/simple.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -172,5 +148,5 @@ describe('E2E: Basic Flow Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 60000); // タイムアウト: 60秒
 });

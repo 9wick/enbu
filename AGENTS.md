@@ -60,17 +60,17 @@ This is an Nx workspace: applications live in `apps/`, shared libraries in `pack
 ## Build, Test & Development Commands
 
 - Nxはグローバルインストールなしで、必要に応じて `pnpm exec nx …`（または `pnpm nx …`）を使う。
-- `pnpm run build` executes `nx affected --target=build`; `pnpm exec nx run web:build` builds the Electron bundle. Packaging/preview lives in `apps/desktop` scripts (`pnpm --filter @packages/desktop run start|build:mac|build:win|build:linux|build:unpack`).
-- Quality gates: `pnpm run typecheck` (`nx affected --target=typecheck`), `pnpm run lint` / `pnpm run lint:check` (`nx affected --target=lint` with/without CI config), and `pnpm run format` / `pnpm run format:check` (Biome).
-- Tests: `pnpm run test` runs affected Vitest targets. Desktop-specific suites: `pnpm run test:main`, `pnpm run test:storybook`, `pnpm run test:coverage`, and `pnpm run test:s3` (LocalStack-driven).
-- Utilities: `pnpm run graph` visualizes Nx deps; `pnpm run clean` drops build artifacts and resets Nx cache; `clean:modules` purges all `node_modules`. `pnpm run prepush` chains format → typecheck → lint → build → test (expensive).
+- `pnpm run build` executes `nx run-many --target=build`。
+- Quality gates: `pnpm run typecheck`、`pnpm run lint` / `pnpm run lint:check`、`pnpm run format` / `pnpm run format:check` (Biome)。
+- Tests: `pnpm run test` runs Vitest unit tests. `pnpm run test:integration` runs integration tests. `pnpm run test:e2e` runs E2E tests. `pnpm run test:examples` runs example tests. `pnpm run test:coverage` runs coverage report.
+- Utilities: `pnpm run clean` drops build artifacts and resets Nx cache; `clean:pnpm:modules` purges all `node_modules`. `pnpm run prepush` chains format → typecheck → lint → build → test → test:integration → test:e2e → test:examples.
 
 ## After your task finished
 After completing your task, ensure to run `pnpm run prepush` to verify that all code quality checks pass before pushing your changes. This helps maintain the integrity of the codebase and prevents integration issues.
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript + React function components, 2-space indent, and Biome defaults (single quotes, trailing commas). ESLint’s flat config enforces React Hooks/Refresh rules and blocks raw `console`, so prefer `pino` logging or dedicated debug utilities. Components/files are PascalCase, hooks start with `use`, and shared helpers export camelCase from `packages/common/src` (barrel files live at `index.barrel.ts`). Keep preload APIs thin, typed, and colocated with their renderer consumers. Storybook files follow `Component.stories.tsx` plus CSF 3.
+Use TypeScript, 2-space indent, and Biome defaults (single quotes, trailing commas). ESLint's flat config blocks raw `console`. Files are PascalCase for types/classes, camelCase for functions/utilities. Shared helpers export from `packages/` with barrel files at `index.barrel.ts`.
 
 - throwは禁止で、neverthrowをつかって型安全にResult型で扱う。
 - 外部ライブラリのthrowはneverthrowのFromThrowableを使って、例外をResultに変換する。このとき、FromThrowableのscopeは最小となるように、外部ライブラリ以外を含まないようにする
@@ -84,8 +84,8 @@ Use TypeScript + React function components, 2-space indent, and Biome defaults (
 
 ## Testing Guidelines
 
-Vitest multi-project config is defined in the root `vitest.config.ts` and `apps/desktop/vitest.config.ts`. Co-locate `*.test.ts(x)` with features, share renderer setup via `apps/desktop/src/test/setup.ts`, and use `@testing-library/react` plus `user-event` for UI flows. Mock DuckDB adapters or reuse `sample/` JSONL fixtures for deterministic runs. Run `pnpm run test:coverage` ahead of releases (desktop renderer enforces ≥80% thresholds). When touching visual components or Storybook metadata, re-run `pnpm run test:storybook` and review Storybook locally.
+Vitest multi-project config is defined in the root `vitest.config.ts`. Each app/package has its own `vitest.config.ts`. Co-locate `*.test.ts` with features. Reuse `example/` YAML fixtures for deterministic E2E runs. Run `pnpm run test:coverage` for coverage reports.
 
 ## Commit & Pull Request Guidelines
 
-Commit messages follow the existing prefixes (`feat:`, `fix:`, `test:`, optional scopes like `feat(renderer): …`) and reference issues via `#123`. Keep commits focused, include one English summary line, and avoid mixing infrastructure with UI or data-layer edits. Each PR must explain intent, highlight risky surfaces (DuckDB schema, preload contracts, packaging scripts), and list manual QA or sample data used. Attach screenshots/clips for UI work, rerun `pnpm run prepush`, and update docs or Storybook when behavior shifts.
+Commit messages follow the existing prefixes (`feat:`, `fix:`, `test:`, optional scopes like `feat(core): …`) and reference issues via `#123`. Keep commits focused, include one English summary line. Each PR must explain intent, highlight risky surfaces (YAML schema changes, agent-browser integration), and list manual QA or sample data used. Rerun `pnpm run prepush` before pushing.

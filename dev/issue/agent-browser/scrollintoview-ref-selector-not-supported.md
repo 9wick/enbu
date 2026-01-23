@@ -71,7 +71,7 @@ agent-browser の他のコマンド（`click`, `fill`, `focus` など）では `
 npx agent-browser focus @e3 --session test-scroll --json
 ```
 
-### agent-browser-flow での回避実装
+### enbu での回避実装
 
 `packages/core/src/executor/commands/scroll.ts` にて実装済み：
 
@@ -125,6 +125,6 @@ await locator.scrollIntoViewIfNeeded();
 
 ## 関連情報
 
-- このバグは [agent-browser-flow](https://github.com/anthropics/agent-browser-flow) の実装中に発見
+- このバグは enbu の実装中に発見
 - 回避策の実装箇所: `packages/core/src/executor/commands/scroll.ts:44-75`
 - 関連する `@ref` セレクタ処理: `packages/core/src/executor/auto-wait.ts`

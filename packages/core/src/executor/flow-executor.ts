@@ -10,6 +10,7 @@
  */
 
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
+import { browserClose } from '@packages/agent-browser-adapter';
 import { errAsync, ok, okAsync, type Result, ResultAsync } from 'neverthrow';
 import type { Flow } from '../types';
 import { executeStep } from './execute-step';
@@ -81,24 +82,53 @@ const buildFailedFlowResult = (
  * 成功したフロー結果を構築する
  *
  * @param expandedFlow - 環境変数が展開されたフロー定義
- * @param sessionName - セッション名
  * @param duration - 全体の実行時間（ミリ秒）
  * @param steps - 実行済みのステップ結果の配列
  * @returns 成功したフロー結果
  */
 const buildSuccessFlowResult = (
   expandedFlow: Flow,
-  sessionName: string,
   duration: number,
   steps: StepResult[],
 ): PassedFlowResult => {
   return {
     flow: expandedFlow,
-    sessionName,
     status: 'passed',
     duration,
     steps,
   };
+};
+
+/**
+ * ユニークなセッション名を生成する
+ *
+ * 並列実行時の衝突を防ぐため、タイムスタンプとランダム値を組み合わせる。
+ * Unixドメインソケットのパス長制限（約108バイト）を考慮し、セッション名は短くする。
+ *
+ * @param prefix - セッション名のプレフィックス（デフォルト: 'enbu'）
+ * @returns ユニークなセッション名（{prefix}-timestamp-random 形式）
+ */
+const generateSessionName = (prefix = 'enbu'): string => {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 6);
+  return `${prefix}-${timestamp}-${random}`;
+};
+
+/**
+ * SessionSpec からセッション名を解決する
+ *
+ * @param spec - セッション指定
+ * @returns セッション名
+ */
+const resolveSessionName = (spec: FlowExecutionOptions['session']): string => {
+  switch (spec.type) {
+    case 'name':
+      return spec.value;
+    case 'prefix':
+      return generateSessionName(spec.value);
+    case 'default':
+      return generateSessionName('enbu');
+  }
 };
 
 /**
@@ -109,6 +139,8 @@ const buildSuccessFlowResult = (
  * @returns 実行コンテキスト
  */
 const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): ExecutionContext => {
+  const sessionName = resolveSessionName(options.session);
+
   // Flow.envとoptions.envをマージする（options.envが優先）
   const mergedEnv = {
     ...flow.env,
@@ -116,9 +148,9 @@ const buildExecutionContext = (options: FlowExecutionOptions, flow: Flow): Execu
   };
 
   return {
-    sessionName: options.sessionName,
+    sessionName,
     executeOptions: {
-      sessionName: options.sessionName,
+      sessionName,
       headed: options.headed,
       timeoutMs: options.commandTimeoutMs,
       cwd: options.cwd,
@@ -332,6 +364,19 @@ export const executeFlow = (
       );
     }
 
-    return okAsync(buildSuccessFlowResult(flow, context.sessionName, duration, steps));
+    // 成功時: session をクローズしてから結果を返す
+    return browserClose(context.sessionName)
+      .map(() => buildSuccessFlowResult(flow, duration, steps))
+      .mapErr((error): AgentBrowserError => {
+        if (error.type !== 'command_execution_failed') {
+          return error;
+        }
+        return {
+          type: 'command_execution_failed',
+          message: 'Failed to close browser session',
+          command: 'browserClose',
+          rawError: String(error),
+        };
+      });
   });
 };

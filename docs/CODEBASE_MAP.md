@@ -69,7 +69,7 @@ sequenceDiagram
 ## Directory Structure
 
 ```
-/workspaces/agent-browser-flow/
+/workspaces/enbu/
 ├── apps/                           # アプリケーション層
 │   ├── cli/                        # enbu CLI (npm公開)
 │   │   ├── src/

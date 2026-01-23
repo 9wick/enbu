@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { startTestServer } from '../utils/file-server';
+import { describe, it, expect } from 'vitest';
 import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
+import { getE2EServerPort } from '../utils/e2e-test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -13,33 +13,9 @@ import { join } from 'node:path';
  * - npx agent-browser が利用可能であること
  * - tests/fixtures/flows/error-case.enbu.yaml が存在すること
  * - tests/fixtures/html/assertions.html が存在すること
+ * - グローバルセットアップでHTTPサーバーが起動していること
  */
 describe('E2E: Error Cases Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
-    ? T extends { isOk(): true; value: infer V }
-      ? V
-      : never
-    : never;
-
-  beforeAll(async () => {
-    // テスト用HTTPサーバーを起動（空きポートを自動選択）
-    const serverResult = await startTestServer();
-    if (serverResult.isErr()) {
-      throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
-    }
-    server = serverResult.value;
-  });
-
-  afterAll(async () => {
-    // サーバーを停止
-    if (server) {
-      const closeResult = await server.close();
-      if (closeResult.isErr()) {
-        console.error(`サーバー停止失敗: ${closeResult.error.message}`);
-      }
-    }
-  });
-
   /**
    * E-ERR-1: 存在しない要素
    *
@@ -55,7 +31,7 @@ describe('E2E: Error Cases Tests', () => {
   it('E-ERR-1: 存在しない要素 - 適切なエラーメッセージ', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -74,7 +50,7 @@ describe('E2E: Error Cases Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 60000); // タイムアウト: 60秒
 
   /**
    * E-ERR-2: 無効な操作
@@ -92,7 +68,7 @@ describe('E2E: Error Cases Tests', () => {
   it('E-ERR-2: 無効な操作 - 無効な操作のエラー', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -110,7 +86,7 @@ describe('E2E: Error Cases Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 
   /**
    * E-ERR-3: タイムアウト
@@ -128,7 +104,7 @@ describe('E2E: Error Cases Tests', () => {
   it('E-ERR-3: タイムアウト - タイムアウトエラー', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -146,7 +122,7 @@ describe('E2E: Error Cases Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 
   /**
    * E-ERR-4: アサーション失敗
@@ -163,7 +139,7 @@ describe('E2E: Error Cases Tests', () => {
   it('E-ERR-4: アサーション失敗 - 期待値との差分表示', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/error-case.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -183,5 +159,5 @@ describe('E2E: Error Cases Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 });

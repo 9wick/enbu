@@ -86,7 +86,7 @@ CLIのコマンドライン引数パーサーが第2引数を `value`（単数�
 
 - CLIからの `select` コマンドが完全に機能しない
 - E2Eテストでセレクトボックスの操作が不可能
-- enbu（agent-browser-flow）との連携でも同様に失敗
+- enbu との連携でも同様に失敗
 
 ## 回避策
 
@@ -133,5 +133,5 @@ const selectSchema = baseCommandSchema.extend({
 
 ## 関連情報
 
-- このバグは [agent-browser-flow](https://github.com/anthropics/agent-browser-flow) の E2E テスト実装中に発見
+- このバグは enbu の E2E テスト実装中に発見
 - 内部呼び出し箇所: `packages/core/src/executor/commands/hover-select.ts:58`

@@ -25,12 +25,9 @@ steps:
   # Click login button (type=submit button)
   - click: Sign In
 
-  # Verify login success message is displayed
-  - assertVisible: Welcome, John Smith
-
-  # Wait for automatic redirect
+  # Wait for redirect to index page (login success)
   - wait:
-      anyText: Collection
+      url: ${BASE_URL}/index.html
 
   # Verify user name is displayed (logged in state)
   - assertVisible: John Smith

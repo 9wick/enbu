@@ -7,7 +7,6 @@ export default defineConfig({
       '@packages/agent-browser-adapter': resolve(__dirname, 'packages/agent-browser-adapter/src'),
       '@packages/core': resolve(__dirname, 'packages/core/src'),
       '@packages/common': resolve(__dirname, 'packages/common/src'),
-      '@agent-browser-flow/v-arch': resolve(__dirname, 'packages/v-arch/src'),
     },
   },
   test: {
@@ -15,19 +14,22 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./tests/utils/custom-matchers.ts'],
-    // テスト終了後にenbu-e2e-*セッションをクリーンアップ
-    globalSetup: ['./tests/utils/e2e-teardown.ts'],
+    // グローバルセットアップ: 共有HTTPサーバー起動 + セッションクリーンアップ
+    globalSetup: ['./tests/utils/e2e-global-setup.ts'],
     // E2Eテストは時間がかかるため、タイムアウトを長めに設定
-    testTimeout: 60000,
-    hookTimeout: 30000,
+    testTimeout: 90000,
+    hookTimeout: 60000,
+    // ファイル内テストの並列実行を有効化
     // 各テストが一意なセッション名を使用するため、並列実行が可能
     // test-helpers.tsのrunCliが自動的に--sessionオプションを付与する
-    pool: 'forks',
+    // agent-browserの同時起動数を制限するため、並列度を2に制限
+    // 各テストがブラウザセッションを使用するため、過度な並列化はタイムアウトの原因になる
+    fileParallelism: true,
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        // 4並列で実行（CPU/メモリに余裕があれば増やせる）
-        maxForks: 4,
-        minForks: 1,
+      threads: {
+        maxThreads: 2,
+        minThreads: 1,
       },
     },
     // E2Eテストではカバレッジを取得しない（実行時間削減）

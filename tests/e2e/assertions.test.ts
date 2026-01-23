@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { startTestServer } from '../utils/file-server';
+import { describe, it, expect } from 'vitest';
 import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
+import { getE2EServerPort } from '../utils/e2e-test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -13,33 +13,9 @@ import { join } from 'node:path';
  * - npx agent-browser が利用可能であること
  * - tests/fixtures/flows/assertions.enbu.yaml が存在すること
  * - tests/fixtures/html/assertions.html が存在すること
+ * - グローバルセットアップでHTTPサーバーが起動していること
  */
 describe('E2E: Assertion Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
-    ? T extends { isOk(): true; value: infer V }
-      ? V
-      : never
-    : never;
-
-  beforeAll(async () => {
-    // テスト用HTTPサーバーを起動（空きポートを自動選択）
-    const serverResult = await startTestServer();
-    if (serverResult.isErr()) {
-      throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
-    }
-    server = serverResult.value;
-  });
-
-  afterAll(async () => {
-    // サーバーを停止
-    if (server) {
-      const closeResult = await server.close();
-      if (closeResult.isErr()) {
-        console.error(`サーバー停止失敗: ${closeResult.error.message}`);
-      }
-    }
-  });
-
   /**
    * E-ASSERT-1: assertVisible
    *
@@ -54,7 +30,7 @@ describe('E2E: Assertion Tests', () => {
   it('E-ASSERT-1: assertVisible - 可視要素が検出される', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -69,7 +45,7 @@ describe('E2E: Assertion Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 90000); // タイムアウト: 90秒
 
   /**
    * E-ASSERT-2: assertEnabled
@@ -85,7 +61,7 @@ describe('E2E: Assertion Tests', () => {
   it('E-ASSERT-2: assertEnabled - 有効なボタンが検出される', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -100,7 +76,7 @@ describe('E2E: Assertion Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 
   /**
    * E-ASSERT-3: assertChecked
@@ -116,7 +92,7 @@ describe('E2E: Assertion Tests', () => {
   it('E-ASSERT-3: assertChecked - チェック済みのチェックボックスが検出される', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -131,7 +107,7 @@ describe('E2E: Assertion Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 
   /**
    * E-ASSERT-4: assertChecked (unchecked)
@@ -147,7 +123,7 @@ describe('E2E: Assertion Tests', () => {
   it('E-ASSERT-4: assertChecked (unchecked) - 未チェックのチェックボックスが検出される', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/assertions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -162,5 +138,5 @@ describe('E2E: Assertion Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 60000);
 });

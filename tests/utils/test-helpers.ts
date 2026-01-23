@@ -22,11 +22,9 @@ export type CliResult = {
  * このプレフィックスを使用することで、テスト終了後に
  * テスト用セッションだけをクリーンアップできる。
  *
- * 注意: CLIのrun.tsでセッション名に`enbu-`プレフィックスが追加されるため、
- * 最終的なセッション名は`enbu-e2e-xxx`形式になる。
- * 例: npx agent-browser session list | grep enbu-e2e-
+ * 例: npx agent-browser session list | grep e2e-
  */
-export const TEST_SESSION_PREFIX = 'enbu-e2e-';
+export const TEST_SESSION_PREFIX = 'e2e-';
 
 /**
  * テスト用の一意なセッション名を生成する
@@ -34,10 +32,9 @@ export const TEST_SESSION_PREFIX = 'enbu-e2e-';
  * 並列実行時にagent-browserセッションが競合しないよう、
  * タイムスタンプとランダム値を組み合わせた一意な名前を生成する。
  *
- * 注意: CLIのrun.tsで`enbu-`プレフィックスが追加されるため、
- * ここでは`e2e-`で始める。最終的なセッション名は`enbu-e2e-xxx`形式になる。
+ * --session オプションで渡すため、完全なセッション名を生成する。
  *
- * @returns 一意なセッション名（e2e-xxxx-xxxx形式）
+ * @returns 一意なセッション名（e2e-timestamp-random形式）
  */
 const generateUniqueSessionName = (): string => {
   const timestamp = Date.now().toString(36);

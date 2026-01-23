@@ -378,6 +378,8 @@ export const runFlowCommand = (
   const input: RunFlowsInput = {
     files: args.files,
     cwd: process.cwd(),
+    sessionName: args.session,
+    // CLI からは sessionPrefix を指定しない（デフォルトの 'enbu' を使用）
     headed: args.headed,
     env: args.env,
     commandTimeoutMs: args.timeout,

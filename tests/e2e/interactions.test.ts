@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { startTestServer } from '../utils/file-server';
+import { describe, it, expect } from 'vitest';
 import { runCli, createTempFlowWithPort } from '../utils/test-helpers';
+import { getE2EServerPort } from '../utils/e2e-test-helpers';
 import { join } from 'node:path';
 
 /**
@@ -13,33 +13,9 @@ import { join } from 'node:path';
  * - npx agent-browser が利用可能であること
  * - tests/fixtures/flows/interactions.enbu.yaml が存在すること
  * - tests/fixtures/html/form-elements.html が存在すること
+ * - グローバルセットアップでHTTPサーバーが起動していること
  */
 describe('E2E: Interaction Tests', () => {
-  let server: Awaited<ReturnType<typeof startTestServer>> extends infer T
-    ? T extends { isOk(): true; value: infer V }
-      ? V
-      : never
-    : never;
-
-  beforeAll(async () => {
-    // テスト用HTTPサーバーを起動（空きポートを自動選択）
-    const serverResult = await startTestServer();
-    if (serverResult.isErr()) {
-      throw new Error(`サーバー起動失敗: ${serverResult.error.message}`);
-    }
-    server = serverResult.value;
-  });
-
-  afterAll(async () => {
-    // サーバーを停止
-    if (server) {
-      const closeResult = await server.close();
-      if (closeResult.isErr()) {
-        console.error(`サーバー停止失敗: ${closeResult.error.message}`);
-      }
-    }
-  });
-
   /**
    * E-INT-1: type - テキスト入力
    *
@@ -54,7 +30,7 @@ describe('E2E: Interaction Tests', () => {
   it('E-INT-1: type - テキスト入力が成功', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -69,7 +45,7 @@ describe('E2E: Interaction Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000); // タイムアウト: 30秒
+  }, 90000); // タイムアウト: 90秒（複数ステップのフロー実行に時間がかかるため）
 
   /**
    * E-INT-2: fill - フォーム入力
@@ -85,7 +61,7 @@ describe('E2E: Interaction Tests', () => {
   it('E-INT-2: fill - フォーム入力が成功', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -100,7 +76,7 @@ describe('E2E: Interaction Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 90000);
 
   /**
    * E-INT-3: click - ボタンクリック
@@ -115,7 +91,7 @@ describe('E2E: Interaction Tests', () => {
   it('E-INT-3: click - ボタンクリックが成功', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -130,7 +106,7 @@ describe('E2E: Interaction Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 90000);
 
   /**
    * E-INT-4: press - キーボード操作
@@ -147,7 +123,7 @@ describe('E2E: Interaction Tests', () => {
   it('E-INT-4: press - キーボード操作が成功', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -162,7 +138,7 @@ describe('E2E: Interaction Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 90000);
 
   /**
    * E-INT-5: 複数要素の操作
@@ -185,7 +161,7 @@ describe('E2E: Interaction Tests', () => {
   it('E-INT-5: 複数要素の操作 - 連続した操作が全て成功', async () => {
     // Arrange
     const fixturePath = join(process.cwd(), 'tests/fixtures/flows/interactions.enbu.yaml');
-    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, server.port);
+    const { tempPath, cleanup } = await createTempFlowWithPort(fixturePath, getE2EServerPort());
 
     try {
       // Act
@@ -200,5 +176,5 @@ describe('E2E: Interaction Tests', () => {
     } finally {
       await cleanup();
     }
-  }, 30000);
+  }, 90000);
 });

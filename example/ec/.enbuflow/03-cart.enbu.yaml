@@ -14,9 +14,9 @@ steps:
       css: "#password"
       value: password123
   - click: Sign In
-  - assertVisible: Welcome, John Smith
   - wait:
-      anyText: John Smith
+      url: ${BASE_URL}/index.html
+  - assertVisible: John Smith
 
   # Wait for product listing to be displayed
   - assertVisible: Collection
