@@ -211,6 +211,35 @@ steps:
       return element.textContent;
 ```
 
+## Documentation
+
+### Command Reference
+
+For a complete reference of all available commands and their options, see [docs/reference.md](./docs/REFERENCE.md).
+
+This auto-generated document includes detailed usage examples for all 17+ supported commands across categories:
+
+- **Navigation**: `open`, `scroll`, `scrollIntoView`
+- **Interaction**: `click`, `hover`, `press`
+- **Input**: `type`, `fill`, `select`
+- **Wait**: `wait` (with multiple strategies)
+- **Capture**: `screenshot`
+- **Assertion**: `assertVisible`, `assertNotVisible`, `assertEnabled`, `assertChecked`
+- **Other**: `eval`
+
+### Examples
+
+The [`example/`](./example/) directory contains working examples demonstrating all enbu commands organized by category:
+
+- **[simple](./example/simple/)** (port 3000) - Basic navigation and assertions
+- **[navigation](./example/navigation/)** (port 3010) - Page navigation, clicks, and hover
+- **[form-input](./example/form-input/)** (port 3020) - Text input, key presses, and select boxes
+- **[scroll](./example/scroll/)** (port 3030) - Scrolling and scroll-into-view
+- **[utility](./example/utility/)** (port 3040) - Wait, screenshot, snapshot, and JavaScript execution
+- **[assertions](./example/assertions/)** (port 3050) - All assertion commands
+
+Each example includes a working Express server and `.enbuflow/` test files. See [example/README.md](./example/README.md) for how to run them.
+
 ## Environment Variables
 
 You can use environment variables in your flows:

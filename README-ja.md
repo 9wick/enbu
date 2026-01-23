@@ -209,6 +209,35 @@ steps:
       return element.textContent;
 ```
 
+## ドキュメント
+
+### コマンドリファレンス
+
+全コマンドの詳細なリファレンスは [docs/reference.md](./docs/REFERENCE.md) を参照してください。
+
+この自動生成ドキュメントには、カテゴリ別に整理された17以上のコマンドの詳細な使用例が含まれています：
+
+- **Navigation（ナビゲーション）**: `open`, `scroll`, `scrollIntoView`
+- **Interaction（インタラクション）**: `click`, `hover`, `press`
+- **Input（入力）**: `type`, `fill`, `select`
+- **Wait（待機）**: `wait`（複数の待機戦略に対応）
+- **Capture（キャプチャ）**: `screenshot`
+- **Assertion（アサーション）**: `assertVisible`, `assertNotVisible`, `assertEnabled`, `assertChecked`
+- **Other（その他）**: `eval`
+
+### サンプル
+
+[`example/`](./example/) ディレクトリには、enbuの全コマンドを実際に動作するサンプルとしてカテゴリ別に実装したプロジェクトが含まれています：
+
+- **[simple](./example/simple/)** (ポート 3000) - 基本的なナビゲーションとアサーション
+- **[navigation](./example/navigation/)** (ポート 3010) - ページ遷移、クリック、ホバー
+- **[form-input](./example/form-input/)** (ポート 3020) - テキスト入力、キー入力、セレクトボックス
+- **[scroll](./example/scroll/)** (ポート 3030) - スクロールと要素までのスクロール
+- **[utility](./example/utility/)** (ポート 3040) - 待機、スクリーンショット、スナップショット、JavaScript実行
+- **[assertions](./example/assertions/)** (ポート 3050) - 全アサーションコマンド
+
+各サンプルには動作するExpressサーバーと `.enbuflow/` テストファイルが含まれています。実行方法は [example/README.md](./example/README.md) を参照してください。
+
 ## 環境変数
 
 フロー内で環境変数を使用できます：
