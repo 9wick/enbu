@@ -1,236 +1,234 @@
 # enbu
 
-[日本語版 README](./README-ja.md)
-
 > In martial arts, Enbu (演武) is a choreographed demonstration where practitioners perform predefined sequences of techniques. Similarly, Enbu lets you define test sequences in YAML and performs them in the browser — a rehearsal before production.
 
-A simple E2E testing framework for web browsers. Define test flows in YAML format and leverage the powerful browser automation capabilities of [agent-browser](https://github.com/vercel-labs/agent-browser).
+Webブラウザ向けのシンプルなE2Eテストフレームワーク。YAMLベースのフロー定義で、[agent-browser](https://github.com/vercel-labs/agent-browser)のパワフルなブラウザ自動化を活用できます。
 
-## Features
+## 特徴
 
-- **Readable YAML step definitions** - Write tests in a simple, human-readable format
-- **Semantic element selection** - Locate elements by text, ARIA roles, labels, etc.
-- **Auto-wait** - Automatically waits for elements to appear (no explicit sleeps needed)
-- **Headless/Headed support** - Run tests in CI/CD or debug visually
-- **Debug on failure** - Keep browser state open after test failures for debugging (you can even ask AI to investigate)
-- **agent-browser integration** - Powered by a fast, Rust-based browser automation engine
+- **YAMLで読みやすいステップ定義** - 人間が読みやすいシンプルな形式でテストを記述
+- **セマンティックな要素指定** - テキスト、ARIAロール、ラベル等で要素を特定
+- **自動待機** - 要素が現れるまで自動的に待機（明示的なsleep不要）
+- **Headless/Headed両対応** - CI/CDでの自動実行も、目視でのデバッグも可能
+- **失敗時のデバッグ継続** - テスト失敗時にブラウザ状態を保持したままデバッグ開始可能（AIに調査を依頼することも可能）
+- **agent-browser統合** - Rust製の高速ブラウザ自動化エンジンを利用
 
-## Prerequisites
+## 前提条件
 
-You must have agent-browser installed.
+agent-browserがインストールされている必要があります。
 
 ```bash
-# Install agent-browser (required)
+# agent-browserのインストール（事前に必要）
 npm install -g agent-browser
 ```
 
-## Installation
+## インストール
 
 ```bash
 npm install -g enbu
-# or
+# または
 npx enbu
 ```
 
-## Quick Start
+## クイックスタート
 
-### 1. Initialize Your Project
+### 1. プロジェクトの初期化
 
 ```bash
 npx enbu init
 ```
 
-This creates a `.enbuflow/` directory with sample flows.
+これにより `.enbuflow/` ディレクトリとサンプルフローが作成されます。
 
-### 2. Create a Flow
+### 2. フローの作成
 
 `.enbuflow/login.enbu.yaml`:
 
 ```yaml
-# Login flow test
+# ログインフローのテスト
 steps:
   - open: https://example.com/login
-  - click: Login
+  - click: ログイン
   - fill:
-      selector: Email
+      selector: メールアドレス
       value: user@example.com
   - fill:
-      selector: Password
+      selector: パスワード
       value: password123
-  - click: Submit
-  - assertVisible: Dashboard
+  - click: 送信
+  - assertVisible: ダッシュボード
 ```
 
-### 3. Run Tests
+### 3. テストの実行
 
 ```bash
-# Run all flows
+# 全フローを実行
 npx enbu
 
-# Run a specific flow
+# 特定のフローを実行
 npx enbu .enbuflow/login.enbu.yaml
 ```
 
-## Command Reference
+## コマンドリファレンス
 
-### Open Page
+### ページを開く
 
 ```yaml
 steps:
   - open: https://example.com
 ```
 
-### Click
+### クリック
 
 ```yaml
 steps:
-  # Semantic selector (text, label, ARIA role, etc.)
-  - click: Login
+  # セマンティックセレクタ（テキスト、ラベル、ARIAロール等）
+  - click: ログイン
 
-  # CSS selector
+  # CSSセレクタ
   - click: "#submit-button"
   - click: "[data-testid='add-to-cart']"
 ```
 
-### Text Input
+### テキスト入力
 
 ```yaml
 steps:
-  # fill: Clear input field then type
+  # fill: 入力欄をクリアしてから入力
   - fill:
-      selector: Username
-      value: John Doe
+      selector: ユーザー名
+      value: 山田太郎
 
-  # type: Append to existing text
+  # type: 既存テキストに追記
   - type:
-      selector: Search box
-      value: Additional text
+      selector: 検索欄
+      value: 追加テキスト
 ```
 
-### Key Press
+### キー入力
 
 ```yaml
 steps:
-  # Press Enter key
+  # Enterキーを押す
   - press: Enter
 
-  # Press Tab key
+  # Tabキーを押す
   - press: Tab
 ```
 
-### Assertions
+### アサーション
 
 ```yaml
 steps:
-  # Assert element is visible
-  - assertVisible: Login successful
+  # 要素が表示されていることを確認
+  - assertVisible: ログイン成功
 
-  # Assert element is not visible
-  - assertNotVisible: Error
+  # 要素が表示されていないことを確認
+  - assertNotVisible: エラー
 
-  # Assert element is enabled
-  - assertEnabled: Submit button
+  # 要素が有効であることを確認
+  - assertEnabled: 送信ボタン
 
-  # Assert checkbox is checked
-  - assertChecked: Accept terms
+  # チェックボックスがチェックされていることを確認
+  - assertChecked: 利用規約に同意
 
-  # Assert checkbox is not checked
+  # チェックボックスがチェックされていないことを確認
   - assertChecked:
-      selector: Optional feature
+      selector: オプション
       checked: false
 ```
 
-### Screenshot
+### スクリーンショット
 
 ```yaml
 steps:
-  # Regular screenshot
+  # 通常のスクリーンショット
   - screenshot: ./screenshots/result.png
 
-  # Full-page screenshot
+  # フルページスクリーンショット
   - screenshot:
       path: ./screenshots/fullpage.png
       full: true
 ```
 
-### Snapshot (for debugging)
+### スナップショット（デバッグ用）
 
 ```yaml
 steps:
   - snapshot: {}
 ```
 
-Captures the accessibility tree of the current page. Useful for debugging element selection.
+現在のページのアクセシビリティツリーを取得します。デバッグ時に要素の確認に使用します。
 
-### Scroll
+### スクロール
 
 ```yaml
 steps:
-  # Scroll by direction
+  # 方向を指定してスクロール
   - scroll:
       direction: down
       amount: 500
 
-  # Scroll element into view
-  - scrollIntoView: Footer
+  # 要素が見えるまでスクロール
+  - scrollIntoView: フッター
 ```
 
-### Wait
+### 待機
 
 ```yaml
 steps:
-  # Wait milliseconds
+  # ミリ秒で待機
   - wait: 2000
 
-  # Wait for element to be visible
+  # 要素が表示されるまで待機
   - wait:
       selector: "#loading-complete"
 
-  # Wait for text to appear
+  # テキストが表示されるまで待機
   - wait:
-      text: Loading complete
+      text: 読み込み完了
 
-  # Wait for URL to change
+  # URLが変わるまで待機
   - wait:
       url: /dashboard
 
-  # Wait for page load state
+  # ページ読み込み状態を待機
   - wait:
       load: networkidle
 ```
 
-### JavaScript Execution
+### JavaScript実行
 
 ```yaml
 steps:
   - eval: document.title
 
-  # Multi-line
+  # 複数行
   - eval: |
       const element = document.querySelector('#result');
       return element.textContent;
 ```
 
-## Environment Variables
+## 環境変数
 
-You can use environment variables in your flows:
+フロー内で環境変数を使用できます：
 
 ```yaml
 steps:
   - fill:
-      selector: Password
+      selector: パスワード
       value: ${PASSWORD}
 ```
 
-### Ways to Specify Environment Variables
+### 環境変数の指定方法
 
-#### CLI Arguments
+#### CLI引数で指定
 
 ```bash
 npx enbu --env PASSWORD=secret123
 ```
 
-#### Define in YAML
+#### YAML内で定義
 
 `.enbuflow/login.enbu.yaml`:
 ```yaml
@@ -240,25 +238,25 @@ steps:
   - open: ${BASE_URL}/login
 ```
 
-## CLI Options
+## CLI オプション
 
 ```bash
 npx enbu [options] [flow-files...]
 
-Options:
-  --headed          Show browser while running (default: headless)
-  --env KEY=VALUE   Set environment variable (can be used multiple times)
-  --timeout <ms>    Default timeout (default: 30000)
-  --screenshot      Save screenshot on failure
-  --bail            Stop on first failure
-  --session <name>  Specify agent-browser session name
-  --parallel <N>    Run N flows in parallel
-  -v, --verbose     Output detailed logs
-  -h, --help        Show help
-  -V, --version     Show version
+オプション:
+  --headed          ブラウザを表示して実行（デフォルト: ヘッドレス）
+  --env KEY=VALUE   環境変数を設定（複数回指定可）
+  --timeout <ms>    デフォルトタイムアウト（デフォルト: 30000）
+  --screenshot      失敗時にスクリーンショットを保存
+  --bail            最初の失敗時にテストを停止
+  --session <name>  agent-browserのセッション名を指定
+  --parallel <N>    N個のフローを並列実行
+  -v, --verbose     詳細なログを出力
+  -h, --help        ヘルプを表示
+  -V, --version     バージョンを表示
 ```
 
-## Directory Structure
+## ディレクトリ構成
 
 ```
 your-project/
@@ -270,7 +268,7 @@ your-project/
 └── package.json
 ```
 
-## CI/CD Integration
+## CI/CD統合
 
 ### GitHub Actions
 
@@ -302,14 +300,14 @@ jobs:
           PASSWORD: ${{ secrets.TEST_PASSWORD }}
 ```
 
-## agent-browser Command Coverage
+## agent-browser コマンド対応表
 
-This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent-browser) commands from YAML. Below is the current coverage status.
+本ツールは [agent-browser](https://github.com/vercel-labs/agent-browser) のコマンドをYAMLから利用できます。以下は対応状況です。
 
 ### Core Commands
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `open <url>` | ✅ | `- open: <url>` |
 | `click <selector>` | ✅ | `- click: <selector>` |
 | `dblclick <selector>` | ❌ | - |
@@ -327,7 +325,7 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 | `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
 | `drag <source> <target>` | ❌ | - |
 | `upload <selector> <files>` | ❌ | - |
-| `screenshot [path]` | ✅ | `- screenshot: <path>` or `{ path: <path>, full: true }` |
+| `screenshot [path]` | ✅ | `- screenshot: <path>` または `{ path: <path>, full: true }` |
 | `pdf <path>` | ❌ | - |
 | `snapshot` | ✅ | `- snapshot: {}` |
 | `eval <js>` | ✅ | `- eval: <script>` |
@@ -335,8 +333,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Get Info
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `get text <selector>` | ❌ | - |
 | `get html <selector>` | ❌ | - |
 | `get value <selector>` | ❌ | - |
@@ -348,16 +346,16 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Check State
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `is visible <selector>` | ✅ | `- assertVisible: <selector>` |
 | `is enabled <selector>` | ✅ | `- assertEnabled: <selector>` |
 | `is checked <selector>` | ✅ | `- assertChecked: <selector>` |
 
 ### Find Elements
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `find role <role> <action> [value]` | ❌ | - |
 | `find text <text> <action>` | ❌ | - |
 | `find label <label> <action> [value]` | ❌ | - |
@@ -371,8 +369,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Wait
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `wait <selector>` | ✅ | `- wait: "<selector>"` |
 | `wait <ms>` | ✅ | `- wait: <ms>` |
 | `wait --text <text>` | ✅ | `- wait: { text: "<text>" }` |
@@ -382,8 +380,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Mouse Control
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `mouse move <x> <y>` | ❌ | - |
 | `mouse down [button]` | ❌ | - |
 | `mouse up [button]` | ❌ | - |
@@ -391,8 +389,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Browser Settings
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `set viewport <width> <height>` | ❌ | - |
 | `set device <name>` | ❌ | - |
 | `set geo <lat> <lng>` | ❌ | - |
@@ -403,8 +401,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Cookies & Storage
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `cookies` | ❌ | - |
 | `cookies set <name> <value>` | ❌ | - |
 | `cookies clear` | ❌ | - |
@@ -419,8 +417,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Network
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `network route <url>` | ❌ | - |
 | `network route <url> --abort` | ❌ | - |
 | `network route <url> --body <json>` | ❌ | - |
@@ -430,8 +428,8 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Tabs & Windows
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `tab` | ❌ | - |
 | `tab new [url]` | ❌ | - |
 | `tab <n>` | ❌ | - |
@@ -440,22 +438,22 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Frames
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `frame <selector>` | ❌ | - |
 | `frame main` | ❌ | - |
 
 ### Dialogs
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `dialog accept [text]` | ❌ | - |
 | `dialog dismiss` | ❌ | - |
 
 ### Debug
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `trace start [path]` | ❌ | - |
 | `trace stop [path]` | ❌ | - |
 | `console` | ❌ | - |
@@ -468,18 +466,18 @@ This tool allows you to use [agent-browser](https://github.com/vercel-labs/agent
 
 ### Navigation
 
-| agent-browser | Status | YAML Syntax |
-|---------------|:------:|-------------|
+| agent-browser | 対応 | YAML記法 |
+|---------------|:----:|----------|
 | `back` | ❌ | - |
 | `forward` | ❌ | - |
 | `reload` | ❌ | - |
 
-### enbu Custom Commands
+### enbu 独自コマンド
 
-| Command | YAML Syntax |
-|---------|-------------|
+| コマンド | YAML記法 |
+|----------|----------|
 | assertNotVisible | `- assertNotVisible: <selector>` |
 
-## License
+## ライセンス
 
 MIT
