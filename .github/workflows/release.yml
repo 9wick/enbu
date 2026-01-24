@@ -47,9 +47,35 @@ jobs:
           CUSTOM_VERSION="${{ inputs.custom_version }}"
           BUMP_TYPE="${{ inputs.bump_type }}"
 
+          # semver形式を検証する関数（正規表現ベース）
+          validate_semver() {
+            local version="$1"
+            node -e "
+              const v = '$version';
+              const regex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/;
+              process.exit(regex.test(v) ? 0 : 1);
+            "
+          }
+
+          # バージョンをbumpする関数
+          bump_version() {
+            local current="$1"
+            local type="$2"
+            node -e "
+              const [major, minor, patch] = '$current'.split('.').map(Number);
+              let newVersion;
+              switch ('$type') {
+                case 'major': newVersion = \`\${major + 1}.0.0\`; break;
+                case 'minor': newVersion = \`\${major}.\${minor + 1}.0\`; break;
+                case 'patch': newVersion = \`\${major}.\${minor}.\${patch + 1}\`; break;
+              }
+              console.log(newVersion);
+            "
+          }
+
           if [ -n "$CUSTOM_VERSION" ]; then
             # custom_version が指定されている場合、semver形式をバリデーション
-            if ! npx semver "$CUSTOM_VERSION" > /dev/null 2>&1; then
+            if ! validate_semver "$CUSTOM_VERSION"; then
               echo "Error: Invalid semver format: $CUSTOM_VERSION"
               exit 1
             fi
@@ -57,7 +83,7 @@ jobs:
           else
             # bump_type に基づいて現在バージョンからbump
             CURRENT=$(node -p "require('./apps/cli/package.json').version")
-            VERSION=$(npx semver "$CURRENT" -i "$BUMP_TYPE")
+            VERSION=$(bump_version "$CURRENT" "$BUMP_TYPE")
           fi
 
           # pre-release判定（バージョンに - が含まれるか）
