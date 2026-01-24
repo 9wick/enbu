@@ -339,6 +339,18 @@ export type ScreenshotCommand = {
 };
 
 /**
+ * PDFを保存
+ *
+ * @example
+ * // YAML: - pdf: ./result.pdf
+ * { command: 'pdf', path: './result.pdf' }
+ */
+export type PdfCommand = {
+  command: 'pdf';
+  path: FilePath;
+};
+
+/**
  * JavaScriptを実行
  *
  * @example
@@ -446,6 +458,57 @@ export type UncheckCommand = {
 } & InteractableSelectorSpec;
 
 /**
+ * 要素をドラッグ&ドロップ
+ *
+ * @example
+ * // YAML:
+ * // - drag:
+ * //     source:
+ * //       css: "#draggable"
+ * //     target:
+ * //       css: "#droppable"
+ * { command: 'drag', source: { css: '#draggable' }, target: { css: '#droppable' } }
+ *
+ * @example
+ * // YAML:
+ * // - drag:
+ * //     source:
+ * //       interactableText: "ドラッグ要素"
+ * //     target:
+ * //       interactableText: "ドロップ先"
+ * { command: 'drag', source: { interactableText: 'ドラッグ要素' }, target: { interactableText: 'ドロップ先' } }
+ */
+export type DragCommand = {
+  command: 'drag';
+  source: InteractableSelectorSpec;
+  target: InteractableSelectorSpec;
+};
+
+/**
+ * ファイルをアップロード
+ *
+ * @example
+ * // YAML:
+ * // - upload:
+ * //     css: "input[type='file']"
+ * //     files: "/path/to/file.pdf"
+ * { command: 'upload', css: 'input[type="file"]', files: '/path/to/file.pdf' }
+ *
+ * @example
+ * // YAML:
+ * // - upload:
+ * //     text: "ファイル選択"
+ * //     files:
+ * //       - "/path/to/file1.pdf"
+ * //       - "/path/to/file2.jpg"
+ * { command: 'upload', interactableText: 'ファイル選択', files: ['/path/to/file1.pdf', '/path/to/file2.jpg'] }
+ */
+export type UploadCommand = {
+  command: 'upload';
+  files: FilePath | FilePath[];
+} & InteractableSelectorSpec;
+
+/**
  * 全てのコマンド型のユニオン
  */
 export type Command =
@@ -464,13 +527,16 @@ export type Command =
   | ScrollIntoViewCommand
   | WaitCommand
   | ScreenshotCommand
+  | PdfCommand
   | EvalCommand
   | AssertVisibleCommand
   | AssertNotVisibleCommand
   | AssertEnabledCommand
   | AssertCheckedCommand
   | CheckCommand
-  | UncheckCommand;
+  | UncheckCommand
+  | DragCommand
+  | UploadCommand;
 
 // ==========================================
 // 解決済みコマンド型定義（executor実行時）
@@ -552,12 +618,25 @@ export type ResolvedUncheckCommand = {
   command: 'uncheck';
 } & ResolvedSelectorSpec;
 
+/** 解決済みDragCommand */
+export type ResolvedDragCommand = {
+  command: 'drag';
+  source: ResolvedSelectorSpec;
+  target: ResolvedSelectorSpec;
+};
+
+/** 解決済みUploadCommand */
+export type ResolvedUploadCommand = {
+  command: 'upload';
+  files: FilePath | FilePath[];
+} & ResolvedSelectorSpec;
+
 /**
  * 解決済みコマンド型のユニオン
  *
  * executor層でコマンドハンドラに渡される型。
  * セレクタを持つコマンドはResolvedSelectorSpecを使用。
- * セレクタを持たないコマンド（open, press, keydown, keyup, scroll, wait, screenshot, eval）は
+ * セレクタを持たないコマンド（open, press, keydown, keyup, scroll, wait, screenshot, pdf, eval）は
  * そのまま使用される。
  */
 export type ResolvedCommand =
@@ -576,13 +655,16 @@ export type ResolvedCommand =
   | ResolvedScrollIntoViewCommand
   | WaitCommand
   | ScreenshotCommand
+  | PdfCommand
   | EvalCommand
   | ResolvedAssertVisibleCommand
   | ResolvedAssertNotVisibleCommand
   | ResolvedAssertEnabledCommand
   | ResolvedAssertCheckedCommand
   | ResolvedCheckCommand
-  | ResolvedUncheckCommand;
+  | ResolvedUncheckCommand
+  | ResolvedDragCommand
+  | ResolvedUploadCommand;
 
 // ==========================================
 // Raw型定義（YAMLパース直後の未検証型）

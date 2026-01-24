@@ -25,6 +25,8 @@ export {
   browserFocus,
   browserCheck,
   browserUncheck,
+  browserDrag,
+  browserUpload,
 } from './commands/interaction';
 
 // スクロール
@@ -42,7 +44,7 @@ export {
 } from './commands/wait';
 
 // キャプチャ
-export { browserScreenshot, browserSnapshot } from './commands/capture';
+export { browserScreenshot, browserSnapshot, browserPdf } from './commands/capture';
 
 // JavaScript実行
 export { browserEval } from './commands/eval';
@@ -135,6 +137,7 @@ export type {
   OpenData,
   EmptyData,
   ScreenshotData,
+  PdfData,
   SnapshotData,
   EvalData,
   IsVisibleData,

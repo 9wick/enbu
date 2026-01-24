@@ -1,0 +1,37 @@
+name: Drag & Drop Test
+steps:
+  # ページを開く
+  - open: http://localhost:3002/drag.html
+
+  # アイテム1をドロップゾーンにドラッグ
+  - drag:
+      source:
+        css: '#item1'
+      target:
+        css: '#drop-zone'
+
+  # 結果リストにアイテム1が表示されていることを確認
+  - assertVisible:
+      text: 'アイテム 1'
+
+  # アイテム2をドロップゾーンにドラッグ
+  - drag:
+      source:
+        css: '#item2'
+      target:
+        css: '#drop-zone'
+
+  # 結果リストにアイテム2が表示されていることを確認
+  - assertVisible:
+      text: 'アイテム 2'
+
+  # アイテム3をテキストセレクタでドラッグ
+  - drag:
+      source:
+        text: 'アイテム 3'
+      target:
+        css: '#drop-zone'
+
+  # 結果リストにアイテム3が表示されていることを確認
+  - assertVisible:
+      text: 'アイテム 3'

@@ -6,8 +6,8 @@
 
 import { type ResultAsync } from 'neverthrow';
 import type { AgentBrowserError, ExecuteOptions, FilePath, ScreenshotOptions } from '../types';
-import type { ScreenshotData, SnapshotData } from '../schemas';
-import { ScreenshotDataSchema, SnapshotDataSchema } from '../schemas';
+import type { ScreenshotData, SnapshotData, PdfData } from '../schemas';
+import { ScreenshotDataSchema, SnapshotDataSchema, PdfDataSchema } from '../schemas';
 import { executeCommand } from '../executor';
 import { validateAndExtractData } from '../validator';
 
@@ -42,3 +42,21 @@ export const browserSnapshot = (
   executeCommand('snapshot', ['--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, SnapshotDataSchema, 'snapshot'),
   );
+
+/**
+ * ページをPDFとして保存する
+ *
+ * @param path - 保存先のファイルパス
+ * @param options - 実行オプション
+ * @returns 成功時: PdfData、失敗時: AgentBrowserError
+ */
+export const browserPdf = (
+  path: FilePath,
+  options: ExecuteOptions = {},
+): ResultAsync<PdfData, AgentBrowserError> => {
+  const args = [path, '--json'];
+
+  return executeCommand('pdf', args, options).andThen((stdout) =>
+    validateAndExtractData(stdout, PdfDataSchema, 'pdf'),
+  );
+};

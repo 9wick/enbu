@@ -25,6 +25,8 @@ import type {
   ResolvedAssertCheckedCommand,
   ResolvedCheckCommand,
   ResolvedUncheckCommand,
+  ResolvedDragCommand,
+  ResolvedUploadCommand,
   ResolvedAssertVisibleCommand,
   ResolvedAssertNotVisibleCommand,
   ResolvedScrollIntoViewCommand,
@@ -39,6 +41,8 @@ import type {
   AssertCheckedCommand,
   CheckCommand,
   UncheckCommand,
+  DragCommand,
+  UploadCommand,
   AssertVisibleCommand,
   AssertNotVisibleCommand,
   ScrollIntoViewCommand,
@@ -507,6 +511,62 @@ const resolveScrollIntoView = (
 });
 
 /**
+ * UploadCommandのResolvedCommand変換関数
+ */
+const resolveUpload = (
+  cmd: UploadCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedUploadCommand => ({
+  command: 'upload',
+  files: cmd.files,
+  ...resolved,
+});
+
+/**
+ * DragCommandのResolvedCommand変換関数（sourceとtargetの両方を解決）
+ */
+const resolveDrag = (
+  _cmd: DragCommand,
+  resolvedSource: ResolvedSelectorSpec,
+  resolvedTarget: ResolvedSelectorSpec,
+): ResolvedDragCommand => ({
+  command: 'drag',
+  source: resolvedSource,
+  target: resolvedTarget,
+});
+
+/**
+ * DragCommandのtargetセレクタを解決する
+ *
+ * sourceセレクタが解決された後に呼び出される。
+ * targetセレクタを待機し、解決済みのsourceとtargetから
+ * ResolvedDragCommandを生成する。
+ *
+ * @param cmd - DragCommand
+ * @param resolvedSource - 解決済みsourceセレクタ
+ * @param context - 実行コンテキスト
+ * @returns ResolvedDragCommand
+ */
+const resolveDragTarget = (
+  cmd: DragCommand,
+  resolvedSource: ResolvedSelectorSpec,
+  context: ExecutionContext,
+): ResultAsync<ResolvedDragCommand, SelectorWaitFailure> =>
+  toWaitableSelectorSpec(cmd.target)
+    .andThen((targetSpec) =>
+      waitForSelector(targetSpec, context)
+        .map(waitResultToResolvedSelectorSpec)
+        .mapErr(
+          (error): SelectorWaitFailure => ({
+            _tag: 'SelectorWaitFailure',
+            message: `Target selector wait timeout: ${getErrorMessage(error)}`,
+            errorType: error.type,
+          }),
+        ),
+    )
+    .map((resolvedTarget) => resolveDrag(cmd, resolvedSource, resolvedTarget));
+
+/**
  * SelectorSpecを抽出し、存在しない場合はエラーを返す
  */
 const extractSelectorSpecOrFail = (
@@ -585,6 +645,7 @@ const processSelectorWait = (
     .with({ command: 'scroll' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'wait' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'screenshot' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'pdf' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'eval' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
 
     // ========================================
@@ -645,6 +706,11 @@ const processSelectorWait = (
         processWaitableSelector(cmd, spec, context, resolveUncheck),
       ),
     )
+    .with({ command: 'upload' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveUpload),
+      ),
+    )
 
     // ========================================
     // セレクタ待機不要だがセレクタを持つコマンド群
@@ -668,6 +734,25 @@ const processSelectorWait = (
       extractSelectorSpecOrFail(cmd).andThen((spec) =>
         processDirectOrWaitSelector(cmd, spec, true, context, resolveScrollIntoView),
       ),
+    )
+
+    // ========================================
+    // drag: sourceとtargetの両方のセレクタを待機する特殊なコマンド
+    // ========================================
+    .with({ command: 'drag' }, (cmd) =>
+      toWaitableSelectorSpec(cmd.source)
+        .andThen((sourceSpec) =>
+          waitForSelector(sourceSpec, context)
+            .map(waitResultToResolvedSelectorSpec)
+            .mapErr(
+              (error): SelectorWaitFailure => ({
+                _tag: 'SelectorWaitFailure',
+                message: `Source selector wait timeout: ${getErrorMessage(error)}`,
+                errorType: error.type,
+              }),
+            ),
+        )
+        .andThen((resolvedSource) => resolveDragTarget(cmd, resolvedSource, context)),
     )
     .exhaustive();
 

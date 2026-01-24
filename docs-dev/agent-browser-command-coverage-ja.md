@@ -12,26 +12,26 @@ enbuはagent-browserのコマンドをYAMLから利用できます。この表�
 |---------------|:----:|----------|
 | `open <url>` | ✅ | `- open: <url>` |
 | `click <selector>` | ✅ | `- click: <selector>` |
-| `dblclick <selector>` | ❌ | - |
-| `focus <selector>` | ❌ | - |
+| `dblclick <selector>` | ✅ | `- dblclick: <selector>` または `{ css\|text\|xpath: <selector> }` |
+| `focus <selector>` | ✅ | `- focus: <selector>` または `{ css\|text\|xpath: <selector> }` |
 | `type <selector> <text>` | ✅ | `- type: { selector: <selector>, value: <value> }` |
 | `fill <selector> <text>` | ✅ | `- fill: { selector: <selector>, value: <value> }` |
 | `press <key>` | ✅ | `- press: <key>` |
-| `keydown <key>` | ❌ | - |
-| `keyup <key>` | ❌ | - |
+| `keydown <key>` | ✅ | `- keydown: <key>` |
+| `keyup <key>` | ✅ | `- keyup: <key>` |
 | `hover <selector>` | ✅ | `- hover: <selector>` |
 | `select <selector> <value>` | ✅ | `- select: { selector: <selector>, value: <value> }` |
-| `check <selector>` | ❌ | - |
-| `uncheck <selector>` | ❌ | - |
+| `check <selector>` | ✅ | `- check: <selector>` または `{ css\|text\|xpath: <selector> }` |
+| `uncheck <selector>` | ✅ | `- uncheck: <selector>` または `{ css\|text\|xpath: <selector> }` |
 | `scroll <direction> [px]` | ✅ | `- scroll: { direction: up\|down\|left\|right, amount: <px> }` |
 | `scrollintoview <selector>` | ✅ | `- scrollIntoView: <selector>` |
-| `drag <source> <target>` | ❌ | - |
-| `upload <selector> <files>` | ❌ | - |
+| `drag <source> <target>` | ✅ | `- drag: { source: { css\|text\|xpath: <selector> }, target: { css\|text\|xpath: <selector> } }` |
+| `upload <selector> <files>` | ✅ | `- upload: { css\|text\|xpath: <selector>, files: <path> \| [<path1>, <path2>] }` |
 | `screenshot [path]` | ✅ | `- screenshot: <path>` または `{ path: <path>, full: true }` |
-| `pdf <path>` | ❌ | - |
+| `pdf <path>` | ✅ | `- pdf: <path>` または `{ path: <path> }` |
 | `snapshot` | ✅ | `- snapshot: {}` |
 | `eval <js>` | ✅ | `- eval: <script>` |
-| `close` | ❌ | - |
+| `close` | N/A | 自動でcloseされるため実装不要 |
 
 ## Get Info
 

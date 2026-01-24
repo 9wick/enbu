@@ -36,6 +36,13 @@ export const ScreenshotDataSchema = v.object({
 });
 
 /**
+ * pdf コマンドのデータスキーマ
+ */
+export const PdfDataSchema = v.object({
+  path: v.string(),
+});
+
+/**
  * snapshot コマンドの参照要素スキーマ
  */
 const SnapshotRefSchema = v.object({
@@ -91,6 +98,9 @@ export type EmptyData = v.InferOutput<typeof EmptyDataSchema>;
 
 /** screenshot コマンドの戻り値データ型 */
 export type ScreenshotData = v.InferOutput<typeof ScreenshotDataSchema>;
+
+/** pdf コマンドの戻り値データ型 */
+export type PdfData = v.InferOutput<typeof PdfDataSchema>;
 
 /** snapshot コマンドの戻り値データ型 */
 export type SnapshotData = v.InferOutput<typeof SnapshotDataSchema>;

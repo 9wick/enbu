@@ -8,13 +8,14 @@ import {
   handleAssertNotVisible,
   handleAssertVisible,
 } from './assertions';
-import { handleScreenshot } from './capture';
+import { handleScreenshot, handlePdf } from './capture';
 import { handleEval } from './eval';
 import { handleHover, handleSelect } from './hover-select';
 import {
   handleCheck,
   handleClick,
   handleDblclick,
+  handleDrag,
   handleFill,
   handleFocus,
   handleKeydown,
@@ -22,6 +23,7 @@ import {
   handlePress,
   handleType,
   handleUncheck,
+  handleUpload,
 } from './interaction';
 import { handleOpen } from './navigation';
 import { handleScroll, handleScrollIntoView } from './scroll';
@@ -52,12 +54,15 @@ export const executeResolvedCommand: CommandHandler<ResolvedCommand> = (command,
     .with({ command: 'select' }, (cmd) => handleSelect(cmd, context))
     .with({ command: 'check' }, (cmd) => handleCheck(cmd, context))
     .with({ command: 'uncheck' }, (cmd) => handleUncheck(cmd, context))
+    .with({ command: 'drag' }, (cmd) => handleDrag(cmd, context))
+    .with({ command: 'upload' }, (cmd) => handleUpload(cmd, context))
     // スクロール・待機系
     .with({ command: 'scroll' }, (cmd) => handleScroll(cmd, context))
     .with({ command: 'scrollIntoView' }, (cmd) => handleScrollIntoView(cmd, context))
     .with({ command: 'wait' }, (cmd) => handleWait(cmd, context))
     // キャプチャ・eval系
     .with({ command: 'screenshot' }, (cmd) => handleScreenshot(cmd, context))
+    .with({ command: 'pdf' }, (cmd) => handlePdf(cmd, context))
     .with({ command: 'eval' }, (cmd) => handleEval(cmd, context))
     // assertion系
     .with({ command: 'assertVisible' }, (cmd) => handleAssertVisible(cmd, context))

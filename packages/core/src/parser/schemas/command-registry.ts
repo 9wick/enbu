@@ -15,6 +15,7 @@ import type { Command } from '../../types';
 import { CheckYamlSchema, UncheckYamlSchema } from './commands/checkbox.schema';
 import { ClickYamlSchema } from './commands/click.schema';
 import { DblclickYamlSchema } from './commands/dblclick.schema';
+import { DragYamlSchema } from './commands/drag.schema';
 import { FocusYamlSchema } from './commands/focus.schema';
 import { HoverYamlSchema } from './commands/hover.schema';
 import { ScrollIntoViewYamlSchema } from './commands/scrollIntoView.schema';
@@ -33,8 +34,10 @@ import {
   KeydownYamlSchema,
   KeyupYamlSchema,
   ScreenshotYamlSchema,
+  PdfYamlSchema,
   EvalYamlSchema,
 } from './commands/simple.schema';
+import { UploadYamlSchema } from './commands/upload.schema';
 
 /**
  * コマンドスキーマ型（出力型をCommand型に絞り込み）
@@ -84,12 +87,15 @@ export const commandSchemas: CommandSchemaEntry[] = [
   { name: 'keyup', schema: KeyupYamlSchema },
   { name: 'check', schema: CheckYamlSchema },
   { name: 'uncheck', schema: UncheckYamlSchema },
+  { name: 'drag', schema: DragYamlSchema },
+  { name: 'upload', schema: UploadYamlSchema },
 
   // 待機
   { name: 'wait', schema: WaitYamlSchema },
 
   // キャプチャ
   { name: 'screenshot', schema: ScreenshotYamlSchema },
+  { name: 'pdf', schema: PdfYamlSchema },
 
   // 検証
   { name: 'assertVisible', schema: AssertVisibleYamlSchema },

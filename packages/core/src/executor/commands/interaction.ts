@@ -9,6 +9,7 @@ import {
   browserCheck,
   browserClick,
   browserDblclick,
+  browserDrag,
   browserFill,
   browserFocus,
   browserKeydown,
@@ -16,6 +17,7 @@ import {
   browserPress,
   browserType,
   browserUncheck,
+  browserUpload,
 } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
 import type {
@@ -25,10 +27,12 @@ import type {
   ResolvedCheckCommand,
   ResolvedClickCommand,
   ResolvedDblclickCommand,
+  ResolvedDragCommand,
   ResolvedFillCommand,
   ResolvedFocusCommand,
   ResolvedTypeCommand,
   ResolvedUncheckCommand,
+  ResolvedUploadCommand,
 } from '../../types';
 import type { CommandResult, ExecutionContext } from '../result';
 import { resolveCliSelector } from './cli-selector-utils';
@@ -265,6 +269,63 @@ export const handleUncheck = (
 
   return resolveCliSelector(command, context)
     .andThen((selector) => browserUncheck(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
+};
+
+/**
+ * drag コマンドのハンドラ
+ *
+ * 指定されたソース要素をターゲット要素にドラッグ&ドロップする。
+ * source と target の両方のResolvedSelectorSpec (css/ref/xpath/interactableText) から
+ * CLIセレクタを解決して実行する。
+ *
+ * @param command - drag コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleDrag = (
+  command: ResolvedDragCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  // sourceとtargetの両方のセレクタを解決してから実行
+  return resolveCliSelector(command.source, context)
+    .andThen((sourceSelector) =>
+      resolveCliSelector(command.target, context).map((targetSelector) => ({
+        source: sourceSelector,
+        target: targetSelector,
+      })),
+    )
+    .andThen(({ source, target }) => browserDrag(source, target, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
+};
+
+/**
+ * upload コマンドのハンドラ
+ *
+ * 指定されたセレクタのファイル入力要素にファイルをアップロードする。
+ * ResolvedSelectorSpec (css/ref/xpath/interactableText) からCLIセレクタを解決して実行する。
+ * filesは単一ファイルまたは複数ファイルの配列。
+ *
+ * @param command - upload コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleUpload = (
+  command: ResolvedUploadCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserUpload(selector, command.files, context.executeOptions))
     .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,

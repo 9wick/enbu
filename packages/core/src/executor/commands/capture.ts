@@ -1,7 +1,7 @@
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
-import { browserScreenshot } from '@packages/agent-browser-adapter';
+import { browserScreenshot, browserPdf } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
-import type { ScreenshotCommand } from '../../types';
+import type { ScreenshotCommand, PdfCommand } from '../../types';
 import { UseDefault } from '../../types/utility-types';
 import type { CommandResult, ExecutionContext } from '../result';
 
@@ -28,6 +28,30 @@ export const handleScreenshot = (
   return browserScreenshot(command.path, {
     ...context.executeOptions,
     fullPage,
+  }).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
+};
+
+/**
+ * pdf コマンドのハンドラ
+ *
+ * ページをPDFとして保存し、指定されたパスに保存する。
+ *
+ * @param command - pdf コマンドのパラメータ
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResult型
+ */
+export const handlePdf = (
+  command: PdfCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  // command.path は既に FilePath 型（Branded Type）なので、そのまま使用
+  return browserPdf(command.path, {
+    ...context.executeOptions,
   }).map((output) => ({
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,

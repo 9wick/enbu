@@ -301,3 +301,71 @@ export type EvalYamlInput = v.InferInput<typeof EvalYamlSchema>;
  * EvalCommand型（Single Source of Truth）
  */
 export type EvalCommand = v.InferOutput<typeof EvalYamlSchema>;
+
+// ============================================================================
+// PdfCommand
+// ============================================================================
+
+/**
+ * Pdf簡略形式スキーマ
+ *
+ * pdf: "./path.pdf" → { command: 'pdf', path: FilePath }
+ *
+ * パスのみを指定した場合。
+ * Branded TypeのFilePathとして型安全に変換。
+ */
+const PdfShorthandSchema = v.pipe(
+  v.object({
+    pdf: v.pipe(
+      FilePathSchema,
+      v.description('PDF save path'),
+      v.metadata({ exampleValues: ['./output.pdf', './report/document.pdf'] }),
+    ),
+  }),
+  v.transform((input): { command: 'pdf'; path: FilePath } => ({
+    command: 'pdf',
+    path: input.pdf,
+  })),
+);
+
+/**
+ * Pdf詳細形式スキーマ
+ *
+ * pdf: { path: "..." } → { command: 'pdf', path: FilePath }
+ *
+ * パスを明示的に指定。将来的にオプション追加可能。
+ * Branded TypeのFilePathとして型安全に変換。
+ */
+const PdfDetailedSchema = v.pipe(
+  v.object({
+    pdf: v.object({
+      path: v.pipe(
+        FilePathSchema,
+        v.description('PDF save path'),
+        v.metadata({ exampleValues: ['./output.pdf', './report/document.pdf'] }),
+      ),
+    }),
+  }),
+  v.transform((input): { command: 'pdf'; path: FilePath } => ({
+    command: 'pdf',
+    path: input.pdf.path,
+  })),
+);
+
+/**
+ * PdfコマンドYAMLスキーマ（Single Source of Truth）
+ *
+ * 簡略形式と詳細形式の両方を受け付ける。
+ * - 簡略形式: pdf: "./path.pdf"
+ * - 詳細形式: pdf: { path: "..." }
+ */
+export const PdfYamlSchema = v.pipe(
+  v.union([PdfShorthandSchema, PdfDetailedSchema]),
+  v.description('ページをPDFとして保存する'),
+  v.metadata({ category: 'Capture' }),
+);
+
+/**
+ * PdfYamlSchemaの入力型
+ */
+export type PdfYamlInput = v.InferInput<typeof PdfYamlSchema>;

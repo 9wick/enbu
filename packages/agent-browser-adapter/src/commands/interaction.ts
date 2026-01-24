@@ -196,3 +196,54 @@ export const browserUncheck = (
   executeCommand('uncheck', [selector, '--json'], options).andThen((stdout) =>
     validateAndExtractData(stdout, EmptyDataSchema, 'uncheck'),
   );
+
+/**
+ * 指定したソース要素をターゲット要素にドラッグ&ドロップする
+ *
+ * @param source - ドラッグ元のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
+ * @param target - ドロップ先のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
+ * @param options - 実行オプション
+ * @returns 成功時: EmptyData、失敗時: AgentBrowserError
+ */
+export const browserDrag = (
+  source: CliSelector,
+  target: CliSelector,
+  options: ExecuteOptions = {},
+): ResultAsync<EmptyData, AgentBrowserError> =>
+  executeCommand('drag', [source, target, '--json'], options).andThen((stdout) =>
+    validateAndExtractData(stdout, EmptyDataSchema, 'drag'),
+  );
+
+/**
+ * 指定したセレクタのファイル入力要素にファイルをアップロードする
+ *
+ * agent-browserのuploadコマンドを実行する。
+ * 単一ファイルまたは複数ファイルの両方に対応。
+ *
+ * @param selector - ファイル入力要素のセレクタ（CssSelector、RefSelector、CliTextSelector、CliXpathSelector）
+ * @param files - アップロードするファイルパス（単一または配列）
+ * @param options - 実行オプション
+ * @returns 成功時: EmptyData、失敗時: AgentBrowserError
+ *
+ * @example
+ * // 単一ファイル
+ * browserUpload('#file-input', '/path/to/file.pdf')
+ *
+ * @example
+ * // 複数ファイル
+ * browserUpload('#file-input', ['/path/to/file1.pdf', '/path/to/file2.jpg'])
+ */
+export const browserUpload = (
+  selector: CliSelector,
+  files: string | string[],
+  options: ExecuteOptions = {},
+): ResultAsync<EmptyData, AgentBrowserError> => {
+  // filesが配列の場合、agent-browserは複数引数として受け取る
+  // agent-browser upload <selector> <file1> <file2> ... --json
+  const fileArgs = Array.isArray(files) ? files : [files];
+  const args = [selector, ...fileArgs, '--json'];
+
+  return executeCommand('upload', args, options).andThen((stdout) =>
+    validateAndExtractData(stdout, EmptyDataSchema, 'upload'),
+  );
+};

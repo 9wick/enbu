@@ -217,6 +217,32 @@ const formatCommandDescription = (command: Command): string =>
       (cmd) => `uncheck text:"${cmd.interactableText}"`,
     )
     .with({ command: 'uncheck', xpath: P.string }, (cmd) => `uncheck xpath:"${cmd.xpath}"`)
+    .with(
+      { command: 'upload', css: P.string, files: P.string },
+      (cmd) => `upload "${cmd.css}" files:"${cmd.files}"`,
+    )
+    .with(
+      { command: 'upload', css: P.string, files: P.array(P.string) },
+      (cmd) => `upload "${cmd.css}" files:[${cmd.files.join(', ')}]`,
+    )
+    .with(
+      { command: 'upload', interactableText: P.string, files: P.string },
+      (cmd) => `upload text:"${cmd.interactableText}" files:"${cmd.files}"`,
+    )
+    .with(
+      { command: 'upload', interactableText: P.string, files: P.array(P.string) },
+      (cmd) => `upload text:"${cmd.interactableText}" files:[${cmd.files.join(', ')}]`,
+    )
+    .with(
+      { command: 'upload', xpath: P.string, files: P.string },
+      (cmd) => `upload xpath:"${cmd.xpath}" files:"${cmd.files}"`,
+    )
+    .with(
+      { command: 'upload', xpath: P.string, files: P.array(P.string) },
+      (cmd) => `upload xpath:"${cmd.xpath}" files:[${cmd.files.join(', ')}]`,
+    )
+    .with({ command: 'pdf', path: P.string }, (cmd) => `pdf ${cmd.path}`)
+    .with({ command: 'drag', source: P.any, target: P.any }, () => `drag source to target`)
     .exhaustive();
 
 /**
