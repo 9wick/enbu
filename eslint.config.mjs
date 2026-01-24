@@ -535,6 +535,15 @@ export default tseslint.config(
     },
   },
   /**
+   * execute-step.tsは多くのコマンドハンドラを含むため、max-linesを緩和する。
+   */
+  {
+    files: ['packages/core/src/executor/execute-step.ts'],
+    rules: {
+      'max-lines': ['error', { max: 800, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  /**
    * packages/core（ドメイン層）でのoptional禁止
    * naoya式関数型DDDに基づき、optional/null/undefined を検出
    * 基底ルールに加えてドメイン層専用ルールを追加

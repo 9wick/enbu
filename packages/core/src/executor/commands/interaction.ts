@@ -6,17 +6,29 @@
 
 import type { AgentBrowserError } from '@packages/agent-browser-adapter';
 import {
+  browserCheck,
   browserClick,
+  browserDblclick,
   browserFill,
+  browserFocus,
+  browserKeydown,
+  browserKeyup,
   browserPress,
   browserType,
+  browserUncheck,
 } from '@packages/agent-browser-adapter';
 import type { ResultAsync } from 'neverthrow';
 import type {
+  KeydownCommand,
+  KeyupCommand,
   PressCommand,
+  ResolvedCheckCommand,
   ResolvedClickCommand,
+  ResolvedDblclickCommand,
   ResolvedFillCommand,
+  ResolvedFocusCommand,
   ResolvedTypeCommand,
+  ResolvedUncheckCommand,
 } from '../../types';
 import type { CommandResult, ExecutionContext } from '../result';
 import { resolveCliSelector } from './cli-selector-utils';
@@ -39,6 +51,30 @@ export const handleClick = (
 
   return resolveCliSelector(command, context)
     .andThen((selector) => browserClick(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
+};
+
+/**
+ * dblclick コマンドのハンドラ
+ *
+ * 指定されたセレクタの要素をダブルクリックする。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
+ *
+ * @param command - dblclick コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleDblclick = (
+  command: ResolvedDblclickCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserDblclick(selector, context.executeOptions))
     .map((output) => ({
       stdout: JSON.stringify(output),
       duration: Date.now() - startTime,
@@ -115,4 +151,122 @@ export const handlePress = (
     stdout: JSON.stringify(output),
     duration: Date.now() - startTime,
   }));
+};
+
+/**
+ * keydown コマンドのハンドラ
+ *
+ * 指定されたキーボードキーを押下する（押したまま）。
+ * agent-browser の keydown コマンドを実行する。
+ *
+ * @param command - keydown コマンドのパラメータ
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleKeydown = (
+  command: KeydownCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  // command.key は既に KeyboardKey 型（Branded Type）なので、そのまま使用
+  return browserKeydown(command.key, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
+};
+
+/**
+ * keyup コマンドのハンドラ
+ *
+ * 指定されたキーボードキーを離す。
+ * agent-browser の keyup コマンドを実行する。
+ *
+ * @param command - keyup コマンドのパラメータ
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleKeyup = (
+  command: KeyupCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  // command.key は既に KeyboardKey 型（Branded Type）なので、そのまま使用
+  return browserKeyup(command.key, context.executeOptions).map((output) => ({
+    stdout: JSON.stringify(output),
+    duration: Date.now() - startTime,
+  }));
+};
+
+/**
+ * focus コマンドのハンドラ
+ *
+ * 指定されたセレクタの要素にフォーカスを当てる。
+ * ResolvedSelectorSpec (css/ref/xpath) からCLIセレクタを解決して実行する。
+ *
+ * @param command - focus コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleFocus = (
+  command: ResolvedFocusCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserFocus(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
+};
+
+/**
+ * check コマンドのハンドラ
+ *
+ * 指定されたセレクタのチェックボックスをチェックする。
+ * ResolvedSelectorSpec (css/ref/xpath/interactableText) からCLIセレクタを解決して実行する。
+ *
+ * @param command - check コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleCheck = (
+  command: ResolvedCheckCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserCheck(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
+};
+
+/**
+ * uncheck コマンドのハンドラ
+ *
+ * 指定されたセレクタのチェックボックスのチェックを外す。
+ * ResolvedSelectorSpec (css/ref/xpath/interactableText) からCLIセレクタを解決して実行する。
+ *
+ * @param command - uncheck コマンドのパラメータ（解決済み）
+ * @param context - 実行コンテキスト
+ * @returns コマンド実行結果を含むResultAsync型
+ */
+export const handleUncheck = (
+  command: ResolvedUncheckCommand,
+  context: ExecutionContext,
+): ResultAsync<CommandResult, AgentBrowserError> => {
+  const startTime = Date.now();
+
+  return resolveCliSelector(command, context)
+    .andThen((selector) => browserUncheck(selector, context.executeOptions))
+    .map((output) => ({
+      stdout: JSON.stringify(output),
+      duration: Date.now() - startTime,
+    }));
 };

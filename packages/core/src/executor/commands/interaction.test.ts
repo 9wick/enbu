@@ -1,9 +1,27 @@
 import type { CssSelector, KeyboardKey } from '@packages/agent-browser-adapter';
 import { errAsync, ok, okAsync } from 'neverthrow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ClickCommand, FillCommand, PressCommand, TypeCommand } from '../../types';
+import type {
+  ClickCommand,
+  DblclickCommand,
+  FillCommand,
+  FocusCommand,
+  KeydownCommand,
+  KeyupCommand,
+  PressCommand,
+  TypeCommand,
+} from '../../types';
 import type { ExecutionContext } from '../result';
-import { handleClick, handleFill, handlePress, handleType } from './interaction';
+import {
+  handleClick,
+  handleDblclick,
+  handleFill,
+  handleFocus,
+  handleKeydown,
+  handleKeyup,
+  handlePress,
+  handleType,
+} from './interaction';
 
 // テスト用: 文字列をBranded Typeに変換（テストではキャストで対応）
 const toCssSelector = (s: string) => s as CssSelector;
@@ -12,16 +30,24 @@ const toKeyboardKey = (s: string) => s as KeyboardKey;
 // agent-browser-adapter をモック
 vi.mock('@packages/agent-browser-adapter', () => ({
   browserClick: vi.fn(),
+  browserDblclick: vi.fn(),
   browserType: vi.fn(),
   browserFill: vi.fn(),
+  browserFocus: vi.fn(),
   browserPress: vi.fn(),
+  browserKeydown: vi.fn(),
+  browserKeyup: vi.fn(),
   asCssSelector: vi.fn((v) => ok(v)),
   asKeyboardKey: vi.fn((v) => ok(v)),
 }));
 
 import {
   browserClick,
+  browserDblclick,
   browserFill,
+  browserFocus,
+  browserKeydown,
+  browserKeyup,
   browserPress,
   browserType,
 } from '@packages/agent-browser-adapter';
@@ -101,6 +127,95 @@ describe('handleClick', () => {
 
     // Act
     const result = await handleClick(command, mockContext);
+
+    // Assert
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('command_failed');
+      },
+    );
+  });
+});
+
+describe('handleDblclick', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockContext: ExecutionContext = {
+    sessionName: 'test',
+    executeOptions: {
+      sessionName: 'test',
+      headed: false,
+      timeoutMs: 30000,
+      cwd: '/tmp',
+    },
+    env: {},
+    autoWaitTimeoutMs: 30000,
+    autoWaitIntervalMs: 100,
+  };
+
+  /**
+   * INT-DBLCLICK-1: dblclick コマンドが成功
+   *
+   * 前提条件: browserDblclick が成功
+   * 検証項目: ok(CommandResult) が返される
+   */
+  it('INT-DBLCLICK-1: dblclickコマンドが成功した場合、CommandResultを返す', async () => {
+    // Arrange
+    const command: DblclickCommand = {
+      command: 'dblclick',
+      css: toCssSelector('編集ボタン'),
+    };
+
+    vi.mocked(browserDblclick).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
+
+    // Act
+    const result = await handleDblclick(command, mockContext);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (commandResult) => {
+        expect(commandResult.duration).toBeGreaterThanOrEqual(0);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * INT-DBLCLICK-2: dblclick コマンドが失敗
+   *
+   * 前提条件: browserDblclick が command_failed を返す
+   * 検証項目: err(AgentBrowserError) が返される
+   */
+  it('INT-DBLCLICK-2: dblclickコマンドが失敗した場合、エラーを返す', async () => {
+    // Arrange
+    const command: DblclickCommand = {
+      command: 'dblclick',
+      css: toCssSelector('存在しない要素'),
+    };
+
+    vi.mocked(browserDblclick).mockReturnValue(
+      errAsync({
+        type: 'command_failed',
+        message: 'Element not found',
+        command: 'dblclick',
+        args: [],
+        exitCode: 1,
+        stderr: '',
+        rawError: 'Element not found',
+      }),
+    );
+
+    // Act
+    const result = await handleDblclick(command, mockContext);
 
     // Assert
     expect(result.isErr()).toBe(true);
@@ -237,5 +352,176 @@ describe('handlePress', () => {
 
     // Assert
     expect(result.isOk()).toBe(true);
+  });
+});
+
+describe('handleKeydown', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockContext: ExecutionContext = {
+    sessionName: 'test',
+    executeOptions: {
+      sessionName: 'test',
+      headed: false,
+      timeoutMs: 30000,
+      cwd: '/tmp',
+    },
+    env: {},
+    autoWaitTimeoutMs: 30000,
+    autoWaitIntervalMs: 100,
+  };
+
+  /**
+   * INT-6: keydown コマンドが成功
+   *
+   * 前提条件: browserKeydown が成功
+   * 検証項目: ok(CommandResult) が返される
+   */
+  it('INT-6: keydownコマンドが成功した場合、CommandResultを返す', async () => {
+    // Arrange
+    const command: KeydownCommand = {
+      command: 'keydown',
+      key: toKeyboardKey('Shift'),
+    };
+
+    vi.mocked(browserKeydown).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
+
+    // Act
+    const result = await handleKeydown(command, mockContext);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+  });
+});
+
+describe('handleKeyup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockContext: ExecutionContext = {
+    sessionName: 'test',
+    executeOptions: {
+      sessionName: 'test',
+      headed: false,
+      timeoutMs: 30000,
+      cwd: '/tmp',
+    },
+    env: {},
+    autoWaitTimeoutMs: 30000,
+    autoWaitIntervalMs: 100,
+  };
+
+  /**
+   * INT-7: keyup コマンドが成功
+   *
+   * 前提条件: browserKeyup が成功
+   * 検証項目: ok(CommandResult) が返される
+   */
+  it('INT-7: keyupコマンドが成功した場合、CommandResultを返す', async () => {
+    // Arrange
+    const command: KeyupCommand = {
+      command: 'keyup',
+      key: toKeyboardKey('Shift'),
+    };
+
+    vi.mocked(browserKeyup).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
+
+    // Act
+    const result = await handleKeyup(command, mockContext);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+  });
+});
+
+describe('handleFocus', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockContext: ExecutionContext = {
+    sessionName: 'test',
+    executeOptions: {
+      sessionName: 'test',
+      headed: false,
+      timeoutMs: 30000,
+      cwd: '/tmp',
+    },
+    env: {},
+    autoWaitTimeoutMs: 30000,
+    autoWaitIntervalMs: 100,
+  };
+
+  /**
+   * INT-6: focus コマンドが成功
+   *
+   * 前提条件: browserFocus が成功
+   * 検証項目: ok(CommandResult) が返される
+   */
+  it('INT-6: focusコマンドが成功した場合、CommandResultを返す', async () => {
+    // Arrange
+    const command: FocusCommand = {
+      command: 'focus',
+      css: toCssSelector('メールアドレス入力欄'),
+    };
+
+    vi.mocked(browserFocus).mockReturnValue(okAsync({ success: true, data: {}, error: null }));
+
+    // Act
+    const result = await handleFocus(command, mockContext);
+
+    // Assert
+    expect(result.isOk()).toBe(true);
+    result.match(
+      (commandResult) => {
+        expect(commandResult.duration).toBeGreaterThanOrEqual(0);
+      },
+      () => {
+        throw new Error('Expected ok result');
+      },
+    );
+  });
+
+  /**
+   * INT-7: focus コマンドが失敗
+   *
+   * 前提条件: browserFocus が command_failed を返す
+   * 検証項目: err(AgentBrowserError) が返される
+   */
+  it('INT-7: focusコマンドが失敗した場合、エラーを返す', async () => {
+    // Arrange
+    const command: FocusCommand = {
+      command: 'focus',
+      css: toCssSelector('存在しない入力欄'),
+    };
+
+    vi.mocked(browserFocus).mockReturnValue(
+      errAsync({
+        type: 'command_failed',
+        message: 'Element not found',
+        command: 'focus',
+        args: [],
+        exitCode: 1,
+        stderr: '',
+        rawError: 'Element not found',
+      }),
+    );
+
+    // Act
+    const result = await handleFocus(command, mockContext);
+
+    // Assert
+    expect(result.isErr()).toBe(true);
+    result.match(
+      () => {
+        throw new Error('Expected err result');
+      },
+      (error) => {
+        expect(error.type).toBe('command_failed');
+      },
+    );
   });
 });

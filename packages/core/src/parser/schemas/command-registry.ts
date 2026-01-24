@@ -12,7 +12,10 @@
 
 import type { BaseIssue, GenericSchema } from 'valibot';
 import type { Command } from '../../types';
+import { CheckYamlSchema, UncheckYamlSchema } from './commands/checkbox.schema';
 import { ClickYamlSchema } from './commands/click.schema';
+import { DblclickYamlSchema } from './commands/dblclick.schema';
+import { FocusYamlSchema } from './commands/focus.schema';
 import { HoverYamlSchema } from './commands/hover.schema';
 import { ScrollIntoViewYamlSchema } from './commands/scrollIntoView.schema';
 import { ScrollYamlSchema } from './commands/scroll.schema';
@@ -27,6 +30,8 @@ import { TypeYamlSchema, FillYamlSchema, SelectYamlSchema } from './commands/inp
 import {
   OpenYamlSchema,
   PressYamlSchema,
+  KeydownYamlSchema,
+  KeyupYamlSchema,
   ScreenshotYamlSchema,
   EvalYamlSchema,
 } from './commands/simple.schema';
@@ -68,11 +73,17 @@ export const commandSchemas: CommandSchemaEntry[] = [
 
   // インタラクション
   { name: 'click', schema: ClickYamlSchema },
+  { name: 'dblclick', schema: DblclickYamlSchema },
   { name: 'hover', schema: HoverYamlSchema },
+  { name: 'focus', schema: FocusYamlSchema },
   { name: 'type', schema: TypeYamlSchema },
   { name: 'fill', schema: FillYamlSchema },
   { name: 'select', schema: SelectYamlSchema },
   { name: 'press', schema: PressYamlSchema },
+  { name: 'keydown', schema: KeydownYamlSchema },
+  { name: 'keyup', schema: KeyupYamlSchema },
+  { name: 'check', schema: CheckYamlSchema },
+  { name: 'uncheck', schema: UncheckYamlSchema },
 
   // 待機
   { name: 'wait', schema: WaitYamlSchema },

@@ -106,6 +106,80 @@ export type PressYamlInput = v.InferInput<typeof PressYamlSchema>;
 export type PressCommand = v.InferOutput<typeof PressYamlSchema>;
 
 // ============================================================================
+// KeydownCommand
+// ============================================================================
+
+/**
+ * KeydownコマンドYAMLスキーマ（Single Source of Truth）
+ *
+ * keydown: "Enter" → { command: 'keydown', key: KeyboardKey }
+ *
+ * キーを押下する（押したまま）。Branded TypeのKeyboardKeyとして型安全に変換。
+ */
+export const KeydownYamlSchema = v.pipe(
+  v.object({
+    keydown: v.pipe(
+      KeyboardKeySchema,
+      v.description('Key to press down'),
+      v.metadata({ exampleValues: ['Shift', 'Control', 'Alt', 'Enter'] }),
+    ),
+  }),
+  v.description('キーを押下する（押したまま）'),
+  v.metadata({ category: 'Interaction' }),
+  v.transform((input): { command: 'keydown'; key: KeyboardKey } => ({
+    command: 'keydown',
+    key: input.keydown,
+  })),
+);
+
+/**
+ * KeydownYamlSchemaの入力型
+ */
+export type KeydownYamlInput = v.InferInput<typeof KeydownYamlSchema>;
+
+/**
+ * KeydownCommand型（Single Source of Truth）
+ */
+export type KeydownCommand = v.InferOutput<typeof KeydownYamlSchema>;
+
+// ============================================================================
+// KeyupCommand
+// ============================================================================
+
+/**
+ * KeyupコマンドYAMLスキーマ（Single Source of Truth）
+ *
+ * keyup: "Shift" → { command: 'keyup', key: KeyboardKey }
+ *
+ * キーを離す。Branded TypeのKeyboardKeyとして型安全に変換。
+ */
+export const KeyupYamlSchema = v.pipe(
+  v.object({
+    keyup: v.pipe(
+      KeyboardKeySchema,
+      v.description('Key to release'),
+      v.metadata({ exampleValues: ['Shift', 'Control', 'Alt', 'Enter'] }),
+    ),
+  }),
+  v.description('キーを離す'),
+  v.metadata({ category: 'Interaction' }),
+  v.transform((input): { command: 'keyup'; key: KeyboardKey } => ({
+    command: 'keyup',
+    key: input.keyup,
+  })),
+);
+
+/**
+ * KeyupYamlSchemaの入力型
+ */
+export type KeyupYamlInput = v.InferInput<typeof KeyupYamlSchema>;
+
+/**
+ * KeyupCommand型（Single Source of Truth）
+ */
+export type KeyupCommand = v.InferOutput<typeof KeyupYamlSchema>;
+
+// ============================================================================
 // ScreenshotCommand
 // ============================================================================
 

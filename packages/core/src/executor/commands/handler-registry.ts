@@ -11,7 +11,18 @@ import {
 import { handleScreenshot } from './capture';
 import { handleEval } from './eval';
 import { handleHover, handleSelect } from './hover-select';
-import { handleClick, handleFill, handlePress, handleType } from './interaction';
+import {
+  handleCheck,
+  handleClick,
+  handleDblclick,
+  handleFill,
+  handleFocus,
+  handleKeydown,
+  handleKeyup,
+  handlePress,
+  handleType,
+  handleUncheck,
+} from './interaction';
 import { handleOpen } from './navigation';
 import { handleScroll, handleScrollIntoView } from './scroll';
 import { handleWait } from './wait';
@@ -29,12 +40,18 @@ export const executeResolvedCommand: CommandHandler<ResolvedCommand> = (command,
     // ナビゲーション・入力系
     .with({ command: 'open' }, (cmd) => handleOpen(cmd, context))
     .with({ command: 'click' }, (cmd) => handleClick(cmd, context))
+    .with({ command: 'dblclick' }, (cmd) => handleDblclick(cmd, context))
     .with({ command: 'type' }, (cmd) => handleType(cmd, context))
     .with({ command: 'fill' }, (cmd) => handleFill(cmd, context))
     // インタラクション系
     .with({ command: 'press' }, (cmd) => handlePress(cmd, context))
+    .with({ command: 'keydown' }, (cmd) => handleKeydown(cmd, context))
+    .with({ command: 'keyup' }, (cmd) => handleKeyup(cmd, context))
     .with({ command: 'hover' }, (cmd) => handleHover(cmd, context))
+    .with({ command: 'focus' }, (cmd) => handleFocus(cmd, context))
     .with({ command: 'select' }, (cmd) => handleSelect(cmd, context))
+    .with({ command: 'check' }, (cmd) => handleCheck(cmd, context))
+    .with({ command: 'uncheck' }, (cmd) => handleUncheck(cmd, context))
     // スクロール・待機系
     .with({ command: 'scroll' }, (cmd) => handleScroll(cmd, context))
     .with({ command: 'scrollIntoView' }, (cmd) => handleScrollIntoView(cmd, context))

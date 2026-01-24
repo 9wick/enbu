@@ -87,6 +87,12 @@ const formatCommandDescription = (command: Command): string =>
       (cmd) => `click text:"${cmd.interactableText}"`,
     )
     .with({ command: 'click', xpath: P.string }, (cmd) => `click xpath:"${cmd.xpath}"`)
+    .with({ command: 'dblclick', css: P.string }, (cmd) => `dblclick "${cmd.css}"`)
+    .with(
+      { command: 'dblclick', interactableText: P.string },
+      (cmd) => `dblclick text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'dblclick', xpath: P.string }, (cmd) => `dblclick xpath:"${cmd.xpath}"`)
     .with(
       { command: 'type', css: P.string, value: P.string },
       (cmd) => `type "${cmd.css}" = "${cmd.value}"`,
@@ -112,12 +118,20 @@ const formatCommandDescription = (command: Command): string =>
       (cmd) => `fill xpath:"${cmd.xpath}" = "${cmd.value}"`,
     )
     .with({ command: 'press', key: P.string }, (cmd) => `press ${cmd.key}`)
+    .with({ command: 'keydown', key: P.string }, (cmd) => `keydown ${cmd.key}`)
+    .with({ command: 'keyup', key: P.string }, (cmd) => `keyup ${cmd.key}`)
     .with({ command: 'hover', css: P.string }, (cmd) => `hover "${cmd.css}"`)
     .with(
       { command: 'hover', interactableText: P.string },
       (cmd) => `hover text:"${cmd.interactableText}"`,
     )
     .with({ command: 'hover', xpath: P.string }, (cmd) => `hover xpath:"${cmd.xpath}"`)
+    .with({ command: 'focus', css: P.string }, (cmd) => `focus "${cmd.css}"`)
+    .with(
+      { command: 'focus', interactableText: P.string },
+      (cmd) => `focus text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'focus', xpath: P.string }, (cmd) => `focus xpath:"${cmd.xpath}"`)
     .with(
       { command: 'select', css: P.string, value: P.string },
       (cmd) => `select "${cmd.css}" = "${cmd.value}"`,
@@ -191,6 +205,18 @@ const formatCommandDescription = (command: Command): string =>
       { command: 'assertChecked', xpath: P.string },
       (cmd) => `assertChecked xpath:"${cmd.xpath}"`,
     )
+    .with({ command: 'check', css: P.string }, (cmd) => `check "${cmd.css}"`)
+    .with(
+      { command: 'check', interactableText: P.string },
+      (cmd) => `check text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'check', xpath: P.string }, (cmd) => `check xpath:"${cmd.xpath}"`)
+    .with({ command: 'uncheck', css: P.string }, (cmd) => `uncheck "${cmd.css}"`)
+    .with(
+      { command: 'uncheck', interactableText: P.string },
+      (cmd) => `uncheck text:"${cmd.interactableText}"`,
+    )
+    .with({ command: 'uncheck', xpath: P.string }, (cmd) => `uncheck xpath:"${cmd.xpath}"`)
     .exhaustive();
 
 /**

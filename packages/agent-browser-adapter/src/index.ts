@@ -14,12 +14,17 @@ export { browserOpen } from './commands/navigation';
 // インタラクション
 export {
   browserClick,
+  browserDblclick,
   browserType,
   browserFill,
   browserPress,
+  browserKeydown,
+  browserKeyup,
   browserHover,
   browserSelect,
   browserFocus,
+  browserCheck,
+  browserUncheck,
 } from './commands/interaction';
 
 // スクロール

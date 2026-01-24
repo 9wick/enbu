@@ -131,6 +131,25 @@ export type ClickCommand = {
 } & InteractableSelectorSpec;
 
 /**
+ * 要素をダブルクリック
+ *
+ * @example
+ * // YAML:
+ * // - dblclick:
+ * //     css: "#edit-button"
+ * { command: 'dblclick', css: '#edit-button' }
+ *
+ * @example
+ * // YAML:
+ * // - dblclick:
+ * //     interactableText: "編集"
+ * { command: 'dblclick', interactableText: '編集' }
+ */
+export type DblclickCommand = {
+  command: 'dblclick';
+} & InteractableSelectorSpec;
+
+/**
  * テキストを入力（既存のテキストをクリアしない）
  *
  * @example
@@ -173,6 +192,30 @@ export type PressCommand = {
 };
 
 /**
+ * キーボードキーを押下する（押したまま）
+ *
+ * @example
+ * // YAML: - keydown: Shift
+ * { command: 'keydown', key: 'Shift' }
+ */
+export type KeydownCommand = {
+  command: 'keydown';
+  key: KeyboardKey;
+};
+
+/**
+ * キーボードキーを離す
+ *
+ * @example
+ * // YAML: - keyup: Shift
+ * { command: 'keyup', key: 'Shift' }
+ */
+export type KeyupCommand = {
+  command: 'keyup';
+  key: KeyboardKey;
+};
+
+/**
  * 要素にホバー
  *
  * @example
@@ -183,6 +226,25 @@ export type PressCommand = {
  */
 export type HoverCommand = {
   command: 'hover';
+} & InteractableSelectorSpec;
+
+/**
+ * 要素にフォーカス
+ *
+ * @example
+ * // YAML:
+ * // - focus:
+ * //     css: "#email"
+ * { command: 'focus', css: '#email' }
+ *
+ * @example
+ * // YAML:
+ * // - focus:
+ * //     interactableText: "入力欄ラベル"
+ * { command: 'focus', interactableText: '入力欄ラベル' }
+ */
+export type FocusCommand = {
+  command: 'focus';
 } & InteractableSelectorSpec;
 
 /**
@@ -350,15 +412,53 @@ export type AssertCheckedCommand = {
 } & InteractableSelectorSpec;
 
 /**
+ * チェックボックスをチェックする
+ *
+ * @example
+ * // YAML: - check: "利用規約に同意する"
+ * { command: 'check', interactableText: '利用規約に同意する' }
+ *
+ * @example
+ * // YAML:
+ * // - check:
+ * //     css: "#agree-terms"
+ * { command: 'check', css: '#agree-terms' }
+ */
+export type CheckCommand = {
+  command: 'check';
+} & InteractableSelectorSpec;
+
+/**
+ * チェックボックスのチェックを外す
+ *
+ * @example
+ * // YAML: - uncheck: "メール配信を希望する"
+ * { command: 'uncheck', interactableText: 'メール配信を希望する' }
+ *
+ * @example
+ * // YAML:
+ * // - uncheck:
+ * //     css: "#newsletter"
+ * { command: 'uncheck', css: '#newsletter' }
+ */
+export type UncheckCommand = {
+  command: 'uncheck';
+} & InteractableSelectorSpec;
+
+/**
  * 全てのコマンド型のユニオン
  */
 export type Command =
   | OpenCommand
   | ClickCommand
+  | DblclickCommand
   | TypeCommand
   | FillCommand
   | PressCommand
+  | KeydownCommand
+  | KeyupCommand
   | HoverCommand
+  | FocusCommand
   | SelectCommand
   | ScrollCommand
   | ScrollIntoViewCommand
@@ -368,7 +468,9 @@ export type Command =
   | AssertVisibleCommand
   | AssertNotVisibleCommand
   | AssertEnabledCommand
-  | AssertCheckedCommand;
+  | AssertCheckedCommand
+  | CheckCommand
+  | UncheckCommand;
 
 // ==========================================
 // 解決済みコマンド型定義（executor実行時）
@@ -378,6 +480,11 @@ export type Command =
 /** 解決済みClickCommand */
 export type ResolvedClickCommand = {
   command: 'click';
+} & ResolvedSelectorSpec;
+
+/** 解決済みDblclickCommand */
+export type ResolvedDblclickCommand = {
+  command: 'dblclick';
 } & ResolvedSelectorSpec;
 
 /** 解決済みTypeCommand */
@@ -395,6 +502,11 @@ export type ResolvedFillCommand = {
 /** 解決済みHoverCommand */
 export type ResolvedHoverCommand = {
   command: 'hover';
+} & ResolvedSelectorSpec;
+
+/** 解決済みFocusCommand */
+export type ResolvedFocusCommand = {
+  command: 'focus';
 } & ResolvedSelectorSpec;
 
 /** 解決済みSelectCommand */
@@ -430,21 +542,35 @@ export type ResolvedAssertCheckedCommand = {
   checked: boolean | UseDefault;
 } & ResolvedSelectorSpec;
 
+/** 解決済みCheckCommand */
+export type ResolvedCheckCommand = {
+  command: 'check';
+} & ResolvedSelectorSpec;
+
+/** 解決済みUncheckCommand */
+export type ResolvedUncheckCommand = {
+  command: 'uncheck';
+} & ResolvedSelectorSpec;
+
 /**
  * 解決済みコマンド型のユニオン
  *
  * executor層でコマンドハンドラに渡される型。
  * セレクタを持つコマンドはResolvedSelectorSpecを使用。
- * セレクタを持たないコマンド（open, press, scroll, wait, screenshot, eval）は
+ * セレクタを持たないコマンド（open, press, keydown, keyup, scroll, wait, screenshot, eval）は
  * そのまま使用される。
  */
 export type ResolvedCommand =
   | OpenCommand
   | ResolvedClickCommand
+  | ResolvedDblclickCommand
   | ResolvedTypeCommand
   | ResolvedFillCommand
   | PressCommand
+  | KeydownCommand
+  | KeyupCommand
   | ResolvedHoverCommand
+  | ResolvedFocusCommand
   | ResolvedSelectCommand
   | ScrollCommand
   | ResolvedScrollIntoViewCommand
@@ -454,7 +580,9 @@ export type ResolvedCommand =
   | ResolvedAssertVisibleCommand
   | ResolvedAssertNotVisibleCommand
   | ResolvedAssertEnabledCommand
-  | ResolvedAssertCheckedCommand;
+  | ResolvedAssertCheckedCommand
+  | ResolvedCheckCommand
+  | ResolvedUncheckCommand;
 
 // ==========================================
 // Raw型定義（YAMLパース直後の未検証型）

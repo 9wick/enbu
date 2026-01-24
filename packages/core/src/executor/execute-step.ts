@@ -15,22 +15,30 @@ import type {
   ResolvedSelectorSpec,
   SelectorSpec,
   ResolvedClickCommand,
+  ResolvedDblclickCommand,
   ResolvedTypeCommand,
   ResolvedFillCommand,
   ResolvedHoverCommand,
+  ResolvedFocusCommand,
   ResolvedSelectCommand,
   ResolvedAssertEnabledCommand,
   ResolvedAssertCheckedCommand,
+  ResolvedCheckCommand,
+  ResolvedUncheckCommand,
   ResolvedAssertVisibleCommand,
   ResolvedAssertNotVisibleCommand,
   ResolvedScrollIntoViewCommand,
   ClickCommand,
+  DblclickCommand,
   TypeCommand,
   FillCommand,
   HoverCommand,
+  FocusCommand,
   SelectCommand,
   AssertEnabledCommand,
   AssertCheckedCommand,
+  CheckCommand,
+  UncheckCommand,
   AssertVisibleCommand,
   AssertNotVisibleCommand,
   ScrollIntoViewCommand,
@@ -358,6 +366,17 @@ const resolveClick = (
 });
 
 /**
+ * DblclickCommandのResolvedCommand変換関数
+ */
+const resolveDblclick = (
+  _cmd: DblclickCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedDblclickCommand => ({
+  command: 'dblclick',
+  ...resolved,
+});
+
+/**
  * TypeCommandのResolvedCommand変換関数
  */
 const resolveType = (cmd: TypeCommand, resolved: ResolvedSelectorSpec): ResolvedTypeCommand => ({
@@ -383,6 +402,17 @@ const resolveHover = (
   resolved: ResolvedSelectorSpec,
 ): ResolvedHoverCommand => ({
   command: 'hover',
+  ...resolved,
+});
+
+/**
+ * FocusCommandのResolvedCommand変換関数
+ */
+const resolveFocus = (
+  _cmd: FocusCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedFocusCommand => ({
+  command: 'focus',
   ...resolved,
 });
 
@@ -418,6 +448,28 @@ const resolveAssertChecked = (
 ): ResolvedAssertCheckedCommand => ({
   command: 'assertChecked',
   checked: cmd.checked,
+  ...resolved,
+});
+
+/**
+ * CheckCommandのResolvedCommand変換関数
+ */
+const resolveCheck = (
+  _cmd: CheckCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedCheckCommand => ({
+  command: 'check',
+  ...resolved,
+});
+
+/**
+ * UncheckCommandのResolvedCommand変換関数
+ */
+const resolveUncheck = (
+  _cmd: UncheckCommand,
+  resolved: ResolvedSelectorSpec,
+): ResolvedUncheckCommand => ({
+  command: 'uncheck',
   ...resolved,
 });
 
@@ -528,6 +580,8 @@ const processSelectorWait = (
     // ========================================
     .with({ command: 'open' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'press' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'keydown' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
+    .with({ command: 'keyup' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'scroll' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'wait' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
     .with({ command: 'screenshot' }, (cmd) => okAsync<ResolvedCommand, SelectorWaitFailure>(cmd))
@@ -539,6 +593,11 @@ const processSelectorWait = (
     .with({ command: 'click' }, (cmd) =>
       extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
         processWaitableSelector(cmd, spec, context, resolveClick),
+      ),
+    )
+    .with({ command: 'dblclick' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveDblclick),
       ),
     )
     .with({ command: 'type' }, (cmd) =>
@@ -556,6 +615,11 @@ const processSelectorWait = (
         processWaitableSelector(cmd, spec, context, resolveHover),
       ),
     )
+    .with({ command: 'focus' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveFocus),
+      ),
+    )
     .with({ command: 'select' }, (cmd) =>
       extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
         processWaitableSelector(cmd, spec, context, resolveSelect),
@@ -569,6 +633,16 @@ const processSelectorWait = (
     .with({ command: 'assertChecked' }, (cmd) =>
       extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
         processWaitableSelector(cmd, spec, context, resolveAssertChecked),
+      ),
+    )
+    .with({ command: 'check' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveCheck),
+      ),
+    )
+    .with({ command: 'uncheck' }, (cmd) =>
+      extractWaitableSelectorSpecOrFail(cmd).andThen((spec) =>
+        processWaitableSelector(cmd, spec, context, resolveUncheck),
       ),
     )
 
