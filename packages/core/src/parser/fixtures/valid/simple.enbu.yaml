@@ -2,6 +2,6 @@
 steps:
   - open: https://example.com
   - click:
-      interactableText: "ログインボタン"
+      text: "ログインボタン"
   - assertVisible:
-      anyText: "ダッシュボード"
+      text: "ダッシュボード"

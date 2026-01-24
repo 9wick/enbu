@@ -32,21 +32,22 @@ describe('loadFlows', () => {
    * 検証項目:
    * - ok([Flow]) が返される
    * - フローが正しくパースされる
+   * 注意: YAML入力形式は text を使用し、内部で interactableText に変換される
    */
   it('FL-1: 単一ファイルを正しく読み込める', async () => {
-    // Arrange: 1つの有効なフローファイルを作成
+    // Arrange: 1つの有効なフローファイルを作成（text キーを使用）
     const yamlContent = `
 steps:
   - open: https://example.com
   - click:
-      interactableText: "ボタン"
+      text: "ボタン"
 `;
     await writeFile(join(TEST_DIR, 'test.enbu.yaml'), yamlContent);
 
     // Act: loadFlowsを実行
     const result = await loadFlows(TEST_DIR);
 
-    // Assert: 正しくパースされたフローが返される
+    // Assert: 正しくパースされたフローが返される（text は interactableText に変換される）
     result.match(
       (flows) => {
         expect(flows.length).toBe(1);

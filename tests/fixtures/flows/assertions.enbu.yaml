@@ -14,6 +14,7 @@ steps:
   - assertChecked: チェック済みチェックボックス
 
   # 未チェックのチェックボックス（checked: falseで検証）
+  # text キーを使用（内部で interactableText に変換される）
   - assertChecked:
-      interactableText: 未チェックチェックボックス
+      text: 未チェックチェックボックス
       checked: false

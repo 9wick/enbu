@@ -429,27 +429,32 @@ const AssertCheckedCssSchema = v.pipe(
 );
 
 /**
- * assertChecked: { interactableText: "...", checked?: boolean }
+ * assertChecked: { text: "...", checked?: boolean }
+ *
+ * YAML入力形式は text を使用し、内部で interactableText に変換される。
  */
-const AssertCheckedInteractableTextSchema = v.pipe(
+const AssertCheckedTextSchema = v.pipe(
   v.object({
     assertChecked: v.object({
-      interactableText: v.pipe(
-        InteractableTextBrandedSchema,
-        v.description('インタラクティブ要素をテキスト内容で検索'),
-        v.metadata({ exampleValues: ['Agree to terms', 'Enable email notifications'] }),
+      text: v.pipe(
+        v.string(),
+        v.minLength(1, 'textセレクタは空文字列にできません'),
+        v.description('テキスト内容で要素を検索'),
+        v.metadata({ exampleValues: ['同意する', '通知を有効にする'] }),
       ),
       checked: CheckedFieldSchema,
     }),
   }),
   v.metadata({ description: 'テキストで要素を指定してチェック状態を検証' }),
-  v.transform(
-    (input): AssertCheckedWithInteractableText => ({
+  v.transform((input): AssertCheckedWithInteractableText => {
+    // Branded Typeを適用（InteractableTextBrandedSchemaを通す）
+    const parsed = v.parse(InteractableTextBrandedSchema, input.assertChecked.text);
+    return {
       command: 'assertChecked',
-      interactableText: input.assertChecked.interactableText,
+      interactableText: parsed,
       checked: input.assertChecked.checked ?? UseDefault,
-    }),
-  ),
+    };
+  }),
 );
 
 /**
@@ -481,10 +486,12 @@ const AssertCheckedXpathSchema = v.pipe(
  *
  * 3種類のセレクタをunionで組み合わせる。
  * checkedが省略された場合はUseDefaultになる。
+ *
+ * 注意: text キーを入力として受け入れ、内部で interactableText に変換する。
  */
 const AssertCheckedDetailedSchema = v.union([
   AssertCheckedCssSchema,
-  AssertCheckedInteractableTextSchema,
+  AssertCheckedTextSchema,
   AssertCheckedXpathSchema,
 ]);
 

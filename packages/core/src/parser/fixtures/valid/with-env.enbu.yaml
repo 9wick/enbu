@@ -4,7 +4,7 @@ env:
 steps:
   - open: ${BASE_URL}
   - fill:
-      interactableText: "ユーザー名"
+      text: "ユーザー名"
       value: ${USERNAME}
   - click:
-      interactableText: "ログイン"
+      text: "ログイン"

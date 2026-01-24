@@ -52,10 +52,10 @@ steps:
   - open: https://example.com/login
   - click: Login
   - fill:
-      interactableText: Email
+      text: Email
       value: user@example.com
   - fill:
-      interactableText: Password
+      text: Password
       value: password123
   - click: Submit
   - assertVisible: Dashboard
@@ -98,12 +98,12 @@ steps:
 steps:
   # fill: Clear input field then type
   - fill:
-      interactableText: Username
+      text: Username
       value: John Doe
 
   # type: Append to existing text
   - type:
-      interactableText: Search box
+      text: Search box
       value: Additional text
 ```
 
@@ -136,7 +136,7 @@ steps:
 
   # Assert checkbox is not checked
   - assertChecked:
-      interactableText: Optional feature
+      text: Optional feature
       checked: false
 ```
 
@@ -179,7 +179,7 @@ steps:
 
   # Wait for text to appear
   - wait:
-      anyText: Loading complete
+      text: Loading complete
 
   # Wait for URL to change
   - wait:
@@ -240,7 +240,7 @@ env:
   PASSWORD: secret123
 steps:
   - fill:
-      interactableText: Password
+      text: Password
       value: ${PASSWORD}
 ```
 
@@ -262,7 +262,7 @@ env:
 steps:
   - open: ${BASE_URL}/login
   - fill:
-      interactableText: Password
+      text: Password
       value: ${PASSWORD}
 ```
 

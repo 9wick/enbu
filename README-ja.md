@@ -50,10 +50,10 @@ steps:
   - open: https://example.com/login
   - click: ログイン
   - fill:
-      interactableText: メールアドレス
+      text: メールアドレス
       value: user@example.com
   - fill:
-      interactableText: パスワード
+      text: パスワード
       value: password123
   - click: 送信
   - assertVisible: ダッシュボード
@@ -96,12 +96,12 @@ steps:
 steps:
   # fill: 入力欄をクリアしてから入力
   - fill:
-      interactableText: ユーザー名
+      text: ユーザー名
       value: 山田太郎
 
   # type: 既存テキストに追記
   - type:
-      interactableText: 検索欄
+      text: 検索欄
       value: 追加テキスト
 ```
 
@@ -134,7 +134,7 @@ steps:
 
   # チェックボックスがチェックされていないことを確認
   - assertChecked:
-      interactableText: オプション
+      text: オプション
       checked: false
 ```
 
@@ -177,7 +177,7 @@ steps:
 
   # テキストが表示されるまで待機
   - wait:
-      anyText: 読み込み完了
+      text: 読み込み完了
 
   # URLが変わるまで待機
   - wait:
@@ -238,7 +238,7 @@ env:
   PASSWORD: secret123
 steps:
   - fill:
-      interactableText: パスワード
+      text: パスワード
       value: ${PASSWORD}
 ```
 
@@ -260,7 +260,7 @@ env:
 steps:
   - open: ${BASE_URL}/login
   - fill:
-      interactableText: パスワード
+      text: パスワード
       value: ${PASSWORD}
 ```
 

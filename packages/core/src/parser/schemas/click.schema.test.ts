@@ -49,11 +49,12 @@ describe('ClickYamlSchema', () => {
     });
   });
 
-  describe('詳細形式 - interactableTextセレクタ', () => {
-    // 前提: click: { interactableText: "..." } 形式の入力
+  describe('詳細形式 - textセレクタ（interactableTextに変換）', () => {
+    // 前提: click: { text: "..." } 形式の入力
     // 検証: { command: 'click', interactableText: "..." } に変換されること
-    it('interactableTextセレクタを指定した場合、interactableText形式のRawClickCommandに変換される', () => {
-      const input = { click: { interactableText: '送信する' } };
+    // 注意: YAML入力では text を使用し、内部で interactableText に変換される
+    it('textセレクタを指定した場合、interactableText形式のRawClickCommandに変換される', () => {
+      const input = { click: { text: '送信する' } };
 
       const result = safeParse(ClickYamlSchema, input);
 
@@ -101,7 +102,7 @@ describe('ClickYamlSchema', () => {
     });
 
     // 前提: 複数のセレクタが指定されている
-    // 検証: バリデーションエラーになること（SelectorSpecSchemaはunionなので最初にマッチしたものが使われる）
+    // 検証: バリデーションエラーになること（unionなので最初にマッチしたものが使われる）
     it('複数のセレクタが指定された場合は最初にマッチしたものが使われる', () => {
       // unionの仕様上、cssが最初にマッチするのでcssが使われる
       const input = { click: { css: '#btn', ref: '@e1' } };

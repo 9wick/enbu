@@ -17,21 +17,33 @@ describe('generateJsonSchema', () => {
 
     expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
     expect(schema.definitions).toBeDefined();
-    expect(schema.definitions.selectorSpec).toBeDefined();
+    expect(schema.definitions.interactableSelectorSpec).toBeDefined();
+    expect(schema.definitions.anySelectorSpec).toBeDefined();
     expect(schema.definitions.clickCommand).toBeDefined();
   });
 
   // 前提: generateJsonSchemaを実行
-  // 検証: selectorSpecがanyOfでセレクタを含むこと
-  // 注: SelectorSpecSchemaはInteractableSelectorSpecSchemaとAnySelectorSpecSchemaのunionであり、
-  // さらにそれぞれが3つのセレクタのunionなので、構造が複雑になっている
-  it('selectorSpecがanyOfでセレクタを含むこと', () => {
+  // 検証: interactableSelectorSpecがanyOfでセレクタを含むこと
+  // InteractableSelectorSpecSchemaは3つのセレクタ（css, text, xpath）のunion
+  it('interactableSelectorSpecがanyOfで3つのセレクタを含むこと', () => {
     const schema = generateJsonSchema();
-    const selectorSpec = schema.definitions.selectorSpec as AnyJsonSchema;
+    const interactableSelectorSpec = schema.definitions.interactableSelectorSpec as AnyJsonSchema;
 
-    expect(selectorSpec.anyOf).toBeDefined();
-    // SelectorSpecSchemaは2つのunionのunionなので、anyOfの長さは2
-    expect(selectorSpec.anyOf.length).toBeGreaterThan(0);
+    expect(interactableSelectorSpec.anyOf).toBeDefined();
+    // InteractableSelectorSpecSchemaは3つのセレクタのunion
+    expect(interactableSelectorSpec.anyOf).toHaveLength(3);
+  });
+
+  // 前提: generateJsonSchemaを実行
+  // 検証: anySelectorSpecがanyOfでセレクタを含むこと
+  // AnySelectorSpecSchemaは3つのセレクタ（css, text, xpath）のunion
+  it('anySelectorSpecがanyOfで3つのセレクタを含むこと', () => {
+    const schema = generateJsonSchema();
+    const anySelectorSpec = schema.definitions.anySelectorSpec as AnyJsonSchema;
+
+    expect(anySelectorSpec.anyOf).toBeDefined();
+    // AnySelectorSpecSchemaは3つのセレクタのunion
+    expect(anySelectorSpec.anyOf).toHaveLength(3);
   });
 
   // 前提: generateJsonSchemaを実行

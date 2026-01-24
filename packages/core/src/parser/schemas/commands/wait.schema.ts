@@ -106,31 +106,35 @@ const WaitCssSchema = v.pipe(
 );
 
 /**
- * anyText待機: wait: { anyText: 'テキスト' }
+ * text待機: wait: { text: 'テキスト' }
  *
+ * YAML入力形式は text を使用し、内部で anyText に変換される。
  * 全要素をテキスト内容で検索して表示されるまで待機する。
  * 出力はBranded Type (AnyTextSelector)
  */
 type WaitAnyText = { command: 'wait'; anyText: AnyTextSelector };
-const WaitAnyTextSchema = v.pipe(
+const WaitTextSchema = v.pipe(
   v.object({
     wait: v.object({
-      anyText: v.pipe(
-        AnyTextBrandedSchema,
-        v.description('Search for any elements by text content'),
-        v.metadata({ exampleValues: ['Login', 'Submit'] }),
+      text: v.pipe(
+        v.string(),
+        v.minLength(1, 'textセレクタは空文字列にできません'),
+        v.description('テキスト内容で要素を検索'),
+        v.metadata({ exampleValues: ['ログイン', '送信'] }),
       ),
     }),
   }),
   v.metadata({
     description: 'Wait until element specified by text is visible',
   }),
-  v.transform(
-    (input): WaitAnyText => ({
+  v.transform((input): WaitAnyText => {
+    // Branded Typeを適用（AnyTextBrandedSchemaを通す）
+    const parsed = v.parse(AnyTextBrandedSchema, input.wait.text);
+    return {
       command: 'wait',
-      anyText: input.wait.anyText,
-    }),
-  ),
+      anyText: parsed,
+    };
+  }),
 );
 
 /**
@@ -258,7 +262,7 @@ export const WaitYamlSchema = v.pipe(
   v.union([
     WaitMsSchema,
     WaitCssSchema,
-    WaitAnyTextSchema,
+    WaitTextSchema,
     WaitXpathSchema,
     WaitLoadSchema,
     WaitUrlSchema,

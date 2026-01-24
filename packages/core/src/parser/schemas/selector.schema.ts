@@ -8,6 +8,11 @@
  * - Runtime版スキーマのみを定義（brand/metadata込み）
  * - JSON Schema生成には typeMode: 'input' を使用
  *
+ * 入出力変換:
+ * - YAML入力では `text` キーを使用
+ * - InteractableSelectorSpecSchema: text → interactableText に変換
+ * - AnySelectorSpecSchema: text → anyText に変換
+ *
  * 各セレクタはBranded Typeスキーマを使用し、format検証も行う。
  * これにより1段階で形式検証 + Branded Type化が完了する。
  *
@@ -20,7 +25,12 @@ import {
   CssSelectorSchema as CssBrandedSchema,
   InteractableTextSelectorSchema as InteractableTextBrandedSchema,
   XpathSelectorSchema as XpathBrandedSchema,
+  type AnyTextSelector,
+  type CssSelector,
+  type InteractableTextSelector,
+  type XpathSelector,
 } from '@packages/agent-browser-adapter';
+import { match, P } from 'ts-pattern';
 import * as v from 'valibot';
 
 /**
@@ -40,36 +50,17 @@ const CssSelectorSchema = v.object({
 });
 
 /**
- * InteractableTextセレクタスキーマ
+ * テキストセレクタ入力スキーマ（YAML入力用）
  *
- * インタラクティブ要素（ボタン、リンク、入力欄等）をテキスト内容で検索する。
- * click, fill, type, hover, select, assertEnabled, assertChecked で使用。
- * 例: { interactableText: "Login" }
- *
- * 出力はBranded Type (InteractableTextSelector)
+ * ユーザーは text キーで指定し、内部で用途に応じて
+ * interactableText または anyText に変換される。
  */
-const InteractableTextSelectorSchema = v.object({
-  interactableText: v.pipe(
-    InteractableTextBrandedSchema,
-    v.description('Search for interactive elements by text content'),
-    v.metadata({ exampleValues: ['Login', 'Submit'] }),
-  ),
-});
-
-/**
- * AnyTextセレクタスキーマ
- *
- * 全ての要素（静的テキスト含む）をテキスト内容で検索する。
- * assertVisible, assertNotVisible, scrollIntoView, wait で使用。
- * 例: { anyText: "Welcome" }
- *
- * 出力はBranded Type (AnyTextSelector)
- */
-const AnyTextSelectorSchema = v.object({
-  anyText: v.pipe(
-    AnyTextBrandedSchema,
-    v.description('Search for any elements by text content'),
-    v.metadata({ exampleValues: ['Welcome', 'Error message'] }),
+const TextInputSchema = v.object({
+  text: v.pipe(
+    v.string(),
+    v.minLength(1, 'textセレクタは空文字列にできません'),
+    v.description('テキスト内容で要素を検索'),
+    v.metadata({ exampleValues: ['ログイン', '送信'] }),
   ),
 });
 
@@ -92,62 +83,80 @@ const XpathSelectorSchema = v.object({
 /**
  * インタラクティブ要素用セレクタ指定スキーマ
  *
- * css, interactableText, xpath のいずれか1つのみを指定する。
+ * 入力: css, text, xpath のいずれか1つのみを指定する。
+ * text入力の場合、transformで `{ interactableText: ... }` に変換される。
  * click, fill, type, hover, select, assertEnabled, assertChecked で使用。
  */
-export const InteractableSelectorSpecSchema = v.union([
-  CssSelectorSchema,
-  InteractableTextSelectorSchema,
-  XpathSelectorSchema,
-]);
+export const InteractableSelectorSpecSchema = v.pipe(
+  v.union([CssSelectorSchema, TextInputSchema, XpathSelectorSchema]),
+  v.transform(
+    (
+      input,
+    ):
+      | { css: CssSelector }
+      | { interactableText: InteractableTextSelector }
+      | { xpath: XpathSelector } =>
+      match(input)
+        .with({ text: P.string }, ({ text }) => {
+          // Branded Typeを適用（InteractableTextBrandedSchemaを通す）
+          const parsed = v.parse(InteractableTextBrandedSchema, text);
+          return { interactableText: parsed };
+        })
+        .with({ css: P._ }, (cssInput) => cssInput)
+        .with({ xpath: P._ }, (xpathInput) => xpathInput)
+        .exhaustive(),
+  ),
+);
 
 /**
  * 全要素用セレクタ指定スキーマ
  *
- * css, anyText, xpath のいずれか1つのみを指定する。
+ * 入力: css, text, xpath のいずれか1つのみを指定する。
+ * text入力の場合、transformで `{ anyText: ... }` に変換される。
  * assertVisible, assertNotVisible, scrollIntoView, wait で使用。
  */
-export const AnySelectorSpecSchema = v.union([
-  CssSelectorSchema,
-  AnyTextSelectorSchema,
-  XpathSelectorSchema,
-]);
-
-/**
- * セレクタ指定スキーマ（後方互換用）
- *
- * @deprecated 将来的にInteractableSelectorSpecSchemaまたはAnySelectorSpecSchemaを直接使用すること
- */
-export const SelectorSpecSchema = v.union([InteractableSelectorSpecSchema, AnySelectorSpecSchema]);
+export const AnySelectorSpecSchema = v.pipe(
+  v.union([CssSelectorSchema, TextInputSchema, XpathSelectorSchema]),
+  v.transform(
+    (input): { css: CssSelector } | { anyText: AnyTextSelector } | { xpath: XpathSelector } =>
+      match(input)
+        .with({ text: P.string }, ({ text }) => {
+          // Branded Typeを適用（AnyTextBrandedSchemaを通す）
+          const parsed = v.parse(AnyTextBrandedSchema, text);
+          return { anyText: parsed };
+        })
+        .with({ css: P._ }, (cssInput) => cssInput)
+        .with({ xpath: P._ }, (xpathInput) => xpathInput)
+        .exhaustive(),
+  ),
+);
 
 /**
  * InteractableSelectorSpecSchemaの入力型
+ *
+ * YAML入力形式: css | text | xpath
  */
 export type InteractableSelectorSpecInput = v.InferInput<typeof InteractableSelectorSpecSchema>;
 
 /**
  * InteractableSelectorSpecSchemaの出力型
+ *
+ * transform後の形式: css | interactableText | xpath
+ * （text は含まない）
  */
 export type InteractableSelectorSpecOutput = v.InferOutput<typeof InteractableSelectorSpecSchema>;
 
 /**
  * AnySelectorSpecSchemaの入力型
+ *
+ * YAML入力形式: css | text | xpath
  */
 export type AnySelectorSpecInput = v.InferInput<typeof AnySelectorSpecSchema>;
 
 /**
  * AnySelectorSpecSchemaの出力型
+ *
+ * transform後の形式: css | anyText | xpath
+ * （text は含まない）
  */
 export type AnySelectorSpecOutput = v.InferOutput<typeof AnySelectorSpecSchema>;
-
-/**
- * SelectorSpecSchemaの入力型（後方互換用）
- * @deprecated
- */
-export type SelectorSpecInput = v.InferInput<typeof SelectorSpecSchema>;
-
-/**
- * SelectorSpecSchemaの出力型（後方互換用）
- * @deprecated
- */
-export type SelectorSpecOutput = v.InferOutput<typeof SelectorSpecSchema>;

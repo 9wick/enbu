@@ -124,17 +124,17 @@ describe('parseFlowYaml', () => {
   /**
    * YP-4: 簡略形式のコマンド
    *
-   * 前提条件: 簡略形式のYAML（- click: { interactableText: "ボタン" }）
+   * 前提条件: 簡略形式のYAML（- click: { text: "ボタン" }）
    * 検証項目:
-   * - オブジェクト形式に正規化される
+   * - text は内部で interactableText に変換される
    * - { command: 'click', interactableText: "ボタン" } となる
    */
   it('YP-4: 簡略形式のコマンドが正規化される', () => {
-    // Arrange
+    // Arrange: YAML入力形式は text を使用し、内部で interactableText に変換
     const yamlContent = `
 steps:
   - click:
-      interactableText: "ログインボタン"
+      text: "ログインボタン"
   - open: https://example.com
 `;
 
@@ -144,6 +144,7 @@ steps:
     // Assert
     result.match(
       (flow) => {
+        // text は interactableText に変換される
         expect(flow.steps[0]).toEqual({ command: 'click', interactableText: 'ログインボタン' });
         expect(flow.steps[1]).toEqual({ command: 'open', url: 'https://example.com' });
       },
@@ -307,13 +308,14 @@ steps:
    * 検証項目:
    * - ok(Flow) が返される
    * - checkedフィールドがtrueとして正しくパースされる
+   * 注意: YAML入力形式は text を使用し、内部で interactableText に変換される
    */
   it('YP-10: assertCheckedコマンドのcheckedフィールド(true)を正しくパースできる', () => {
-    // Arrange: checked: trueを持つassertCheckedコマンド
+    // Arrange: checked: trueを持つassertCheckedコマンド（text キーを使用）
     const yamlContent = `
 steps:
   - assertChecked:
-      interactableText: "同意チェックボックス"
+      text: "同意チェックボックス"
       checked: true
 `;
 
@@ -327,6 +329,7 @@ steps:
         const command = flow.steps[0];
         expect(command.command).toBe('assertChecked');
         if (command.command === 'assertChecked') {
+          // text は interactableText に変換される
           expect('interactableText' in command && command.interactableText).toBe(
             '同意チェックボックス',
           );

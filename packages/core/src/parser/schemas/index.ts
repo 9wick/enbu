@@ -8,4 +8,4 @@
  * JSON Schema生成には typeMode: 'input' を使用。
  */
 
-export { SelectorSpecSchema } from './selector.schema';
+export { InteractableSelectorSpecSchema, AnySelectorSpecSchema } from './selector.schema';

@@ -80,27 +80,32 @@ const TypeCssSchema = v.pipe(
 );
 
 /**
- * type: { interactableText: "...", value: "..." }
+ * type: { text: "...", value: "..." }
+ *
+ * YAML入力形式は text を使用し、内部で interactableText に変換される。
  */
-const TypeInteractableTextSchema = v.pipe(
+const TypeTextSchema = v.pipe(
   v.object({
     type: v.object({
-      interactableText: v.pipe(
-        InteractableTextBrandedSchema,
-        v.description('Search for interactive elements by text content'),
-        v.metadata({ exampleValues: ['Email address', 'Username'] }),
+      text: v.pipe(
+        v.string(),
+        v.minLength(1, 'textセレクタは空文字列にできません'),
+        v.description('テキスト内容で要素を検索'),
+        v.metadata({ exampleValues: ['メールアドレス', 'ユーザー名'] }),
       ),
       value: TypeValueSchema,
     }),
   }),
   v.metadata({ description: 'Input to element specified by text' }),
-  v.transform(
-    (input): TypeWithInteractableText => ({
+  v.transform((input): TypeWithInteractableText => {
+    // Branded Typeを適用（InteractableTextBrandedSchemaを通す）
+    const parsed = v.parse(InteractableTextBrandedSchema, input.type.text);
+    return {
       command: 'type',
-      interactableText: input.type.interactableText,
+      interactableText: parsed,
       value: input.type.value,
-    }),
-  ),
+    };
+  }),
 );
 
 /**
@@ -136,7 +141,7 @@ const TypeXpathSchema = v.pipe(
  * このRuntime版スキーマから入力形式のJSON Schemaを生成する。
  */
 export const TypeYamlSchema = v.pipe(
-  v.union([TypeCssSchema, TypeInteractableTextSchema, TypeXpathSchema]),
+  v.union([TypeCssSchema, TypeTextSchema, TypeXpathSchema]),
   v.description('要素にテキストを入力する（既存テキストに追加）'),
   v.metadata({ category: 'Input' }),
 );
@@ -202,27 +207,32 @@ const FillCssSchema = v.pipe(
 );
 
 /**
- * fill: { interactableText: "...", value: "..." }
+ * fill: { text: "...", value: "..." }
+ *
+ * YAML入力形式は text を使用し、内部で interactableText に変換される。
  */
-const FillInteractableTextSchema = v.pipe(
+const FillTextSchema = v.pipe(
   v.object({
     fill: v.object({
-      interactableText: v.pipe(
-        InteractableTextBrandedSchema,
-        v.description('Search for interactive elements by text content'),
-        v.metadata({ exampleValues: ['Email address', 'Password'] }),
+      text: v.pipe(
+        v.string(),
+        v.minLength(1, 'textセレクタは空文字列にできません'),
+        v.description('テキスト内容で要素を検索'),
+        v.metadata({ exampleValues: ['メールアドレス', 'パスワード'] }),
       ),
       value: FillValueSchema,
     }),
   }),
   v.metadata({ description: 'Fill element specified by text' }),
-  v.transform(
-    (input): FillWithInteractableText => ({
+  v.transform((input): FillWithInteractableText => {
+    // Branded Typeを適用（InteractableTextBrandedSchemaを通す）
+    const parsed = v.parse(InteractableTextBrandedSchema, input.fill.text);
+    return {
       command: 'fill',
-      interactableText: input.fill.interactableText,
+      interactableText: parsed,
       value: input.fill.value,
-    }),
-  ),
+    };
+  }),
 );
 
 /**
@@ -258,7 +268,7 @@ const FillXpathSchema = v.pipe(
  * このRuntime版スキーマから入力形式のJSON Schemaを生成する。
  */
 export const FillYamlSchema = v.pipe(
-  v.union([FillCssSchema, FillInteractableTextSchema, FillXpathSchema]),
+  v.union([FillCssSchema, FillTextSchema, FillXpathSchema]),
   v.description('要素にテキストを入力する（既存テキストをクリアして入力）'),
   v.metadata({ category: 'Input' }),
 );
@@ -324,27 +334,32 @@ const SelectCssSchema = v.pipe(
 );
 
 /**
- * select: { interactableText: "...", value: "..." }
+ * select: { text: "...", value: "..." }
+ *
+ * YAML入力形式は text を使用し、内部で interactableText に変換される。
  */
-const SelectInteractableTextSchema = v.pipe(
+const SelectTextSchema = v.pipe(
   v.object({
     select: v.object({
-      interactableText: v.pipe(
-        InteractableTextBrandedSchema,
-        v.description('Search for interactive elements by text content'),
-        v.metadata({ exampleValues: ['Select country', 'Language'] }),
+      text: v.pipe(
+        v.string(),
+        v.minLength(1, 'textセレクタは空文字列にできません'),
+        v.description('テキスト内容で要素を検索'),
+        v.metadata({ exampleValues: ['国選択', '言語'] }),
       ),
       value: SelectValueSchema,
     }),
   }),
   v.metadata({ description: 'Select option from element specified by text' }),
-  v.transform(
-    (input): SelectWithInteractableText => ({
+  v.transform((input): SelectWithInteractableText => {
+    // Branded Typeを適用（InteractableTextBrandedSchemaを通す）
+    const parsed = v.parse(InteractableTextBrandedSchema, input.select.text);
+    return {
       command: 'select',
-      interactableText: input.select.interactableText,
+      interactableText: parsed,
       value: input.select.value,
-    }),
-  ),
+    };
+  }),
 );
 
 /**
@@ -380,7 +395,7 @@ const SelectXpathSchema = v.pipe(
  * このRuntime版スキーマから入力形式のJSON Schemaを生成する。
  */
 export const SelectYamlSchema = v.pipe(
-  v.union([SelectCssSchema, SelectInteractableTextSchema, SelectXpathSchema]),
+  v.union([SelectCssSchema, SelectTextSchema, SelectXpathSchema]),
   v.description('セレクトボックスからオプションを選択する'),
   v.metadata({ category: 'Input' }),
 );

@@ -7,13 +7,14 @@ steps:
   - assertVisible: ログインフォーム
 
   # メールアドレスを入力
+  # text キーを使用（内部で interactableText に変換される）
   - type:
-      interactableText: メールアドレス
+      text: メールアドレス
       value: test@example.com
 
   # パスワードを入力
   - type:
-      interactableText: パスワード
+      text: パスワード
       value: password123
 
   # ログインボタンをクリック

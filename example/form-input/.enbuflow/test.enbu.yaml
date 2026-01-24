@@ -14,14 +14,16 @@ steps:
 
   # ステップ3: テキスト欄に追記入力（既存テキスト"初期値"に"追加"を追記）
   # HTMLのlabelテキスト「Type コマンド（追記入力）」を使用
+  # text キーを使用（内部で interactableText に変換される）
   - type:
-      interactableText: Type コマンド（追記入力）
+      text: Type コマンド（追記入力）
       value: 追加
 
   # ステップ4: 別のテキスト欄をクリア後入力
   # HTMLのlabelテキスト「Fill コマンド（クリア後入力）」を使用
+  # text キーを使用（内部で interactableText に変換される）
   - fill:
-      interactableText: Fill コマンド（クリア後入力）
+      text: Fill コマンド（クリア後入力）
       value: 新しい値
 
   # Note: Select コマンドは実装されていますが、現在のバージョンでは
@@ -30,8 +32,9 @@ steps:
 
   # ステップ5: 検索欄に入力
   # HTMLのlabelテキスト「Press コマンド（Enterキーで検索）」を使用
+  # text キーを使用（内部で interactableText に変換される）
   - type:
-      interactableText: Press コマンド（Enterキーで検索）
+      text: Press コマンド（Enterキーで検索）
       value: テスト検索
 
   # ステップ6: Enterキーで検索実行

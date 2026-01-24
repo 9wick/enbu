@@ -13,7 +13,7 @@
 
 import { toJsonSchema } from '@valibot/to-json-schema';
 import { commandSchemas } from '../parser/schemas/command-registry';
-import { SelectorSpecSchema } from '../parser/schemas';
+import { InteractableSelectorSpecSchema, AnySelectorSpecSchema } from '../parser/schemas';
 
 /**
  * JSON Schema生成の共通設定
@@ -33,7 +33,8 @@ const jsonSchemaConfig = {
  * 個別のプロパティ定義は不要。
  */
 export type CommandJsonSchemaDefinitions = {
-  selectorSpec: ReturnType<typeof toJsonSchema>;
+  interactableSelectorSpec: ReturnType<typeof toJsonSchema>;
+  anySelectorSpec: ReturnType<typeof toJsonSchema>;
 } & {
   [key: string]: ReturnType<typeof toJsonSchema>;
 };
@@ -54,7 +55,8 @@ export const generateJsonSchema = (): {
 } => {
   // 基本定義
   const definitions: CommandJsonSchemaDefinitions = {
-    selectorSpec: toJsonSchema(SelectorSpecSchema, jsonSchemaConfig),
+    interactableSelectorSpec: toJsonSchema(InteractableSelectorSpecSchema, jsonSchemaConfig),
+    anySelectorSpec: toJsonSchema(AnySelectorSpecSchema, jsonSchemaConfig),
   };
 
   // commandSchemasから動的に全コマンドのスキーマを追加

@@ -5,18 +5,19 @@ steps:
   - open: http://localhost:8082/form-elements.html
 
   # テキスト入力
+  # text キーを使用（内部で interactableText に変換される）
   - type:
-      interactableText: ユーザー名
+      text: ユーザー名
       value: テストユーザー
 
   # メールアドレス入力
   - type:
-      interactableText: メールアドレス
+      text: メールアドレス
       value: test@example.com
 
   # 年齢入力
   - fill:
-      interactableText: 年齢
+      text: 年齢
       value: "25"
 
   # チェックボックスをクリック

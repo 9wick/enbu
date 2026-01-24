@@ -2,32 +2,32 @@
 steps:
   - open: https://example.com
   - click:
-      interactableText: "ボタン"
+      text: "ボタン"
   - type:
-      interactableText: "検索欄"
+      text: "検索欄"
       value: "検索キーワード"
   - fill:
-      interactableText: "パスワード"
+      text: "パスワード"
       value: "secret123"
   - press: Enter
   - hover:
-      interactableText: "メニュー"
+      text: "メニュー"
   - select:
-      interactableText: "国選択"
+      text: "国選択"
       value: "日本"
   - scroll:
       direction: down
       amount: 500
   - scrollIntoView:
-      anyText: "フッター"
+      text: "フッター"
   - wait: 1000
   - screenshot: ./result.png
   - eval: "document.title"
   - assertVisible:
-      anyText: "完了"
+      text: "完了"
   - assertNotVisible:
-      anyText: "エラーメッセージ"
+      text: "エラーメッセージ"
   - assertEnabled:
-      interactableText: "送信ボタン"
+      text: "送信ボタン"
   - assertChecked:
-      interactableText: "同意チェックボックス"
+      text: "同意チェックボックス"

@@ -35,14 +35,15 @@ steps:
   - assertVisible: Shipping Information
 
   # Enter shipping information
+  # text キーを使用（内部で interactableText に変換される）
   - fill:
-      interactableText: Postal Code
+      text: Postal Code
       value: "123-4567"
   - fill:
-      interactableText: Address
+      text: Address
       value: 123 Fifth Avenue, New York
   - fill:
-      interactableText: Phone Number
+      text: Phone Number
       value: "555-123-4567"
 
   # Payment method is Credit Card by default
