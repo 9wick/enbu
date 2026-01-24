@@ -26,4 +26,6 @@ export type Flow = {
   env: FlowEnv;
   /** 実行するステップのシーケンス */
   steps: readonly Command[];
+  /** フローファイルの絶対パス */
+  filePath: string;
 };

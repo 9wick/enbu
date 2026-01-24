@@ -7,7 +7,7 @@
 
 import * as vscode from 'vscode';
 import { P, match } from 'ts-pattern';
-import { getStepLineNumbers } from '@packages/core';
+import { getStepLineNumbers, generateSessionNameFromPath } from '@packages/core';
 import { browserClose, type AgentBrowserError } from '@packages/agent-browser-adapter';
 import { FlowRunner } from './flowRunner';
 import type { StepStartMessage, StepCompleteMessage, FlowCompleteMessage } from './types';
@@ -319,8 +319,9 @@ const setupRunnerEventListeners = (
 
     // フロー成功時のみセッションをクローズする
     // 失敗時はAIがデバッグできるようにセッションを残す
-    if (message.status === 'passed') {
-      const sessionName = runner.getSessionName();
+    if (message.status === 'passed' && fileItem.uri) {
+      // セッション名はファイルパスから生成（coreと同じロジック）
+      const sessionName = generateSessionNameFromPath(fileItem.uri.fsPath);
       // browserCloseは非同期だが、イベントハンドラーの処理をブロックしないため、
       // void-returning async関数を即座に実行する
       void (async () => {

@@ -76,7 +76,6 @@ export class FlowRunner extends EventEmitter {
   private process: ChildProcess | null = null;
   private readonly filePath: string;
   private readonly workspaceRoot: string;
-  private readonly sessionName: string;
 
   /**
    * コンストラクタ
@@ -88,11 +87,7 @@ export class FlowRunner extends EventEmitter {
     super();
     this.filePath = filePath;
     this.workspaceRoot = workspaceRoot;
-    // セッション名を生成（CLIと同じ形式）
-    const timestamp = Date.now().toString(36);
-    const fileName = this.filePath.split('/').pop()?.replace('.enbu.yaml', '') ?? 'flow';
-    const shortName = fileName.slice(0, 12);
-    this.sessionName = `enbu-${shortName}-${timestamp}`;
+    // セッション名はCLIのデフォルト動作（ファイルパスベース）に任せる
   }
 
   /**
@@ -119,14 +114,12 @@ export class FlowRunner extends EventEmitter {
 
       // enbuが見つかったディレクトリをcwdとして使用（そのpackage.jsonのコンテキストで実行）
       const enbuDir = dirname(dirname(dirname(enbuBin))); // node_modules/.bin/enbu -> project root
-      this.process = spawn(
-        enbuBin,
-        [this.filePath, '--progress-json', '--headed', '--session', this.sessionName],
-        {
-          cwd: enbuDir,
-          stdio: ['ignore', 'pipe', 'pipe'],
-        },
-      );
+      // セッション名はCLIのデフォルト動作（ファイルパスベース）に任せる
+      // これにより、同一ファイルを複数回実行しても同じセッションが再利用される
+      this.process = spawn(enbuBin, [this.filePath, '--progress-json', '--headed'], {
+        cwd: enbuDir,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 
       // stdoutを行単位でバッファリング
       let stdoutBuffer = '';
@@ -272,15 +265,6 @@ export class FlowRunner extends EventEmitter {
     if (this.process) {
       this.process.kill();
     }
-  }
-
-  /**
-   * セッション名を取得する
-   *
-   * @returns セッション名
-   */
-  public getSessionName(): string {
-    return this.sessionName;
   }
 
   /**

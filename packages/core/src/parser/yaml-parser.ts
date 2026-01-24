@@ -17,6 +17,7 @@
  * - 旧形式（配列形式や`---`区切り）はサポートしない
  */
 
+import * as path from 'node:path';
 import { err, fromThrowable, ok, type Result } from 'neverthrow';
 import { P, match } from 'ts-pattern';
 import * as yaml from 'yaml';
@@ -260,7 +261,7 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  * YAMLファイルをパースしてFlowオブジェクトに変換する
  *
  * @param yamlContent - YAMLファイルの内容
- * @param fileName - ファイル名（フロー名として使用）
+ * @param filePath - フローファイルの絶対パス（path.basenameでフロー名を取得）
  * @param processEnv - プロセス環境変数（process.env）
  * @param dotEnv - .envファイルから読み込んだ環境変数
  * @returns 成功時: Flowオブジェクト、失敗時: ParseError
@@ -289,7 +290,7 @@ const validateCommands = (commands: unknown[]): Result<readonly Command[], Parse
  *
  * const result = parseFlowYaml(
  *   yamlContent,
- *   'login.enbu.yaml',
+ *   '/path/to/login.enbu.yaml',
  *   process.env,
  *   {}
  * );
@@ -417,17 +418,22 @@ const buildRawFlowData = (root: Record<string, unknown>): RawFlowData => ({
 
 /**
  * 解決済みRawFlowDataからFlowを構築する
+ *
+ * @param resolvedRawFlow - 環境変数解決済みのRawFlowData
+ * @param filePath - フローファイルの絶対パス
+ * @returns 成功時: Flowオブジェクト、失敗時: ParseError
  */
-const buildFlow = (resolvedRawFlow: RawFlowData, fileName: string): Result<Flow, ParseError> =>
+const buildFlow = (resolvedRawFlow: RawFlowData, filePath: string): Result<Flow, ParseError> =>
   validateCommands(resolvedRawFlow.steps).map((validatedCommands) => ({
-    name: fileName.replace(/\.enbu\.yaml$/, ''),
+    name: path.basename(filePath).replace(/\.enbu\.yaml$/, ''),
     env: resolvedRawFlow.env,
     steps: validatedCommands,
+    filePath,
   }));
 
 export const parseFlowYaml = (
   yamlContent: string,
-  fileName: string,
+  filePath: string,
   processEnv: Readonly<Record<string, string | undefined>>,
   dotEnv: Readonly<Record<string, string>>,
 ): Result<Flow, ParseError> =>
@@ -435,4 +441,4 @@ export const parseFlowYaml = (
     .andThen(validateRootStructure)
     .map(buildRawFlowData)
     .andThen((rawFlow) => resolveEnvVariables(rawFlow, processEnv, dotEnv))
-    .andThen((resolvedRawFlow) => buildFlow(resolvedRawFlow, fileName));
+    .andThen((resolvedRawFlow) => buildFlow(resolvedRawFlow, filePath));

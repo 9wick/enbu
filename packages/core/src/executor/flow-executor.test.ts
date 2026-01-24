@@ -83,6 +83,7 @@ describe('executeFlow', () => {
   it('FE-1: 全ステップが成功する場合、passedステータスを返す', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/test-flow.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [
@@ -145,6 +146,7 @@ describe('executeFlow', () => {
     // Arrange
     // 環境変数は既にParser層で展開済みの状態
     const flow: Flow = {
+      filePath: '/test/flows/parameterized-flow.enbu.yaml',
       name: 'パラメータ化フロー',
       env: {},
       steps: [
@@ -189,6 +191,7 @@ describe('executeFlow', () => {
   it('FE-6: 空のフローは成功ステータスを返す', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/empty-flow.enbu.yaml',
       name: '空のフロー',
       env: {},
       steps: [],
@@ -221,6 +224,7 @@ describe('executeFlow', () => {
   it('FE-7: agent-browserが未インストールの場合、failedステータスを返す', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/not-installed-test.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [{ command: 'open', url: toUrl('https://example.com') }],
@@ -261,6 +265,7 @@ describe('executeFlow', () => {
   it('FE-8: 実行時間が正しく記録される', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/duration-test.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [
@@ -304,6 +309,7 @@ describe('executeFlow', () => {
   it('FE-9: screenshot: false の場合、スクリーンショットを撮影しない', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/screenshot-disabled-test.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [{ command: 'click', css: toCssSelector('#not-exist') }],
@@ -354,6 +360,7 @@ describe('executeFlow', () => {
   it('FE-10: 成功時は sessionName が結果に含まれない', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/session-name-success-test.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [{ command: 'open', url: toUrl('https://example.com') }],
@@ -389,6 +396,7 @@ describe('executeFlow', () => {
   it('FE-11: 失敗時は sessionName が結果に含まれる（デバッグ用）', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/session-name-failure-test.enbu.yaml',
       name: 'テストフロー',
       env: {},
       steps: [{ command: 'open', url: toUrl('https://example.com') }],
@@ -437,6 +445,7 @@ describe('executeFlow', () => {
   it('FE-12: ステップが失敗したら後続のステップは実行されない', async () => {
     // Arrange: 3ステップのフロー
     const flow: Flow = {
+      filePath: '/test/flows/step-failure-test.enbu.yaml',
       name: 'ステップ失敗テスト',
       env: {},
       steps: [
@@ -514,6 +523,7 @@ describe('executeFlow', () => {
   it('FE-13: 最初のステップが失敗した場合も後続は実行されない', async () => {
     // Arrange: 3ステップのフロー
     const flow: Flow = {
+      filePath: '/test/flows/first-step-failure-test.enbu.yaml',
       name: '最初のステップ失敗テスト',
       env: {},
       steps: [
@@ -580,6 +590,7 @@ describe('executeFlow', () => {
   it('FE-14: onStepProgressコールバックは失敗したステップまでしか呼ばれない', async () => {
     // Arrange
     const flow: Flow = {
+      filePath: '/test/flows/callback-test.enbu.yaml',
       name: 'コールバックテスト',
       env: {},
       steps: [

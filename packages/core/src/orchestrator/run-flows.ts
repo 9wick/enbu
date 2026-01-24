@@ -10,6 +10,7 @@
  * eslint.config.mjsで除外設定済み。
  */
 
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { glob } from 'glob';
@@ -21,6 +22,28 @@ import type { Flow, ParseError } from '../types';
 import { executeFlow, NO_CALLBACK, type ScreenshotResult } from '../executor';
 import type { FlowExecutionOptions } from '../executor';
 import type { FlowRunSummary, OrchestratorError, RunFlowsInput, RunFlowsOutput } from './types';
+
+/**
+ * ファイルパスからセッション名を生成する
+ *
+ * ファイルパスに基づいて一意のセッション名を生成する。
+ * SHA-256ハッシュの先頭6文字を使用し、衝突確率を低く抑えながら
+ * 識別しやすい長さのセッション名を生成する。
+ *
+ * @param filePath - フローファイルの絶対パス
+ * @returns `enbu-{flowName}-{hash}` 形式のセッション名
+ *
+ * @example
+ * ```typescript
+ * generateSessionNameFromPath('/path/to/login.enbu.yaml')
+ * // => 'enbu-login-a1b2c3'
+ * ```
+ */
+export const generateSessionNameFromPath = (filePath: string): string => {
+  const flowName = basename(filePath).replace(/\.enbu\.yaml$/, '');
+  const hash = createHash('sha256').update(filePath).digest('hex').slice(0, 6);
+  return `enbu-${flowName}-${hash}`;
+};
 
 /**
  * ScreenshotResultからパスを取得する
@@ -89,8 +112,6 @@ const loadSingleFlow = (
   processEnv: Readonly<Record<string, string | undefined>>,
   inputEnv: Readonly<Record<string, string>>,
 ): ResultAsync<Flow, OrchestratorError> => {
-  const fileName = basename(filePath);
-
   return ResultAsync.fromPromise(
     readFile(filePath, 'utf-8'),
     (error): OrchestratorError => ({
@@ -99,7 +120,7 @@ const loadSingleFlow = (
       filePath,
     }),
   ).andThen((yamlContent) =>
-    parseFlowYaml(yamlContent, fileName, processEnv, inputEnv).mapErr(
+    parseFlowYaml(yamlContent, filePath, processEnv, inputEnv).mapErr(
       (error): OrchestratorError => ({
         type: 'load_error',
         message: formatParseErrorMessage(error),
@@ -147,18 +168,23 @@ const loadAllFlows = (
 /**
  * FlowExecutionOptionsを構築する
  *
+ * @param flow - 実行対象のフロー
  * @param input - 実行オプション
  * @param cwd - 作業ディレクトリ
  * @returns FlowExecutionOptions
  */
-const buildFlowExecutionOptions = (input: RunFlowsInput, cwd: string): FlowExecutionOptions => {
+const buildFlowExecutionOptions = (
+  flow: Flow,
+  input: RunFlowsInput,
+  cwd: string,
+): FlowExecutionOptions => {
   // セッション指定の決定:
   // - sessionName が指定されていれば、そのまま使用（type: 'name'）
-  // - 指定されていなければ、デフォルトプレフィックス 'enbu' で生成（type: 'default'）
+  // - 指定されていなければ、フローのfilePathからセッション名を生成（type: 'name'）
   const session =
     input.sessionName !== undefined
       ? { type: 'name' as const, value: input.sessionName }
-      : { type: 'default' as const };
+      : { type: 'name' as const, value: generateSessionNameFromPath(flow.filePath) };
 
   return {
     session,
@@ -222,7 +248,7 @@ const executeSingleFlow = async (flow: Flow, input: RunFlowsInput): Promise<Flow
 
   await notifyFlowProgress(input, flow.name, 'start', 0, flow.steps.length);
 
-  const options = buildFlowExecutionOptions(input, input.cwd);
+  const options = buildFlowExecutionOptions(flow, input, input.cwd);
   const result = await executeFlow(flow, options);
 
   return result.match(

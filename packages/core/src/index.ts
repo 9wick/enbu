@@ -11,6 +11,7 @@
 
 export {
   // メインAPI
+  generateSessionNameFromPath,
   runFlows,
   // Parser関数
   getStepLineNumbers,

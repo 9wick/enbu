@@ -6,7 +6,7 @@
  */
 
 // === メインAPI ===
-export { runFlows } from './run-flows';
+export { generateSessionNameFromPath, runFlows } from './run-flows';
 
 // === Orchestrator固有の型 ===
 export type {
